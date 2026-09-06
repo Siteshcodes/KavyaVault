@@ -1,0 +1,417 @@
+/**
+ * काव्यकलश (KavyaVault) — Collections View & Modal Styles (collections.css)
+ * Serene, literary aesthetics supporting all 4 themes and mobile responsiveness.
+ */
+
+/* ==========================================================================
+   Collections Grid & View Layout
+   ========================================================================== */
+
+.collections-view {
+  width: 100%;
+  max-width: var(--max-content-width, 1040px);
+  margin: 0 auto;
+  padding-bottom: var(--space-3xl, 3rem);
+}
+
+.collections-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-lg, 1.5rem);
+  margin-top: var(--space-lg, 1.5rem);
+}
+
+@media (min-width: 768px) {
+  .collections-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1100px) {
+  .collections-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ==========================================================================
+   Collection Card
+   ========================================================================== */
+
+.collection-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--space-lg, 1.5rem);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: all var(--transition-normal, 0.25s ease);
+  position: relative;
+  min-height: 180px;
+}
+
+.collection-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-accent);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.collection-card-body {
+  flex: 1;
+}
+
+.collection-card-header {
+  margin-bottom: var(--space-sm, 0.75rem);
+}
+
+.collection-card-title {
+  font-family: var(--font-display, var(--font-serif));
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0 0 0.35rem 0;
+}
+
+.collection-card-link {
+  color: var(--color-text-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast, 0.15s ease);
+}
+
+.collection-card-link:hover {
+  color: var(--color-accent);
+}
+
+.collection-card-desc {
+  font-family: var(--font-devanagari);
+  font-size: 0.925rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.collection-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--space-md, 1rem);
+  margin-top: var(--space-md, 1rem);
+  border-top: 1px solid var(--color-border);
+}
+
+.collection-poem-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-devanagari);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.collection-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-card-delete-collection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  background: transparent;
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm, 6px);
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+
+.btn-card-delete-collection:hover {
+  color: #c93b2b;
+  background: rgba(201, 59, 43, 0.08);
+  border-color: rgba(201, 59, 43, 0.2);
+}
+
+/* ==========================================================================
+   Collection Detail Header & Actions
+   ========================================================================== */
+
+.collection-detail-top-nav {
+  margin-bottom: var(--space-md, 1rem);
+}
+
+.btn-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-devanagari);
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-sm, 6px);
+  transition: color var(--transition-fast, 0.15s ease);
+}
+
+.btn-back-link:hover {
+  color: var(--color-accent);
+}
+
+.collection-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn-remove-from-collection {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-devanagari);
+  font-size: 0.8rem;
+  color: #c93b2b;
+  background: transparent;
+  border: 1px solid rgba(201, 59, 43, 0.25);
+  border-radius: var(--radius-sm, 4px);
+  padding: 4px 10px;
+  cursor: pointer;
+  min-height: 36px;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+
+.btn-remove-from-collection:hover {
+  background: rgba(201, 59, 43, 0.1);
+  border-color: #c93b2b;
+}
+
+/* ==========================================================================
+   Accessible Dialog Modals (Create Collection / Add Poem)
+   ========================================================================== */
+
+.collection-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+.collection-modal-window {
+  width: 100%;
+  max-width: 520px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl, 16px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 90vh;
+}
+
+.collection-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-lg, 1.25rem) var(--space-xl, 1.5rem);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+}
+
+.collection-modal-title {
+  font-family: var(--font-display, var(--font-serif));
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.collection-modal-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+
+.collection-modal-close-btn:hover {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+.collection-modal-body {
+  padding: var(--space-xl, 1.5rem);
+  overflow-y: auto;
+}
+
+.collection-form-group {
+  margin-bottom: var(--space-lg, 1.25rem);
+}
+
+.collection-form-label {
+  display: block;
+  font-family: var(--font-devanagari);
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-primary);
+}
+
+.collection-form-input,
+.collection-form-textarea {
+  width: 100%;
+  font-family: var(--font-devanagari);
+  font-size: 1rem;
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  padding: 0.75rem 1rem;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color var(--transition-fast, 0.15s ease),
+              box-shadow var(--transition-fast, 0.15s ease);
+}
+
+.collection-form-input {
+  min-height: 48px;
+}
+
+.collection-form-textarea {
+  min-height: 80px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.collection-form-input:focus,
+.collection-form-textarea:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(184, 115, 51, 0.15);
+}
+
+.collection-form-error {
+  color: #c93b2b;
+  font-family: var(--font-devanagari);
+  font-size: 0.85rem;
+  margin-top: 0.35rem;
+  display: none;
+}
+
+.collection-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: var(--space-md, 1rem) var(--space-xl, 1.5rem);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+}
+
+/* ==========================================================================
+   Add Poem Selection List in Modal
+   ========================================================================== */
+
+.add-poem-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.add-poem-picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  transition: background-color var(--transition-fast, 0.15s ease);
+}
+
+.add-poem-picker-info {
+  flex: 1;
+  min-width: 0;
+  margin-right: 1rem;
+}
+
+.add-poem-picker-title {
+  font-family: var(--font-devanagari);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 0.2rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.add-poem-picker-author {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.btn-add-poem-action {
+  font-family: var(--font-devanagari);
+  font-size: 0.825rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-sm, 6px);
+  min-height: 38px;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+
+.btn-add-poem-action.is-added {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  cursor: default;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 480px) {
+  .collection-modal-window {
+    border-radius: var(--radius-lg, 12px);
+  }
+  .collection-modal-header,
+  .collection-modal-body,
+  .collection-modal-footer {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}

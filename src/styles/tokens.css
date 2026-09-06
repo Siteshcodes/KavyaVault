@@ -1,0 +1,352 @@
+/**
+ * काव्यकलश (KavyaVault) — Design System Tokens
+ * Single source of truth for literary, premium, calm, Indian, timeless design.
+ *
+ * Theme definitions:
+ *  1. भोजपत्र (Bhojpatra)   — Default light, warm parchment & aged ink
+ *  2. स्याही (Syahi)        — Deep obsidian, warm ivory & gold foil
+ *  3. खद्दर (Khaddar)      — Unbleached cotton fabric, muted slate & terracotta
+ *  4. मखमली रात (Velvet Night) — Poetic indigo, moonlit silver & sapphire
+ */
+
+/* ==========================================================================
+   1. GLOBAL SYSTEM CONSTANTS (Theme-Independent)
+   ========================================================================== */
+:root {
+  /* --- Typography Families --- */
+  /* Display: Regal, classic Devanagari headline serif */
+  --font-display: 'Rozha One', 'Yatra One', 'Martel', serif;
+  
+  /* Reading / Literary: High-legibility book serif honoring compound aksharas */
+  --font-reading: 'Martel', 'Tiro Devanagari Hindi', 'Noto Serif Devanagari', 'Mangal', 'Devanagari MT', serif;
+  
+  /* Accent / Decorative: Handcrafted, calligraphic woodblock feel */
+  --font-accent: 'Yatra One', 'Rozha One', cursive, serif;
+  
+  /* Interface: Clean, warm, contemporary sans-serif for numbers, buttons & labels */
+  --font-interface: 'Mukta', 'Noto Sans Devanagari', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* --- Type Scale (Fluid Typography) --- */
+  --text-display: clamp(2.5rem, 5vw + 1rem, 4.25rem);
+  --text-h1: clamp(1.75rem, 3.5vw + 0.5rem, 2.75rem);
+  --text-h2: clamp(1.35rem, 2.5vw + 0.25rem, 1.85rem);
+  --text-h3: clamp(1.15rem, 1.5vw + 0.2rem, 1.4rem);
+  --text-h4: 1.125rem;
+  --text-body-large: 1.125rem;
+  --text-body: 1rem;
+  --text-body-small: 0.875rem;
+  --text-caption: 0.75rem;
+  --text-button: 0.9375rem;
+  
+  /* Dedicated Poetry Scale: Roomy & dignified reading rhythm */
+  --text-poem-title: clamp(1.65rem, 3vw + 0.5rem, 2.5rem);
+  --text-poem-subtitle: clamp(1rem, 1.8vw, 1.25rem);
+  --text-poem-body: clamp(1.125rem, 1.6vw + 0.65rem, 1.375rem);
+  --text-metadata: 0.8125rem;
+
+  /* --- Devanagari Line Heights (Vertical Rhythm) --- */
+  /* Critical: Devanagari upper matras (ि, ी, े, ै, ो, ौ, ं, ँ) and lower matras (ु, ू, ृ)
+     require deliberate line spacing to prevent glyph collisions. */
+  --leading-none: 1;
+  --leading-tight: 1.35;
+  --leading-normal: 1.65;
+  --leading-reading: 1.95;
+  --leading-poetry: 2.15;
+  --leading-poetry-spacious: 2.35;
+
+  /* --- Spacing Scale --- */
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-5: 1.25rem;  /* 20px */
+  --space-6: 1.5rem;   /* 24px */
+  --space-8: 2rem;     /* 32px */
+  --space-10: 2.5rem;  /* 40px */
+  --space-12: 3rem;    /* 48px */
+  --space-16: 4rem;    /* 64px */
+  --space-20: 5rem;    /* 80px */
+  --space-24: 6rem;    /* 96px */
+
+  /* Literary Stanza Spacing */
+  --space-stanza: clamp(1.75rem, 3.5vw, 3rem);
+
+  /* --- Layout & Grid Bounds --- */
+  --content-max-width: 1320px;
+  --reader-max-width: 780px;
+  --editor-max-width: 820px;
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 76px;
+  --mobile-nav-height: 68px;
+  --header-height: 64px;
+  --page-padding: clamp(1rem, 3vw, 2.5rem);
+  --card-gap: 1.5rem;
+  --poem-vertical-padding: clamp(2rem, 5vw, 4.5rem);
+
+  /* --- Responsive Breakpoint Standards (Reference Guide) ---
+     Mobile Viewport:  390px (Ergonomic thumb zone, bottom nav)
+     Tablet Viewport:  768px (2-column library grid)
+     Laptop Viewport:  1024px (Docked sidebar navigation)
+     Desktop Viewport: 1440px (Spacious reading margins & multi-column archive)
+  */
+
+  /* --- Restrained Border Radius (Editorial / Craftsmanship) --- */
+  --radius-xs: 3px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-pill: 9999px;
+
+  /* --- Motion & Transitions (Calm & Unhurried) --- */
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.3, 0, 0.1, 1);
+  --ease-subtle: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* --- Z-Index Layering Scale --- */
+  --z-base: 1;
+  --z-raised: 10;
+  --z-sticky: 50;
+  --z-navigation: 100;
+  --z-dropdown: 200;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-toast: 600;
+
+  /* --- Accessibility & Touch Targets --- */
+  --focus-width: 2px;
+  --focus-offset: 3px;
+  --touch-target-min: 48px;
+}
+
+/* ==========================================================================
+   2. THEME 1: भोजपत्र (Bhojpatra) — Default Light Theme
+   Warm parchment, aged iron-gall ink, terracotta / saffron accents
+   ========================================================================== */
+:root,
+[data-theme="bhojpatra"] {
+  /* Surfaces & Canvas */
+  --color-bg: #FAF6EE;
+  --color-surface: #F3EDE0;
+  --color-surface-raised: #FFFDF9;
+  --color-surface-sunken: #EBE3D3;
+
+  /* Typography & Ink */
+  --color-text: #2C221E;
+  --color-text-muted: #63534B;
+  --color-text-subtle: #8E7B71;
+
+  /* Architectural Lines */
+  --color-border: #E2D7C3;
+  --color-border-subtle: #EFE7D5;
+
+  /* Accents (Sinduri Terracotta & Saffron) */
+  --color-accent: #B84A29;
+  --color-accent-hover: #9B381C;
+  --color-accent-soft: rgba(184, 74, 41, 0.08);
+
+  /* Semantic State Tokens */
+  --color-success: #3D6846;
+  --color-warning: #A36618;
+  --color-error: #A62B2B;
+
+  /* Soft Paper Elevation Shadows */
+  --shadow-color: rgba(44, 34, 30, 0.06);
+  --shadow-sm: 0 1px 3px rgba(44, 34, 30, 0.05);
+  --shadow-md: 0 4px 12px rgba(44, 34, 30, 0.07);
+  --shadow-lg: 0 12px 30px rgba(44, 34, 30, 0.09);
+
+  /* Tactile Effects */
+  --paper-texture-opacity: 0.035;
+  --divider-color: #E2D7C3;
+  --ornamental-opacity: 0.85;
+  --quote-decoration-opacity: 0.16;
+
+  /* Accessibility Focus */
+  --focus-color: #B84A29;
+}
+
+/* ==========================================================================
+   3. THEME 2: स्याही (Syahi) — Dark Literary Theme
+   Deep obsidian inkwell, warm ivory parchment, restrained gold leaf
+   ========================================================================== */
+[data-theme="syahi"] {
+  /* Surfaces & Canvas */
+  --color-bg: #121316;
+  --color-surface: #1A1C22;
+  --color-surface-raised: #23262E;
+  --color-surface-sunken: #0C0D0F;
+
+  /* Typography & Text */
+  --color-text: #EAE4D9;
+  --color-text-muted: #A59E92;
+  --color-text-subtle: #6E685F;
+
+  /* Architectural Lines */
+  --color-border: #2C2F38;
+  --color-border-subtle: #20232B;
+
+  /* Accents (Swarna Gold Foil) */
+  --color-accent: #D4AF37;
+  --color-accent-hover: #E5C358;
+  --color-accent-soft: rgba(212, 175, 55, 0.12);
+
+  /* Semantic State Tokens */
+  --color-success: #5B9A68;
+  --color-warning: #D99B26;
+  --color-error: #D9534F;
+
+  /* Deep Shadow with Subtle Card Lift */
+  --shadow-color: rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 14px 34px rgba(0, 0, 0, 0.65);
+
+  /* Tactile Effects */
+  --paper-texture-opacity: 0.02;
+  --divider-color: #2C2F38;
+  --ornamental-opacity: 0.7;
+  --quote-decoration-opacity: 0.12;
+
+  /* Accessibility Focus */
+  --focus-color: #D4AF37;
+}
+
+/* ==========================================================================
+   4. THEME 3: खद्दर (Khaddar) — Earthy Natural Theme
+   Unbleached handspun fiber, weathered slate ink, baked red-clay terracotta
+   ========================================================================== */
+[data-theme="khaddar"] {
+  /* Surfaces & Canvas */
+  --color-bg: #F4F3EE;
+  --color-surface: #EAE8E0;
+  --color-surface-raised: #FBFBF9;
+  --color-surface-sunken: #DFDCD2;
+
+  /* Typography & Text */
+  --color-text: #273238;
+  --color-text-muted: #546369;
+  --color-text-subtle: #7E8F96;
+
+  /* Architectural Lines */
+  --color-border: #D5D3C8;
+  --color-border-subtle: #E3E1D7;
+
+  /* Accents (Baked Earth Terracotta / Gerua) */
+  --color-accent: #A0472E;
+  --color-accent-hover: #853620;
+  --color-accent-soft: rgba(160, 71, 46, 0.08);
+
+  /* Semantic State Tokens */
+  --color-success: #396A58;
+  --color-warning: #946726;
+  --color-error: #9E332E;
+
+  /* Natural Fiber Shadows */
+  --shadow-color: rgba(39, 50, 56, 0.06);
+  --shadow-sm: 0 1px 3px rgba(39, 50, 56, 0.05);
+  --shadow-md: 0 4px 12px rgba(39, 50, 56, 0.07);
+  --shadow-lg: 0 12px 28px rgba(39, 50, 56, 0.09);
+
+  /* Tactile Effects */
+  --paper-texture-opacity: 0.04;
+  --divider-color: #D5D3C8;
+  --ornamental-opacity: 0.8;
+  --quote-decoration-opacity: 0.15;
+
+  /* Accessibility Focus */
+  --focus-color: #A0472E;
+}
+
+/* ==========================================================================
+   5. THEME 4: मखमली रात (Velvet Night) — Poetic Indigo Deep Theme
+   Deepest twilight indigo, moonlit silver, restrained sapphire
+   ========================================================================== */
+[data-theme="velvet-night"],
+[data-theme="velvet"] {
+  /* Surfaces & Canvas */
+  --color-bg: #0F141C;
+  --color-surface: #171E2B;
+  --color-surface-raised: #20293A;
+  --color-surface-sunken: #090C12;
+
+  /* Typography & Text */
+  --color-text: #C5CFDE;
+  --color-text-muted: #8694A8;
+  --color-text-subtle: #566477;
+
+  /* Architectural Lines */
+  --color-border: #232F42;
+  --color-border-subtle: #1A2433;
+
+  /* Accents (Restrained Sapphire / Neelkanth) */
+  --color-accent: #6886B3;
+  --color-accent-hover: #829EC9;
+  --color-accent-soft: rgba(104, 134, 179, 0.14);
+
+  /* Semantic State Tokens */
+  --color-success: #4E9B78;
+  --color-warning: #CCA046;
+  --color-error: #D65A54;
+
+  /* Night Indigo Shadow */
+  --shadow-color: rgba(4, 7, 12, 0.55);
+  --shadow-sm: 0 1px 3px rgba(4, 7, 12, 0.5);
+  --shadow-md: 0 4px 14px rgba(4, 7, 12, 0.6);
+  --shadow-lg: 0 14px 34px rgba(4, 7, 12, 0.7);
+
+  /* Tactile Effects */
+  --paper-texture-opacity: 0.02;
+  --divider-color: #232F42;
+  --ornamental-opacity: 0.75;
+  --quote-decoration-opacity: 0.14;
+
+  /* Accessibility Focus */
+  --focus-color: #6886B3;
+}
+
+/* ==========================================================================
+   6. PREFERS-COLOR-SCHEME FALLBACK (When user has dark OS preference)
+   ========================================================================== */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-bg: #121316;
+    --color-surface: #1A1C22;
+    --color-surface-raised: #23262E;
+    --color-surface-sunken: #0C0D0F;
+    --color-text: #EAE4D9;
+    --color-text-muted: #A59E92;
+    --color-text-subtle: #6E685F;
+    --color-border: #2C2F38;
+    --color-border-subtle: #20232B;
+    --color-accent: #D4AF37;
+    --color-accent-hover: #E5C358;
+    --color-accent-soft: rgba(212, 175, 55, 0.12);
+    --color-success: #5B9A68;
+    --color-warning: #D99B26;
+    --color-error: #D9534F;
+    --shadow-color: rgba(0, 0, 0, 0.5);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.55);
+    --shadow-lg: 0 14px 34px rgba(0, 0, 0, 0.65);
+    --paper-texture-opacity: 0.02;
+    --divider-color: #2C2F38;
+    --ornamental-opacity: 0.7;
+    --quote-decoration-opacity: 0.12;
+    --focus-color: #D4AF37;
+  }
+}
+
+/* ==========================================================================
+   7. REDUCED MOTION SAFEGUARD
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+  }
+}

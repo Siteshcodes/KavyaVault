@@ -1,0 +1,340 @@
+/**
+ * काव्यकलश (KavyaVault) — Poetry Library Styles (library.css)
+ * Responsive grid and list views, card aesthetics, and toolbar controls.
+ */
+
+.library-view {
+  display: flex;
+  flex-direction: column;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+}
+
+/* ==========================================================================
+   1. LIBRARY TOOLBAR
+   ========================================================================== */
+.library-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.filter-pill {
+  padding: var(--space-2) var(--space-4);
+  min-height: var(--touch-target-min);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  font-weight: 500;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filter-pill:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.filter-pill.is-active {
+  background-color: var(--color-accent);
+  color: var(--color-surface-raised);
+  border-color: var(--color-accent);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.library-count {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text-subtle);
+  font-weight: 500;
+}
+
+.view-toggle-group {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background-color: var(--color-surface);
+}
+
+.btn-view-toggle {
+  width: 48px;
+  height: 48px;
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.btn-view-toggle:hover {
+  color: var(--color-accent);
+}
+
+.btn-view-toggle.is-active {
+  background-color: var(--color-surface-raised);
+  color: var(--color-accent);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* ==========================================================================
+   2. POEM COLLECTION (GRID & LIST)
+   ========================================================================== */
+.library-collection-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+@media (min-width: 680px) {
+  .library-collection-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1140px) {
+  .library-collection-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.library-collection-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ==========================================================================
+   3. POEM CARD (GRID MODE)
+   ========================================================================== */
+.poem-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.poem-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-accent);
+}
+
+.poem-card.is-archived {
+  opacity: 0.85;
+  border-style: dashed;
+}
+
+.card-body-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-header {
+  margin-bottom: var(--space-3);
+}
+
+.card-title-wrap {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  color: var(--color-text);
+  margin: 0;
+  line-height: var(--leading-tight);
+}
+
+.card-title-link {
+  color: var(--color-text);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.card-title-link:hover {
+  color: var(--color-accent);
+}
+
+.badge-archived {
+  font-family: var(--font-interface);
+  font-size: 0.6875rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface-sunken);
+  color: var(--color-text-subtle);
+  border: 1px solid var(--color-border-subtle);
+  white-space: nowrap;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-subtle);
+  margin-top: var(--space-1);
+}
+
+.card-meta-dot {
+  font-size: 0.5rem;
+  opacity: 0.6;
+}
+
+.card-snippet {
+  margin: var(--space-2) 0 var(--space-4) 0;
+}
+
+.card-snippet-text {
+  font-family: var(--font-reading);
+  font-size: var(--text-body);
+  line-height: var(--leading-reading);
+  color: var(--color-text-muted);
+  white-space: pre-line;
+  margin: 0;
+  word-break: break-word;
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+}
+
+.card-tag {
+  font-family: var(--font-interface);
+  font-size: 0.75rem;
+  color: var(--color-accent);
+  background-color: var(--color-accent-soft);
+  padding: 2px 8px;
+  border-radius: var(--radius-xs);
+}
+
+/* Card Actions Footer */
+.card-footer {
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: var(--space-3);
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.btn-card-action {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.btn-card-action:hover {
+  background-color: var(--color-surface-raised);
+  color: var(--color-accent);
+}
+
+.btn-card-fav.is-active {
+  color: var(--color-accent);
+}
+
+.btn-card-read {
+  padding: 0 var(--space-3);
+  gap: var(--space-1);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-accent);
+  text-decoration: none;
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.btn-card-read:hover {
+  border-color: var(--color-accent);
+  background-color: var(--color-accent);
+  color: var(--color-surface-raised);
+}
+
+/* ==========================================================================
+   4. POEM CARD (LIST MODE)
+   ========================================================================== */
+.poem-card-list {
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .poem-card-list {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-5);
+  }
+
+  .poem-card-list .card-body-content {
+    flex: 1;
+  }
+
+  .poem-card-list .card-snippet {
+    margin: var(--space-1) 0 var(--space-2) 0;
+  }
+
+  .poem-card-list .card-footer {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+    flex-shrink: 0;
+  }
+}

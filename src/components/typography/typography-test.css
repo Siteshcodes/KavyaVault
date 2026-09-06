@@ -1,0 +1,240 @@
+/**
+ * काव्यकलश (KavyaVault) — Typography Test Styles (typography-test.css)
+ * Diagnostic laboratory for Devanagari glyphs, matras, conjuncts, and line rhythm.
+ */
+
+.typography-test-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+}
+
+/* Diagnostic Test Cards */
+.typo-test-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6) var(--space-5);
+  box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
+  transition: background-color var(--duration-normal) var(--ease-standard),
+              border-color var(--duration-normal) var(--ease-standard);
+}
+
+.typo-test-card-header {
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.typo-test-title {
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.typo-test-subtitle {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+/* Glyph Grid (for conjuncts, matras, nuktas) */
+.glyph-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: var(--space-3);
+}
+
+.glyph-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3) var(--space-2);
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  min-height: 70px;
+  box-sizing: border-box;
+  text-align: center;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.glyph-box:hover {
+  border-color: var(--color-accent);
+}
+
+.glyph-char {
+  font-family: var(--font-reading);
+  font-size: 1.75rem;
+  line-height: var(--leading-poetry);
+  color: var(--color-text);
+  padding: 4px 0;
+}
+
+.glyph-label {
+  font-family: var(--font-interface);
+  font-size: 0.6875rem;
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+
+/* Font Family Demonstration Cards */
+.font-specimen-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.font-specimen-item {
+  padding: var(--space-4);
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.font-specimen-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--space-2);
+}
+
+.font-name {
+  font-family: var(--font-interface);
+  font-weight: 600;
+  font-size: var(--text-body-small);
+  color: var(--color-accent);
+}
+
+.font-role {
+  font-size: var(--text-caption);
+  color: var(--color-text-subtle);
+}
+
+.font-specimen-text {
+  font-size: 1.25rem;
+  line-height: var(--leading-poetry);
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* Realistic Long Poetry Verses Block */
+.verse-test-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background-color: var(--color-surface-raised);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  margin-bottom: var(--space-4);
+}
+
+.verse-line {
+  font-family: var(--font-reading);
+  font-size: var(--text-poem-body);
+  line-height: var(--leading-poetry);
+  color: var(--color-text);
+  word-break: break-word;
+  overflow-wrap: break-word;
+  padding: 2px 0;
+}
+
+.verse-meta-tag {
+  font-family: var(--font-interface);
+  font-size: 0.75rem;
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Multi-Stanza Reading Room Simulator (Capped to --reader-max-width) */
+.reader-simulator {
+  max-width: var(--reader-max-width);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+
+.sim-poem-title {
+  font-family: var(--font-display);
+  font-size: var(--text-poem-title);
+  color: var(--color-text);
+  margin-bottom: var(--space-2);
+}
+
+.sim-poem-author {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-accent);
+  margin-bottom: var(--space-8);
+  font-weight: 500;
+}
+
+.sim-stanza {
+  margin-bottom: var(--space-stanza);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sim-stanza:last-child {
+  margin-bottom: 0;
+}
+
+.sim-verse {
+  font-family: var(--font-reading);
+  font-size: var(--text-poem-body);
+  line-height: var(--leading-poetry);
+  color: var(--color-text);
+  padding: 2px 0;
+}
+
+.sim-stanza-divider {
+  width: 40px;
+  height: 1px;
+  background-color: var(--color-border);
+  margin: var(--space-6) auto;
+  opacity: 0.6;
+}
+
+/* Punctuation and Mixed Inline Badges */
+.punc-badge-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.punc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  font-family: var(--font-reading);
+  font-size: 1.125rem;
+  color: var(--color-text);
+}
+
+.punc-label {
+  font-family: var(--font-interface);
+  font-size: 0.75rem;
+  color: var(--color-text-subtle);
+}

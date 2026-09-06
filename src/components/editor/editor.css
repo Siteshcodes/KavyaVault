@@ -1,0 +1,447 @@
+/**
+ * काव्यकलश (KavyaVault) — Poetry Editor Styles (editor.css)
+ * Literary, distraction-free writing environment with Hindi Devanagari typography,
+ * debounced autosave status, live metrics, and draft recovery banner.
+ */
+
+/* ==========================================================================
+   1. EDITOR CONTAINER
+   ========================================================================== */
+.poetry-editor-view {
+  display: flex;
+  flex-direction: column;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 0 var(--space-2);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   2. TOP ACTION HEADER & STATUS BAR
+   ========================================================================== */
+.editor-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.editor-top-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.btn-editor-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.btn-editor-back:hover {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+/* Autosave subtle status */
+.editor-save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-subtle);
+  user-select: none;
+}
+
+.editor-save-status.is-saving {
+  color: var(--color-accent);
+}
+
+.editor-save-status.is-saved {
+  color: var(--color-success);
+}
+
+.editor-save-status.is-unsaved {
+  color: var(--color-text-subtle);
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: currentColor;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.status-dot.pulse {
+  animation: statusPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.editor-top-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.btn-editor-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target-min);
+  min-width: 100px;
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-interface);
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--color-surface-raised);
+  background-color: var(--color-accent);
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.btn-editor-save:hover {
+  background-color: var(--color-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-editor-save:active {
+  transform: translateY(0);
+}
+
+/* ==========================================================================
+   3. DRAFT RECOVERY BANNER
+   ========================================================================== */
+.draft-recovery-banner {
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  box-shadow: var(--shadow-sm);
+  animation: fadeIn 200ms var(--ease-standard);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.recovery-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.recovery-heading {
+  font-family: var(--font-interface);
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.recovery-desc {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text-muted);
+}
+
+.recovery-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.btn-recovery-continue {
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  font-weight: 600;
+  color: var(--color-surface-raised);
+  background-color: var(--color-accent);
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.btn-recovery-continue:hover {
+  background-color: var(--color-accent-hover);
+}
+
+.btn-recovery-discard {
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.btn-recovery-discard:hover {
+  border-color: var(--color-text);
+  color: var(--color-text);
+}
+
+/* ==========================================================================
+   4. EDITORIAL WRITING CANVAS
+   ========================================================================== */
+.editor-canvas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6) var(--space-7);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 600px) {
+  .editor-canvas {
+    padding: var(--space-5) var(--space-4);
+    border-radius: var(--radius-lg);
+  }
+}
+
+/* Title Input */
+.editor-title-wrap {
+  width: 100%;
+}
+
+.editor-title-input {
+  width: 100%;
+  font-family: var(--font-display);
+  font-size: var(--text-poem-title);
+  line-height: var(--leading-tight);
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: var(--space-1) 0;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.editor-title-input:focus {
+  border-bottom-color: var(--color-accent);
+}
+
+.editor-title-input::placeholder {
+  color: var(--color-text-subtle);
+  opacity: 0.6;
+}
+
+/* Author Input */
+.editor-meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.editor-author-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 200px;
+}
+
+.editor-author-label {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+
+.editor-author-input {
+  width: 100%;
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed var(--color-border-subtle);
+  padding: var(--space-1) 0;
+  outline: none;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.editor-author-input:focus {
+  border-bottom-color: var(--color-accent);
+}
+
+.editor-author-input::placeholder {
+  color: var(--color-text-subtle);
+  opacity: 0.6;
+}
+
+/* Poetry Body Textarea */
+.editor-body-wrap {
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.editor-body-textarea {
+  width: 100%;
+  min-height: 420px;
+  font-family: var(--font-reading);
+  font-size: var(--text-poem-body);
+  line-height: var(--leading-poetry);
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: vertical;
+  box-sizing: border-box;
+  padding: var(--space-2) 0;
+  tab-size: 2;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.editor-body-textarea::placeholder {
+  color: var(--color-text-subtle);
+  opacity: 0.55;
+  font-style: italic;
+}
+
+/* Metadata & Tags Section */
+.editor-tags-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.editor-tags-label {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+
+.editor-tags-input {
+  flex: 1;
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text);
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  outline: none;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.editor-tags-input:focus {
+  border-color: var(--color-accent);
+}
+
+.editor-tags-input::placeholder {
+  color: var(--color-text-subtle);
+  opacity: 0.6;
+}
+
+/* ==========================================================================
+   5. BOTTOM FOOTER & LIVE COUNTERS
+   ========================================================================== */
+.editor-bottom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding: var(--space-3) var(--space-2);
+}
+
+.editor-metrics {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-subtle);
+  user-select: none;
+}
+
+.metric-item strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.metric-dot {
+  font-size: 0.5rem;
+  opacity: 0.6;
+}
+
+.editor-keyboard-hint {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-subtle);
+  user-select: none;
+}
+
+.editor-keyboard-hint kbd {
+  font-family: monospace;
+  font-size: 0.75rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  padding: 1px 4px;
+}
+
+/* Validation toast/prompt */
+.editor-validation-message {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-error);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background-color: rgba(166, 43, 43, 0.08);
+  margin-bottom: var(--space-3);
+}

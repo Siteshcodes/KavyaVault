@@ -1,0 +1,377 @@
+/**
+ * काव्यकलश (KavyaVault) — Poetry Reader Styles (reader.css)
+ * Serene, dignified reading sanctuary honoring Devanagari typography,
+ * responsive layout, lifecycle controls, and accessible deletion modal.
+ */
+
+/* ==========================================================================
+   1. READER CONTAINER & WRITING COLUMN
+   ========================================================================== */
+.poem-reader-view {
+  display: flex;
+  flex-direction: column;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 var(--space-2);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   2. TOP ACTION TOOLBAR
+   ========================================================================== */
+.reader-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-6);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.reader-nav-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text-muted);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  text-decoration: none;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.reader-nav-back:hover {
+  background-color: var(--color-surface-raised);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.reader-lifecycle-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.btn-reader-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  cursor: pointer;
+  text-decoration: none;
+  gap: var(--space-1);
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.btn-reader-action:hover {
+  background-color: var(--color-surface-raised);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.btn-reader-fav.is-favorite {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background-color: var(--color-accent-soft);
+}
+
+.btn-reader-delete:hover {
+  color: var(--color-error);
+  border-color: var(--color-error);
+  background-color: rgba(166, 43, 43, 0.08);
+}
+
+/* ==========================================================================
+   3. ARCHIVE NOTIFICATION BANNER
+   ========================================================================== */
+.reader-archived-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  background-color: var(--color-surface-sunken);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-6);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text-muted);
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.btn-banner-restore {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 38px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-surface-raised);
+  background-color: var(--color-accent);
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.btn-banner-restore:hover {
+  background-color: var(--color-accent-hover);
+}
+
+/* ==========================================================================
+   4. POEM SANCTUARY & READING ARTICLE
+   ========================================================================== */
+.reader-article {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: clamp(var(--space-6), 6vw, var(--space-10)) clamp(var(--space-4), 5vw, var(--space-8));
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 600px) {
+  .reader-article {
+    border-radius: var(--radius-lg);
+    padding: var(--space-6) var(--space-4);
+  }
+}
+
+/* Header: Title, Author, Date, Tags */
+.reader-header {
+  text-align: center;
+  margin-bottom: var(--space-8);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.reader-poem-title {
+  font-family: var(--font-display);
+  font-size: var(--text-poem-title);
+  line-height: var(--leading-tight);
+  color: var(--color-text);
+  margin: 0 0 var(--space-3) 0;
+  word-break: break-word;
+}
+
+.reader-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-family: var(--font-interface);
+  font-size: var(--text-metadata);
+  color: var(--color-text-subtle);
+}
+
+.reader-author {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.reader-meta-dot {
+  font-size: 0.5rem;
+  opacity: 0.6;
+}
+
+.reader-tags {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+}
+
+.reader-tag {
+  font-family: var(--font-interface);
+  font-size: 0.75rem;
+  color: var(--color-accent);
+  background-color: var(--color-accent-soft);
+  padding: 2px 8px;
+  border-radius: var(--radius-xs);
+}
+
+/* Poetry Body & Stanza Architecture */
+.reader-poetry-canvas {
+  margin: var(--space-4) auto var(--space-8) auto;
+  max-width: 60ch;
+  width: 100%;
+}
+
+.reader-stanza {
+  margin-bottom: var(--space-6);
+}
+
+.reader-stanza:last-child {
+  margin-bottom: 0;
+}
+
+.reader-verse-line {
+  font-family: var(--font-reading);
+  font-size: var(--text-poem-body);
+  line-height: var(--leading-poetry);
+  color: var(--color-text);
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Stanza spacing helper for empty line breaks */
+.reader-stanza-spacer {
+  height: var(--space-5);
+}
+
+/* Reader Footer & Literary Dingbat */
+.reader-footer {
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border-subtle);
+  text-align: center;
+}
+
+.reader-ornament {
+  font-family: var(--font-accent);
+  font-size: 1.5rem;
+  color: var(--color-accent);
+  opacity: var(--ornamental-opacity);
+  margin-bottom: var(--space-3);
+  user-select: none;
+}
+
+.reader-timestamp {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-subtle);
+}
+
+/* ==========================================================================
+   5. ACCESSIBLE DELETE CONFIRMATION MODAL
+   ========================================================================== */
+.delete-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: var(--z-modal-backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  animation: modalFadeIn var(--duration-fast) var(--ease-standard);
+}
+
+.delete-modal {
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  max-width: 440px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-modal);
+  animation: modalScaleIn var(--duration-fast) var(--ease-emphasized);
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalScaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.delete-modal-header {
+  margin-bottom: var(--space-3);
+}
+
+.delete-modal-title {
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  color: var(--color-text);
+  margin: 0;
+  line-height: var(--leading-tight);
+}
+
+.delete-modal-body {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  line-height: var(--leading-normal);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-6);
+}
+
+.delete-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.btn-modal-cancel {
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.btn-modal-cancel:hover {
+  background-color: var(--color-surface-sunken);
+}
+
+.btn-modal-confirm {
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  font-weight: 600;
+  color: #FFFFFF;
+  background-color: var(--color-error);
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.btn-modal-confirm:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}

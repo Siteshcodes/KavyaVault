@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="hi" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#FAF6EE" />
+    
+    <!-- Synchronous early theme restoration to prevent flash of default theme -->
+    <script>
+      (function() {
+        try {
+          var t = localStorage.getItem('kavyavault:theme');
+          var valid = ['bhojpatra', 'syahi', 'khaddar', 'velvet-night'];
+          if (t && valid.indexOf(t) !== -1) {
+            document.documentElement.setAttribute('data-theme', t);
+          } else {
+            document.documentElement.setAttribute('data-theme', 'bhojpatra');
+          }
+        } catch (e) {}
+      })();
+    </script>
+    
+    <!-- Primary SEO Meta Tags -->
+    <title>काव्यकलश | KavyaVault — निजी साहित्यिक धरोहर</title>
+    <meta name="title" content="काव्यकलश | KavyaVault — निजी साहित्यिक धरोहर" />
+    <meta name="description" content="काव्यकलश एक शांत, ध्यानमग्न और सुरुचिपूर्ण डिजिटल काव्य पुस्तकालय है। अपनी कविताओं, ग़ज़लों और छंदों का एकांत पठन और संपादन करें।" />
+    <meta name="keywords" content="Hindi Poetry, काव्य, कविता, ग़ज़ल, दोहा, छंद, साहित्य, KavyaVault, Devanagari, Literary Archive" />
+    <meta name="author" content="KavyaVault" />
+    
+    <!-- OpenGraph / Social Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="hi_IN" />
+    <meta property="og:title" content="काव्यकलश | KavyaVault — निजी साहित्यिक धरोहर" />
+    <meta property="og:description" content="एक शांत, एकांत और सुरुचिपूर्ण हिंदी काव्य पुस्तकालय। सुंदर देवनागरी मुद्रणकला और एकाग्र पठन।" />
+    <meta property="og:site_name" content="काव्यकलश (KavyaVault)" />
+    
+    <!-- Google Fonts Optimization: Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Devanagari Typography: Rozha One, Martel, Yatra One, Tiro Devanagari Hindi, Mukta -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Martel:wght@300;400;600;700;900&family=Mukta:wght@300;400;500;600;700&family=Rozha+One&family=Tiro+Devanagari+Hindi:ital@0;1&family=Yatra+One&display=swap"
+    />
+
+    <!-- Fallback base styling before tokens load -->
+    <style>
+      :root {
+        --color-bg-initial: #FAF6EE;
+        --color-text-initial: #2C221E;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: var(--color-bg-initial);
+        color: var(--color-text-initial);
+        font-family: 'Martel', 'Noto Serif Devanagari', serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      #app {
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Root Mounting Point -->
+    <div id="app" role="application" aria-label="काव्यकलश डिजिटल काव्य पुस्तकालय">
+      <noscript>
+        <div style="padding: 2rem; text-align: center; font-family: sans-serif;">
+          काव्यकलश का उपयोग करने के लिए कृपया जावास्क्रिप्ट (JavaScript) सक्षम करें।
+        </div>
+      </noscript>
+    </div>
+
+    <!-- Application Bootstrap Entry -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

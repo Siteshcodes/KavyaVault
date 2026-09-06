@@ -1,0 +1,113 @@
+/**
+ * काव्यकलश (KavyaVault) — Home / Foyer Styles (home.css)
+ * Quiet, contemplative literary foyer structure.
+ */
+
+.home-foyer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* ==========================================================================
+   1. FOYER WELCOME GREETING
+   ========================================================================== */
+.foyer-welcome {
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: background-color var(--duration-normal) var(--ease-standard),
+              border-color var(--duration-normal) var(--ease-standard);
+}
+
+.foyer-welcome::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-accent) 50%,
+    transparent 100%
+  );
+  opacity: 0.6;
+}
+
+.foyer-greeting {
+  font-family: var(--font-display);
+  font-size: var(--text-h1);
+  color: var(--color-text);
+  line-height: var(--leading-tight);
+  margin-bottom: var(--space-2);
+}
+
+.foyer-tagline {
+  font-family: var(--font-reading);
+  font-size: var(--text-body-large);
+  line-height: var(--leading-reading);
+  color: var(--color-text-muted);
+  max-width: 540px;
+  margin: 0 auto var(--space-6) auto;
+}
+
+.foyer-action-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+/* ==========================================================================
+   2. FOYER LITERARY SECTIONS
+   ========================================================================== */
+.foyer-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.foyer-section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.foyer-section-title {
+  font-family: var(--font-display);
+  font-size: var(--text-h2);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.foyer-section-subtitle {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-accent);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+  .foyer-welcome {
+    padding: var(--space-12) var(--space-8);
+  }
+
+  .foyer-section-header {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+}
