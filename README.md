@@ -1,7 +1,6 @@
-# काव्यकलश (KavyaVault)
+# KavyaVault (काव्यकलश)
 
-> **एक एकांत साहित्यिक धरोहर व डिजिटल काव्य पुस्तकालय**  
-> *A Hindi-first, local-first personal digital poetry library and literary sanctuary.*
+> **A Hindi-first, local-first personal digital poetry library and literary sanctuary.**
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
@@ -11,254 +10,262 @@
 
 ---
 
-## 📖 परिचय (Introduction)
+## 📖 Overview
 
-**काव्यकलश (KavyaVault)** कवियों, विचारकों और साहित्य-प्रेमियों के लिए निर्मित एक एकांत, सुरुचिपूर्ण डिजिटल पुस्तकालय है। यह रचनाकारों को अपनी कविताओं, ग़ज़लों, छंदों, दोहों और मुक्तकों को पूर्ण गरिमा, गोपनीयता और सुरक्षा के साथ सहेजने, पढ़ने और व्यवस्थित करने का अनुभव प्रदान करता है।
+**KavyaVault (काव्यकलश)** is an elegant, distraction-free digital poetry vault and sanctuary designed specifically for poets, writers, and Hindi literature enthusiasts. It provides a dignified environment to compose, curate, read, and organize poems, ghazals, couplets (*dohas*), and verses.
 
-यह परियोजना **स्थानीय-प्रथम (Local-First)** सिद्धांत पर आधारित है—आपकी रचनाएँ पूरी तरह आपके अपने उपकरण में सुरक्षित रहती हैं, बिना किसी क्लाउड निर्भरता या डेटा ट्रैकिंग के।
+Built on a **local-first** foundation, KavyaVault ensures that your literary creations remain completely private, durable, and stored exclusively on your own device—with zero cloud lock-in, zero latency, and zero telemetry.
 
 ---
 
-## 🏛️ वास्तुशिल्प व मुख्य सिद्धांत (Architecture & Core Principles)
+## 🏛️ Architecture & Design Tenets
 
-काव्यकलश एक अत्यधिक सुव्यवस्थित, डिकपल्ड (Decoupled) और अमूर्त (Abstracted) स्तरित वास्तुशिल्प का अनुसरण करता है:
+KavyaVault enforces a strictly decoupled, layered domain architecture:
 
 ```text
 ┌──────────────────────────────────────────────────────────┐
-│                   प्रस्तुति स्तर (UI Views)               │
+│                   Presentation Layer (UI)                │
 │  LibraryView | PoetryEditor | PoemReader | SearchView     │
 │  CollectionsView | CollectionDetailView | FavoritesView   │
 └────────────────────────────┬─────────────────────────────┘
                              │
                              ▼
 ┌──────────────────────────────────────────────────────────┐
-│             डोमेन सेवाएँ (Domain Repositories)             │
+│             Domain Repositories Layer                    │
 │        PoemRepository      |     CollectionRepository     │
-│  - CRUD & Validation       │  - Grouping & Referencing    │
+│  - CRUD & Validation       │  - Thematic Groupings        │
 │  - Draft Autosave/Recovery │  - Referential Integrity     │
-│  - Search & Sorting        │  - Cascade Deletion Cleanup  │
+│  - Query & Sorting Logic   │  - Cascade Deletion Cleanup  │
 └────────────────────────────┬─────────────────────────────┘
                              │
                              ▼
 ┌──────────────────────────────────────────────────────────┐
-│         भंडारण अंतराफलक (IStorageAdapter Interface)       │
+│             Storage Abstraction (IStorageAdapter)        │
 │  - get(key)      - set(key, val)   - remove(key)         │
 │  - clear()       - keys()          - has(key)            │
 └────────────────────────────┬─────────────────────────────┘
                              │
                              ▼
 ┌──────────────────────────────────────────────────────────┐
-│         भंडारण चालक (LocalStorageAdapter Driver)          │
-│  - JSON Serialization / Deserialization                  │
+│             Concrete Storage Driver                      │
+│            (LocalStorageAdapter)                         │
+│  - JSON Serialization & Safe Deserialization             │
 │  - StorageError Taxonomy (Quota, Corrupt, KeyNotFound)   │
-│  - Non-destructive Reads & Safe Downgrade Protection     │
+│  - Non-destructive Reads & Downgrade Protection          │
 └────────────────────────────┬─────────────────────────────┘
                              │
                              ▼
 ┌──────────────────────────────────────────────────────────┐
-│         ब्राउज़र लोकल स्टोरेज (Browser Storage Engine)     │
+│             Browser Storage Engine                       │
 │  - 'kavyavault:poems'         - 'kavyavault:drafts'       │
 │  - 'kavyavault:collections'   - 'kavyavault:metadata'     │
 └──────────────────────────────────────────────────────────┘
 ```
 
-### मुख्य वास्तुशिल्प विशेषताएँ:
-1. **अपरिवर्तनीयता (Immutability)**: भंडार से बाहर जाने और अंदर आने वाला प्रत्येक डेटा ऑब्जेक्ट `structuredClone` (या JSON क्लोन) द्वारा सुरक्षित रहता है।
-2. **शून्य-विनाशकारी पठन (Non-Destructive Reads)**: भ्रष्ट या अमान्य डेटा मिलने पर सिस्टम इन-मेमोरी खाली सूची लौटाता है, किंतु उपयोगकर्ता के वास्तविक भंडारण को कभी अधिलेखित (overwrite) कर नष्ट नहीं करता।
-3. **प्रवासन प्रबंधक (MigrationManager)**: स्कीमा संस्करणों का प्रबंधन और भविष्य के संस्करणों से पुराने कोड को सुरक्षित रखने हेतु डाउनग्रेड-सुरक्षा।
-4. **सख्त XSS स्वच्छता (Strict HTML Sanitization)**: शीर्षकों, रचना-अंगों, रचनाकार के नाम और टैग्स को ब्राउज़र में रेंडर करने से पूर्व बहु-स्तरीय सुरक्षित एस्केपिंग।
+### Core Architectural Principles:
+1. **Domain Isolation**: UI components never interact directly with `localStorage`. All state flows through domain repositories (`PoemRepository`, `CollectionRepository`) and the `IStorageAdapter` contract.
+2. **Immutability Guarantee**: Every object returned from or written to repositories is deeply cloned using `structuredClone` (with JSON serialization fallback) to prevent accidental state mutation.
+3. **Non-Destructive Reads**: Encountering malformed or corrupted storage data returns safe fallbacks in memory without overwriting raw user storage, preserving recoverable data.
+4. **Schema Evolution & Downgrade Protection**: Managed by `MigrationManager`. If an existing installation detects data written by a newer schema version, it safely aborts migration rather than forcing an accidental downgrade.
+5. **Strict XSS Sanitization**: Dynamic user input (titles, verse stanzas, author names, tags, search queries) is safely sanitized and escaped across cards, the reader sanctuary, and search highlight marks.
 
 ---
 
-## ✨ चरण १ की उपलब्धियाँ व सुविधाएँ (Phase 1 Features)
+## ✨ Phase 1 Feature Suite
 
-### 📚 १. कविता पुस्तकालय (Poetry Library — `/poems`)
-- **दोहरी दृश्य विधा (Dual View Modes)**: ग्रिड (जालीदार कार्ड) अथवा सूची (संक्षिप्त पंक्तियाँ)।
-- **जीवंत छँटाई (Sorting)**: नवीनतम, प्राचीनतम, अंतिम अद्यतन, और अकारादि (शीर्षक अनुसार)।
-- **काव्य पूर्वावलोकन**: छंद पंक्तियों का सुरुचिपूर्ण और सुरक्षित स्निपेट।
-- **त्वरित क्रियाएँ**: कार्ड स्तर पर पसंदीदा (Favorite) और अभिलेख (Archive) टॉगल।
+### 📚 1. Poetry Library (`/poems`)
+- **Dual Presentation Modes**: Seamlessly switch between **Grid** (visual card layout) and **List** (compact poetic verse layout).
+- **Live Sorting**: Sort by Newest (*नवीनतम*), Oldest (*प्राचीनतम*), Recently Updated (*अद्यतन*), or Alphabetical Title (*शीर्षक अनुसार*).
+- **Poetic Preview Generation**: Automatically generates balanced snippets preserving verse boundaries.
+- **Card-Level Quick Actions**: One-click favorite and archive toggles directly from the card.
 
-### ✍️ २. काव्य संपादक व स्वतः-सहेज (Poetry Editor — `/new`, `/poems/:id/edit`)
-- **देवनागरी-प्रथम कैनवास**: बड़ी, स्पष्ट और सहज हिंदी टाइपोग्राफी।
-- **स्वतः-सहेज (Autosave)**: ७५० मिलीसेकंड का डिबाउंस्ड ड्राफ्ट ऑटोसेव जो ब्राउज़र बंद होने पर भी अप्रकाशित रचना को सुरक्षित रखता है।
-- **ड्राफ्ट पुनर्प्राप्ति (Draft Recovery Banner)**: पिछले अप्रकाशित सत्र को एक क्लिक में बहाल या खारिज करने की सुविधा।
-- **सजीव काव्य माप (Live Metrics)**: शब्द संख्या, पंक्ति संख्या और वर्ण गणना।
-- **टैग पार्सिंग**: कॉमा या स्पेस द्वारा स्व-सफाई करने वाले काव्य टैग्स।
+### ✍️ 2. Poetry Editor & Autosave (`/new`, `/poems/:id/edit`)
+- **Devanagari-First Writing Canvas**: Generous line heights, optical sizing, and distraction-free poetic focus.
+- **Autosave Engine**: Non-blocking ~750ms debounced autosave guarantees drafts are preserved even across browser refreshes or crashes.
+- **Draft Recovery Banner**: Alerts the writer to uncommitted drafts with one-click restore or discard options.
+- **Real-Time Literary Metrics**: Live counts for words (*शब्द*), verse lines (*पंक्तियाँ*), and characters (*वर्ण*).
+- **Smart Tagging**: Delimited by commas or spaces, with automatic deduplication, sanitization, and trimming.
 
-### 📖 ३. काव्य पठन कक्ष (Poem Reader — `/poems/:id`)
-- **एकांत पठन संचेतना**: विकर्षण-रहित, गरिमामय और विशाल पठन इंटरफ़ेस।
-- **छंद व चरण विभाजन (Stanza Delineation)**: दोहरे न्यू-लाइन (`\n\n`) को अलग अंतरा (Stanza) और एकल न्यू-लाइन (`\n`) को चरण पंक्ति में प्रस्तुत करना।
-- **साहित्यिक अलंकरण (Dingbats)**: सुंदर देवनागरी प्रतीक चिन्ह (❦) और रचना तिथि विवरण।
-- **सुलभ विलोपन संवाद (Accessible Delete Modal)**: गलती से रचना हटने से बचाने हेतु कीबोर्ड-सुलभ (Escape-friendly) पुष्टि संवाद।
+### 📖 3. Poetry Reader Sanctuary (`/poems/:id`)
+- **Contemplative Reading Canvas**: Immersive, typography-centered sanctuary devoid of visual clutter.
+- **Stanza & Verse Delineation**: Converts double newlines (`\n\n`) into semantic stanzas and single newlines (`\n`) into verse lines.
+- **Literary Ornaments**: Traditional Devanagari dingbats (❦) and poetic metadata (creation date, last updated date).
+- **Accessible Delete Modal**: Confirmation dialog with keyboard shortcuts (`Escape` to dismiss) to prevent accidental loss.
 
-### 🔍 ४. सटीक हिंदी खोज (Deterministic Search — `/search`)
-- **रूढ़िवादी यूनिकोड सामान्यीकरण (Conservative NFC Normalization)**: मात्राओं, नुक्ते (ज़, फ़, ख़), चंद्रबिंदु (ँ), अनुस्वार (ं) और विसर्ग (ः) की सुरक्षा।
-- **बहु-शब्द प्रासंगिकता (Multi-word Deterministic Ranking)**:
-  1. पूर्ण शीर्षक मिलान
-  2. शीर्षक आंशिक मिलान
-  3. टैग मिलान
-  4. रचनाकार मिलान
-  5. कविता के आंतरिक छंदों में मिलान
-- **सुरक्षित हाइलाइटिंग**: खोजे गए शब्दों को सुरक्षित `<mark class="search-highlight">` में प्रदर्शित करना।
+### 🔍 4. Deterministic Hindi Search (`/search`)
+- **Conservative Unicode NFC Normalization**: Preserves complex Devanagari vowel signs (*matras*), dot diacritics (*nuktas* like ज़, फ़, ख़), *chandrabindu* (ँ), *anusvara* (ं), and *visarga* (ः).
+- **Multi-Word Relevance Ranking**:
+  1. Exact title match
+  2. Partial title match
+  3. Tag match
+  4. Author match
+  5. Verse body match
+- **Contextual Match Badges**: Displays where the match was found (*शीर्षक में मिला*, *टैग में मिला*, *कविता में मिला*).
+- **Safe Match Highlighting**: Escapes all text before wrapping matching query terms in `<mark class="search-highlight">`.
 
-### 🗃️ ५. संग्रह व्यवस्था (Collections Foundation — `/collections`, `/collections/:id`)
-- **व्यक्तिगत काव्य संकलन**: प्रकृति, प्रेम, विद्रोह, स्मृति आदि विषयों में कविताओं का वर्गीकरण।
-- **संदर्भ-आधारित संबंध**: कविता का दोहराव नहीं—संग्रह केवल कविता आईडी को संदर्भित करते हैं।
-- **सहज संपादन**: संग्रह बनाना, नाम व विवरण बदलना, कविता जोड़ना या निकालना।
-- **कैस्केड शुद्धि**: यदि पुस्तकालय से कोई कविता स्थायी रूप से हटाई जाती है, तो सभी संग्रहों से उसका संदर्भ स्वतः हट जाता है।
+### 🗃️ 5. Collections Foundation (`/collections`, `/collections/:id`)
+- **User-Curated Anthologies**: Group poems by theme (*प्रकृति*, *प्रेम*, *विद्रोह*, *यात्राएँ*).
+- **Reference-Only Storage**: Collections store only unique poem IDs, eliminating data duplication.
+- **Cascade Cleanup**: Deleting a poem permanently automatically scrubs its reference from all collections.
+- **Dedicated Detail View**: Manage collection membership, view member poems, and add/remove items cleanly.
 
-### ⭐ ६. पसंदीदा व अभिलेखागार (Favorites & Archive — `/favorites`, `/archive`)
-- **पसंदीदा कक्ष (`/favorites`)**: हृदय-चिह्नित प्रिय रचनाओं का विशेष संकलन।
-- **अभिलेखागार (`/archive`)**: पूर्णतः पृथक शांत अभिलेख जहाँ से रचना को कभी भी मुख्य पुस्तकालय में पुनर्स्थापित (Restore) किया जा सकता है।
+### ⭐ 6. Favorites & Archive (`/favorites`, `/archive`)
+- **Favorites Sanctuary (`/favorites`)**: Dedicated view for starred, beloved poems.
+- **Poetry Archive (`/archive`)**: Isolated cold storage for completed or resting verses, completely excluded from active library search with one-click restore capabilities.
 
-### 🎨 ७. चार विशिष्ट साहित्यिक रंग-रूप (Four Literary Themes)
-1. **भोजपत्र (Bhojpatra)**: धूप जैसी हल्की, गर्म पांडुलिपि पृष्ठभूमि (डिफ़ॉल्ट लाइट थीम)।
-2. **स्याही (Syahi)**: गहरे काले पन्नों पर श्वेत-स्वर्ण अक्षरों की आभा (ऑब्सिडियन डार्क थीम)।
-3. **खद्दर (Khaddar)**: मटमैले भूरे और सेपिया रंगों का देहाती, मिट्टी जैसा अनुभव (अर्थी थीम)।
-4. **मखमली रात (Makhmali Raat)**: आधी रात के गहरे नीले आकाश और हल्के नीलम रंगों की छटा (इंडिगो डार्क थीम)।
+### 🎨 7. Four Tailored Literary Themes
+1. **Bhojpatra (भोजपत्र)**: Warm, parchment-toned manuscript canvas (default light theme).
+2. **Syahi (स्याही)**: Crisp obsidian night and deep ink with golden accents (dark theme).
+3. **Khaddar (खद्दर)**: Rustic, earthy sepia inspired by traditional hand-spun cloth.
+4. **Makhmali Raat (मखमली रात)**: Deep midnight velvet with sapphire accents (indigo dark theme).
 
 ---
 
-## 🗂️ परियोजना संरचना (Directory Structure)
+## 🗂️ Project Directory Structure
 
 ```text
 KavyaVault/
-├── index.html                   # HTML5 प्रवेश द्वार, मेटा टैग्स व वेब फॉन्ट्स
-├── package.json                 # निर्भरताएँ, परीक्षण व निर्माण स्क्रिप्ट्स
-├── vite.config.js               # विट बंडलर कॉन्फ़िगरेशन
-├── README.md                    # समग्र दस्तावेज़ीकरण (यह फ़ाइल)
+├── index.html                   # HTML5 entry point, fonts & metadata
+├── package.json                 # Project dependencies, build & test scripts
+├── vite.config.js               # Vite bundler configuration
+├── README.md                    # Project documentation (this file)
 │
 ├── src/
-│   ├── main.js                  # ऍप्लिकेशन बूटस्ट्रैप, थीम व रूट माउंटिंग
+│   ├── main.js                  # Application bootstrap, router & theme init
 │   │
 │   ├── data/
-│   │   ├── navigation.js        # रूट पाथ्स, लेबल व नेविगेशन विन्यास
-│   │   └── storageKeys.js       # स्थानीय भंडारण के निश्चित स्टोरेज कीज़
+│   │   ├── navigation.js        # Route paths, localized labels & navigation config
+│   │   └── storageKeys.js       # Canonical storage key constants
 │   │
 │   ├── services/
-│   │   ├── PoemRepository.js    # कविता डोमेन मॉडल, CRUD, ड्राफ्ट प्रबंधन
-│   │   ├── CollectionRepository.js # संग्रह डोमेन मॉडल, संबंध व शुद्धि
-│   │   ├── SearchService.js     # यूनिकोड सामान्यीकरण, स्कोरिंग व हाइलाइटिंग
-│   │   ├── router.js            # क्लाइंट-साइड SPA हैश/हिस्ट्री राउटर
-│   │   ├── theme.js             # ४ थीम प्रदाता व डार्क/लाइट सिस्टम श्रोता
+│   │   ├── PoemRepository.js    # Poem domain repository, CRUD, drafts & lifecycle
+│   │   ├── CollectionRepository.js # Collections domain repository & cascade cleanup
+│   │   ├── SearchService.js     # Unicode normalization, scoring & highlights
+│   │   ├── router.js            # Client-side SPA hash/history router
+│   │   ├── theme.js             # 4-theme provider & system preference listener
 │   │   └── storage/
-│   │       ├── IStorageAdapter.js    # भंडारण इंटरफ़ेस अनुबंध
-│   │       ├── LocalStorageAdapter.js# वेब लोकलस्टोरेज ठोस कार्यान्वयन
-│   │       ├── StorageError.js       # विस्तृत त्रुटि वर्गीकरण (Quota/Corrupt)
-│   │       └── MigrationManager.js   # स्कीमा संस्करण प्रवासन प्रबंधक
+│   │       ├── IStorageAdapter.js    # Abstract storage interface
+│   │       ├── LocalStorageAdapter.js# LocalStorage driver implementation
+│   │       ├── StorageError.js       # Error taxonomy (Quota, Corrupt, KeyNotFound)
+│   │       └── MigrationManager.js   # Schema versioning & migration pipeline
 │   │
 │   ├── components/
-│   │   ├── layout/              # AppShell, PageHeader, EmptyState, आदि
-│   │   ├── navigation/          # साइडबार, बॉटम-बार, साहित्यिक आइकन्स (SVG)
-│   │   ├── home/                # गृह पटल (Foyer), आंकड़े व त्वरित क्रियाएँ
-│   │   ├── library/             # पुस्तकालय दृश्य, ग्रिड/सूची कार्ड्स
-│   │   ├── editor/              # काव्य संपादक, मेट्रिक्स, ड्राफ्ट प्रबंधन
-│   │   ├── reader/              # पठन कक्ष, छंद रेंडरिंग, विलोपन संवाद
-│   │   ├── search/              # खोज पटल, इनपुट, फ़िल्टर व परिणाम सूची
-│   │   ├── collections/         # संग्रह सूची व संग्रह विवरण दृश्य
-│   │   ├── favorites/           # पसंदीदा रचनाएँ दृश्य
-│   │   ├── archive/             # अभिलेख दृश्य
-│   │   └── settings/            # थीम चयनकर्ता व वरीयताएँ
+│   │   ├── layout/              # AppShell, PageHeader, EmptyState, etc.
+│   │   ├── navigation/          # Sidebar, BottomNav, literary SVG icons
+│   │   ├── home/                # Home foyer view, quick stats & actions
+│   │   ├── library/             # Library view, grid & list poem cards
+│   │   ├── editor/              # Poetry editor canvas, metrics, autosave
+│   │   ├── reader/              # Poem reader sanctuary & delete modal
+│   │   ├── search/              # Search view, input & result listing
+│   │   ├── collections/         # Collections index & collection detail view
+│   │   ├── favorites/           # Favorites view
+│   │   ├── archive/             # Archive view
+│   │   └── settings/            # Theme switcher & preferences
 │   │
 │   ├── styles/
-│   │   ├── tokens.css           # रंग पट्टिका, स्पेसिंग, टाइपोग्राफी पैमाना
-│   │   └── main.css             # ग्लोबल लेआउट, आधुनिक सीएसएस रीसेट
+│   │   ├── tokens.css           # Design tokens, color palettes, typographic scale
+│   │   └── main.css             # Global layout, resets, accessibility scaffolding
 │   │
 │   └── utils/
-│       ├── date.js              # देवनागरी व काव्यात्मक तिथि प्रारूपक
-│       ├── preview.js           # दोहे/छंद के पूर्वावलोकन का निर्माण
-│       └── counters.js          # देवनागरी-अनुकूल शब्द व वर्ण गणना
+│       ├── date.js              # Devanagari poetic date formatter
+│       ├── preview.js           # Multi-line snippet generator
+│       └── counters.js          # Devanagari-aware word and character metrics
 │
-└── tests/ (स्वचालित परीक्षण फ़ाइलें)
-    ├── test_persistence.js      # स्टोरेज एडेप्टर, त्रुटियाँ व स्कीमा (१० परीक्षण)
-    ├── test_library.js          # पुस्तकालय छँटाई, कार्ड निर्माण (१० परीक्षण)
-    ├── test_editor.js           # स्वतः-सहेज, ड्राफ्ट बहाली, मेट्रिक्स (१० परीक्षण)
-    ├── test_reader.js           # पठन, छंद विभाजन, विलोपन चक्र (१० परीक्षण)
-    ├── test_search.js           # हिंदी खोज, यूनिकोड शुद्धता (२० परीक्षण)
-    ├── test_favorites_archive.js# पसंदीदा व अभिलेख पृथक्करण (२० परीक्षण)
-    ├── test_collections.js      # संग्रह संबंध व कैस्केड विलोपन (२५ परीक्षण)
-    └── test_hardening.js        # चरम सीमाएं, XSS, कोटा, गैर-विनाशकारी पठन (२६ परीक्षण)
+└── tests/ (Automated Node Test Suites)
+    ├── test_persistence.js      # Storage adapter, error handling, schema (10 tests)
+    ├── test_library.js          # Repository CRUD, filtering, sorting (10 tests)
+    ├── test_editor.js           # Autosave, draft recovery, live metrics (10 tests)
+    ├── test_reader.js           # Stanza parsing, lifecycle actions, 404 (10 tests)
+    ├── test_search.js           # Hindi search, NFC normalization, ranking (20 tests)
+    ├── test_favorites_archive.js# Favorites & archive isolation and restore (20 tests)
+    ├── test_collections.js      # Collection relationships & cascade cleanup (25 tests)
+    └── test_hardening.js        # Release gate, XSS, quota, non-destructive reads (26 tests)
 ```
 
 ---
 
-## 🧪 स्वचालित परीक्षण व विश्वसनीयता (Testing & Quality Assurance)
+## 🧪 Automated Testing & Reliability
 
-काव्यकलश में किसी भी बाहरी टेस्ट-रनर निर्भरता के बिना शुद्ध नोड-मॉड्यूल आधारित १००% प्रतिलिपि-योग्य स्वचालित परीक्षण सुइट शामिल है।
+KavyaVault features a 100% reproducible, standalone automated test suite executed directly in Node.js with **zero external test-runner overhead**.
 
-### संपूर्ण प्रतिगमन सुइट (Full Regression Suite):
+### Run Complete Regression Suite:
 ```bash
 npm test
 ```
 
-### सुइट परिणाम (१३१ / १३१ परीक्षण उत्तीर्ण — १००% सफलता):
-| परीक्षण सुइट | फ़ाइल | परीक्षण संख्या | मुख्य सत्यापन क्षेत्र |
+### Test Suite Summary (131 / 131 Tests Passing — 100% Pass Rate):
+| Test Suite | Test File | Test Count | Key Verification Areas |
 |---|---|:---:|---|
-| **स्थानीय दृढ़ता** | `test_persistence.js` | **१०** | एडेप्टर, JSON सीरियलाइजेशन, त्रुटि प्रबंधन |
-| **पुस्तकालय आधार** | `test_library.js` | **१०** | रिपॉजिटरी CRUD, छँटाई, स्निपेट्स |
-| **काव्य संपादक** | `test_editor.js` | **१०** | डिबाउंस्ड ड्राफ्ट, अप्रकाशित रिकवरी, मेट्रिक्स |
-| **काव्य पठन कक्ष** | `test_reader.js` | **१०** | छंद रेंडरिंग, जीवनचक्र क्रियाएँ, 404 सुरक्षा |
-| **हिंदी खोज सेवा** | `test_search.js` | **२०** | NFC सामान्यीकरण, बहु-शब्द स्कोरिंग, हाइलाइट्स |
-| **पसंदीदा व अभिलेख** | `test_favorites_archive.js` | **२०** | समर्पित दृश्य, पुनर्स्थापना, खोज अलगाव |
-| **संग्रह आधार** | `test_collections.js` | **२५** | संग्रह CRUD, डुप्लिकेट निषेध, कैस्केड क्लीनअप |
-| **अंतिम दृढ़ता व सुरक्षा** | `test_hardening.js` | **२६** | XSS रोकथाम, कोटा सीमा, विशाल पेलोड, गैर-विनाशकारी पठन |
-| **कुल उत्तीर्ण** | | **१३१ / १३१** | **शून्य असफलता (0 Failures)** |
+| **Local Persistence** | `test_persistence.js` | **10** | Storage adapter, serialization, error classification |
+| **Poetry Library** | `test_library.js` | **10** | Repository CRUD, sorting, snippets, card generation |
+| **Poetry Editor** | `test_editor.js` | **10** | Debounced autosave, draft recovery, metrics, Hindi input |
+| **Poem Reader** | `test_reader.js` | **10** | Stanza parsing, lifecycle actions, localized 404 state |
+| **Hindi Search** | `test_search.js` | **20** | NFC normalization, multi-word scoring, match highlights |
+| **Favorites & Archive** | `test_favorites_archive.js` | **20** | Dedicated views, archive isolation, restore flow |
+| **Collections Foundation** | `test_collections.js` | **25** | Collection CRUD, duplicate prevention, cascade cleanup |
+| **Final Hardening** | `test_hardening.js` | **26** | Quota limits, extreme payloads, Unicode rigor, XSS, downgrade protection |
+| **TOTAL** | | **131 / 131** | **0 Failures (100% Success)** |
 
 ---
 
-## 🚀 स्थापना व संचालन (Getting Started)
+## 🚀 Getting Started
 
-### आवश्यकताएँ:
-- **Node.js**: v18.0.0 या उच्चतर
-- **npm**: v9.0.0 या उच्चतर
+### Prerequisites:
+- **Node.js**: `v18.0.0` or higher
+- **npm**: `v9.0.0` or higher
 
-### १. भंडार क्लोन अथवा खोलें:
+### 1. Clone or Open Workspace:
 ```bash
 cd KavyaVault
 ```
 
-### २. निर्भरताएँ संस्थापित करें:
+### 2. Install Dependencies:
 ```bash
 npm install
 ```
 
-### ३. स्थानीय विकास सर्वर प्रारंभ करें:
+### 3. Start Local Development Server:
 ```bash
 npm run dev
 ```
-ब्राउज़र में खोलें: `http://localhost:5173/`
+Open your browser at `http://localhost:5173/`.
 
-### ४. उत्पादन निर्माण (Production Build):
+### 4. Run Automated Test Suite:
+```bash
+npm test
+```
+
+### 5. Build for Production:
 ```bash
 npm run build
 ```
-उत्पादन-तैयार बंडल मात्र ७००-८०० मिलीसेकंड में `dist/` फ़ोल्डर में उत्पन्न हो जाता है।
+Generates an optimized, production-ready static bundle in `dist/` in under 800ms.
 
-### ५. निर्माण का पूर्वावलोकन (Preview Build):
+### 6. Preview Production Build:
 ```bash
 npm run preview
 ```
 
 ---
 
-## 🗺️ आगामी चरण (Phase 2 Roadmap Preview)
+## 🗺️ Phase 2 Roadmap Preview
 
-चरण १ की दृढ़ नींव और पूर्ण रिलीज़ गेट पास होने के पश्चात, आगामी चरणों के लिए नियोजित विचार:
-- **काव्य छंद व मात्रा विश्लेषण**: दोहा, चौपाई, रोला, सोरठा आदि छंदों की मात्रा गणना।
-- **डेटा आयात व निर्यात (JSON / Markdown / Plain Text)**: व्यक्तिगत बैकअप व अन्य प्रणालियों से स्थानांतरण।
-- **ऑडियो वाचन व रिकॉर्डिंग (Recitation Voice Memos)**: कवि के स्वयं के स्वर में रचना की ऑडियो क्लिप संलग्न करना।
-- **पांडुलिपि स्कैन व हस्तलिखित पृष्ठ**: पुरानी हस्तलिखित डायरियों के पृष्ठों की तस्वीरें संलग्न करने की सुविधा।
+Following the successful completion and approval of Phase 1 (Tasks 1.1 through 1.15), upcoming Phase 2 milestones include:
+- **Chhand & Metre Analysis**: Automated Devanagari syllable and matra analysis for classical metres (*Doha, Chaupai, Rola, Soratha*).
+- **Import & Export Engine**: Clean data export and backup in JSON, Markdown, and formatted Plain Text.
+- **Poetry Recitation Audio Memos**: In-browser audio recording allowing poets to capture oral recitations alongside the written verse.
+- **Manuscript Image Attachment**: Ability to capture or attach photos of handwritten diary pages to digital records.
 
 ---
 
-## 📜 साहित्यिक समर्पण (Literary Dedication)
+## 📜 Literary Dedication
 
 > *"कलम आज उनकी जय बोल...*  
 > *जला अस्थियाँ बारी-बारी, चिटकाई जिनमें चिंगारी,*  
 > *जो चढ़ गये पुण्यवेदी पर, लिए बिना गर्दन का मोल।*  
 > *कलम आज उनकी जय बोल!"*  
-> — **राष्ट्रकवि रामधारी सिंह 'दिनकर'**
+> — **Rashtrakavi Ramdhari Singh 'Dinkar'**
 
 ---
 
-*काव्यकलश (KavyaVault) — आपकी अपनी कलम, आपका अपना एकांत पटल।*
+*KavyaVault (काव्यकलश) — Your personal sanctuary for timeless verse.*
