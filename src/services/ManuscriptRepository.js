@@ -319,6 +319,14 @@ export class ManuscriptRepository {
       );
     }
 
+    // PROTECTION: metadata updates must NOT modify derived manuscript or transformation directly
+    if (metadata.derivedManuscript !== undefined || metadata.transformation !== undefined) {
+      throw new StorageError(
+        'संपादित प्रति या रूपांतरण को सामान्य मेटाडेटा अद्यतन से संशोधित नहीं किया जा सकता। कृपया saveDerivedManuscript() का उपयोग करें।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
     if (metadata.title !== undefined) {
       if (typeof metadata.title !== 'string' || metadata.title.trim() === '') {
         throw new StorageError(
@@ -337,6 +345,116 @@ export class ManuscriptRepository {
 
     if (metadata.provenance !== undefined) {
       this._validateProvenanceInput(metadata.provenance);
+    }
+  }
+
+  /**
+   * Validates derived manuscript artifact input structure
+   */
+  _validateDerivedArtifact(artifact, originalManuscriptId) {
+    if (!artifact || typeof artifact !== 'object') {
+      throw new StorageError(
+        'संपादित पांडुलिपि (derivedManuscript) ऑब्जेक्ट अनिवार्य है।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    // MIME type validation
+    if (!artifact.mimeType || typeof artifact.mimeType !== 'string') {
+      throw new StorageError(
+        'संपादित पांडुलिपि का MIME प्रकार आवश्यक है।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    if (!ALLOWED_MIME_TYPES.includes(artifact.mimeType)) {
+      throw new StorageError(
+        `अमान्य MIME प्रकार "${artifact.mimeType}"। स्वीकृत प्रकार: ${ALLOWED_MIME_TYPES.join(', ')}`,
+        StorageErrorCode.VALIDATION_ERROR,
+        null,
+        { mimeType: artifact.mimeType, allowed: ALLOWED_MIME_TYPES }
+      );
+    }
+
+    // Image data validation
+    if (!artifact.data || typeof artifact.data !== 'string' || artifact.data.trim() === '') {
+      throw new StorageError(
+        'संपादित पांडुलिपि का छवि डेटा एक गैर-रिक्त स्ट्रिंग होना अनिवार्य है।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    // sourceArtifactId validation: must match originalManuscript.id
+    if (!artifact.sourceArtifactId || typeof artifact.sourceArtifactId !== 'string') {
+      throw new StorageError(
+        'मूल आर्टिफ़ैक्ट आईडी (sourceArtifactId) अनिवार्य है।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    if (artifact.sourceArtifactId !== originalManuscriptId) {
+      throw new StorageError(
+        `स्रोत आर्टिफ़ैक्ट आईडी "${artifact.sourceArtifactId}" मूल पांडुलिपि आईडी "${originalManuscriptId}" से मेल नहीं खाती।`,
+        StorageErrorCode.VALIDATION_ERROR,
+        null,
+        { sourceArtifactId: artifact.sourceArtifactId, expected: originalManuscriptId }
+      );
+    }
+
+    // Filename validation
+    if (artifact.filename !== undefined && artifact.filename !== null && typeof artifact.filename !== 'string') {
+      throw new StorageError(
+        'फ़ाइल नाम (filename) स्ट्रिंग या null होना चाहिए।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+  }
+
+  /**
+   * Validates transformation metadata
+   */
+  _validateTransformation(transformation) {
+    if (!transformation || typeof transformation !== 'object') {
+      throw new StorageError(
+        'रूपांतरण (transformation) ऑब्जेक्ट अनिवार्य है।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    // Rotation validation: strictly 0, 90, 180, 270
+    const VALID_ROTATIONS = [0, 90, 180, 270];
+    if (transformation.rotation === undefined || !VALID_ROTATIONS.includes(transformation.rotation)) {
+      throw new StorageError(
+        `अमान्य घूर्णन (rotation) कोण "${transformation.rotation}"। केवल 0, 90, 180 या 270 अंश मान्य हैं।`,
+        StorageErrorCode.VALIDATION_ERROR,
+        null,
+        { rotation: transformation.rotation, allowed: VALID_ROTATIONS }
+      );
+    }
+
+    // Crop validation
+    if (transformation.crop !== undefined && transformation.crop !== null) {
+      const crop = transformation.crop;
+      if (typeof crop !== 'object') {
+        throw new StorageError(
+          'क्रॉप (crop) ऑब्जेक्ट होना चाहिए।',
+          StorageErrorCode.VALIDATION_ERROR
+        );
+      }
+
+      if (
+        typeof crop.x !== 'number' || isNaN(crop.x) || crop.x < 0 ||
+        typeof crop.y !== 'number' || isNaN(crop.y) || crop.y < 0 ||
+        typeof crop.width !== 'number' || isNaN(crop.width) || crop.width <= 0 ||
+        typeof crop.height !== 'number' || isNaN(crop.height) || crop.height <= 0
+      ) {
+        throw new StorageError(
+          'क्रॉप निर्देशांक अमान्य हैं। x, y >= 0 और चौड़ाई (width), ऊँचाई (height) > 0 होना अनिवार्य है।',
+          StorageErrorCode.VALIDATION_ERROR,
+          null,
+          { crop }
+        );
+      }
     }
   }
 
@@ -453,6 +571,12 @@ export class ManuscriptRepository {
         data: data.originalManuscript.data,
         capturedAt: data.originalManuscript.capturedAt || null
       },
+      derivedManuscript: data.derivedManuscript && typeof data.derivedManuscript === 'object'
+        ? deepClone(data.derivedManuscript)
+        : null,
+      transformation: data.transformation && typeof data.transformation === 'object'
+        ? deepClone(data.transformation)
+        : null,
       transcription,
       provenance,
       createdAt: data.createdAt || now,
@@ -615,6 +739,152 @@ export class ManuscriptRepository {
         data: newOriginal.data,
         capturedAt: newOriginal.capturedAt || null
       },
+      updatedAt: now
+    };
+
+    manuscripts[index] = updated;
+    this._writeManuscripts(manuscripts);
+
+    return deepClone(updated);
+  }
+
+  /**
+   * Retrieves the derived/transformed manuscript artifact for a manuscript.
+   * @param {string} id
+   * @returns {Object|null} Deep-cloned derivedManuscript object or null
+   */
+  getDerivedManuscript(id) {
+    const manuscript = this.getById(id);
+    if (!manuscript || !manuscript.derivedManuscript) return null;
+    return deepClone(manuscript.derivedManuscript);
+  }
+
+  /**
+   * Saves a derived/transformed version of a manuscript image.
+   *
+   * PRESERVATION GUARANTEE: This method NEVER touches, overwrites, or alters
+   * the archival originalManuscript artifact. Transformed image bytes are
+   * stored strictly in derivedManuscript with a new unique artifact ID.
+   *
+   * @param {string} id - Manuscript ID
+   * @param {Object} derivedArtifact - Transformed image artifact
+   * @param {string} derivedArtifact.mimeType - MIME type (e.g. 'image/png')
+   * @param {string} derivedArtifact.data - Transformed base64 image data
+   * @param {string} derivedArtifact.sourceArtifactId - Must match originalManuscript.id
+   * @param {string} [derivedArtifact.filename] - Optional filename
+   * @param {Object} transformation - Transformation parameters
+   * @param {number} transformation.rotation - 0, 90, 180, or 270
+   * @param {Object|null} [transformation.crop=null] - Rectangular crop { x, y, width, height }
+   * @returns {Object} Updated manuscript record (deep-cloned)
+   */
+  saveDerivedManuscript(id, derivedArtifact, transformation) {
+    if (!id || typeof id !== 'string') {
+      throw new StorageError(
+        'पांडुलिपि आईडी (id) अमान्य है।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    const manuscripts = this._readManuscripts();
+    const index = manuscripts.findIndex(m => m && m.id === id);
+
+    if (index === -1) {
+      throw new StorageError(
+        `आईडी "${id}" वाली पांडुलिपि नहीं मिली।`,
+        StorageErrorCode.KEY_NOT_FOUND,
+        null,
+        { id }
+      );
+    }
+
+    const current = manuscripts[index];
+    this._validateDerivedArtifact(derivedArtifact, current.originalManuscript.id);
+    this._validateTransformation(transformation);
+
+    const now = new Date().toISOString();
+    const currentVersion = current.derivedManuscript && typeof current.derivedManuscript.transformVersion === 'number'
+      ? current.derivedManuscript.transformVersion
+      : 0;
+    const nextVersion = typeof derivedArtifact.transformVersion === 'number' && derivedArtifact.transformVersion > currentVersion
+      ? derivedArtifact.transformVersion
+      : currentVersion + 1;
+
+    const newDerivedArtifact = {
+      id: generateArtifactId(), // New unique kv_art_<uuid>, NEVER reuse original artifact ID
+      filename: (derivedArtifact.filename && typeof derivedArtifact.filename === 'string')
+        ? derivedArtifact.filename.trim()
+        : (current.originalManuscript.filename ? `derived_${current.originalManuscript.filename}` : null),
+      mimeType: derivedArtifact.mimeType,
+      data: derivedArtifact.data,
+      createdAt: derivedArtifact.createdAt || now,
+      sourceArtifactId: current.originalManuscript.id, // Strictly points to original
+      transformVersion: nextVersion
+    };
+
+    const cleanTransformation = {
+      rotation: transformation.rotation,
+      crop: transformation.crop
+        ? {
+            x: Math.round(transformation.crop.x),
+            y: Math.round(transformation.crop.y),
+            width: Math.round(transformation.crop.width),
+            height: Math.round(transformation.crop.height)
+          }
+        : null,
+      transformVersion: nextVersion,
+      transformedAt: now
+    };
+
+    const updated = {
+      ...current,
+      // originalManuscript remains strictly untouched and identical byte-for-byte
+      derivedManuscript: newDerivedArtifact,
+      transformation: cleanTransformation,
+      updatedAt: now
+    };
+
+    manuscripts[index] = updated;
+    this._writeManuscripts(manuscripts);
+
+    return deepClone(updated);
+  }
+
+  /**
+   * Resets/clears the derived manuscript artifact, returning to the untouched original.
+   *
+   * PRESERVATION GUARANTEE: Does NOT modify or delete the original manuscript.
+   *
+   * @param {string} id - Manuscript ID
+   * @returns {Object} Updated manuscript record (deep-cloned)
+   */
+  clearDerivedManuscript(id) {
+    if (!id || typeof id !== 'string') {
+      throw new StorageError(
+        'पांडुलिपि आईडी (id) अमान्य है।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    const manuscripts = this._readManuscripts();
+    const index = manuscripts.findIndex(m => m && m.id === id);
+
+    if (index === -1) {
+      throw new StorageError(
+        `आईडी "${id}" वाली पांडुलिपि नहीं मिली।`,
+        StorageErrorCode.KEY_NOT_FOUND,
+        null,
+        { id }
+      );
+    }
+
+    const current = manuscripts[index];
+    const now = new Date().toISOString();
+
+    const updated = {
+      ...current,
+      derivedManuscript: null,
+      transformation: null,
+      // originalManuscript is NEVER touched here
       updatedAt: now
     };
 

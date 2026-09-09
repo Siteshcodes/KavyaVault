@@ -146,6 +146,24 @@ export function getIconSvg(iconName, className = 'nav-icon') {
         <line x1="19" y1="12" x2="5" y2="12"/>
         <polyline points="12 19 5 12 12 5"/>
       </svg>
+    `,
+    'rotate-left': `
+      <svg class="${className}" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M2.5 2v6h6"/>
+        <path d="M2.66 15.57a10 10 0 1 0 .57-8.38L2.5 8"/>
+      </svg>
+    `,
+    'rotate-right': `
+      <svg class="${className}" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21.5 2v6h-6"/>
+        <path d="M21.34 15.57a10 10 0 1 1-.57-8.38l.73.81"/>
+      </svg>
+    `,
+    crop: `
+      <svg class="${className}" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"/>
+        <path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"/>
+      </svg>
     `
   };
 
