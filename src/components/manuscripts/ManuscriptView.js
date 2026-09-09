@@ -87,8 +87,12 @@ export class ManuscriptView {
     }
 
     this.update();
-    this.container.addEventListener('click', this.boundClickHandler);
-    document.addEventListener('keydown', this.boundKeyDownHandler);
+    if (this.container?.addEventListener) {
+      this.container.addEventListener('click', this.boundClickHandler);
+    }
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      document.addEventListener('keydown', this.boundKeyDownHandler);
+    }
   }
 
   /**
@@ -96,10 +100,12 @@ export class ManuscriptView {
    */
   unmount() {
     this.detachCropListeners();
-    if (this.container) {
+    if (this.container?.removeEventListener) {
       this.container.removeEventListener('click', this.boundClickHandler);
     }
-    document.removeEventListener('keydown', this.boundKeyDownHandler);
+    if (typeof document !== 'undefined' && document.removeEventListener) {
+      document.removeEventListener('keydown', this.boundKeyDownHandler);
+    }
   }
 
   /**
@@ -169,6 +175,7 @@ export class ManuscriptView {
   getOriginalImageSrc() {
     const orig = this.manuscript?.originalManuscript || {};
     const raw = orig.data || '';
+    if (!raw || typeof raw !== 'string' || raw.trim() === '') return '';
     if (raw.startsWith('data:')) return raw;
     return `data:${orig.mimeType || 'image/jpeg'};base64,${raw}`;
   }
@@ -184,6 +191,7 @@ export class ManuscriptView {
     if (this.activeTab === 'derived' && this.manuscript?.derivedManuscript) {
       const derived = this.manuscript.derivedManuscript;
       const raw = derived.data || '';
+      if (!raw || typeof raw !== 'string' || raw.trim() === '') return '';
       if (raw.startsWith('data:')) return raw;
       return `data:${derived.mimeType || 'image/png'};base64,${raw}`;
     }
@@ -539,7 +547,7 @@ export class ManuscriptView {
       e.preventDefault();
       try {
         manuscriptRepository.delete(this.manuscriptId);
-        this.router.navigate(ROUTES.POEMS);
+        this.router.navigate(ROUTES.MANUSCRIPTS || '/manuscripts');
       } catch (err) {
         console.error('[ManuscriptView] Error deleting manuscript:', err);
       }
@@ -633,9 +641,9 @@ export class ManuscriptView {
     this.container.innerHTML = `
       <div class="manuscript-detail-view standard-page-view" role="region" aria-label="पांडुलिपि अप्राप्य">
         <div class="manuscript-top-bar">
-          <a href="${ROUTES.POEMS}" data-link class="manuscript-nav-back" aria-label="पुस्तकालय पर लौटें">
+          <a href="${ROUTES.MANUSCRIPTS || '/manuscripts'}" data-link class="manuscript-nav-back" aria-label="पांडुलिपि वीथिका पर लौटें">
             ${getIconSvg('arrow-left', 'nav-icon')}
-            <span>पुस्तकालय</span>
+            <span>वीथिका</span>
           </a>
         </div>
         <div style="text-align: center; padding: var(--space-12) var(--space-4); background: var(--color-bg-card); border-radius: var(--radius-lg); border: 1px solid var(--color-border-subtle); margin-top: var(--space-6);">
@@ -646,15 +654,25 @@ export class ManuscriptView {
           <p style="font-family: var(--font-interface); color: var(--color-text-muted); margin: 0 0 var(--space-6) 0; max-width: 480px; margin-left: auto; margin-right: auto; line-height: var(--leading-normal);">
             जिस पांडुलिपि की आप खोज कर रहे हैं, वह इस संग्रह में उपस्थित नहीं है अथवा हटा दी गई है।
           </p>
-          <a
-            href="${ROUTES.POEMS}"
-            data-link
-            class="manuscript-nav-back"
-            style="background: var(--color-accent-gold); color: #1a150e; border: none; font-weight: 600;"
-          >
-            ${getIconSvg('book', 'nav-icon')}
-            <span>पुस्तकालय पर लौटें</span>
-          </a>
+          <div style="display: flex; gap: var(--space-3); justify-content: center; flex-wrap: wrap;">
+            <a
+              href="${ROUTES.MANUSCRIPTS || '/manuscripts'}"
+              data-link
+              class="manuscript-nav-back"
+              style="background: var(--color-accent-gold); color: #1a150e; border: none; font-weight: 600;"
+            >
+              ${getIconSvg('archive', 'nav-icon')}
+              <span>वीथिका पर लौटें</span>
+            </a>
+            <a
+              href="${ROUTES.POEMS}"
+              data-link
+              class="manuscript-nav-back"
+            >
+              ${getIconSvg('book', 'nav-icon')}
+              <span>पुस्तकालय पर लौटें</span>
+            </a>
+          </div>
         </div>
       </div>
     `;
@@ -685,14 +703,61 @@ export class ManuscriptView {
       ? formatPoeticDate(derived.createdAt)
       : null;
 
+    let prevManuscript = null;
+    let nextManuscript = null;
+    try {
+      const all = this.repository.getAll();
+      const idx = all.findIndex(m => m && m.id === this.manuscriptId);
+      if (idx > 0) prevManuscript = all[idx - 1];
+      if (idx >= 0 && idx < all.length - 1) nextManuscript = all[idx + 1];
+    } catch (_) {}
+
+    let dimsText = null;
+    if (isViewingDerived && derived?.width && derived?.height) {
+      dimsText = `${derived.width} × ${derived.height} px`;
+    } else if (orig.width && orig.height) {
+      dimsText = `${orig.width} × ${orig.height} px`;
+    } else if (transform?.crop?.width && transform?.crop?.height && isViewingDerived) {
+      dimsText = `${transform.crop.width} × ${transform.crop.height} px`;
+    }
+
     return `
       <div class="manuscript-detail-view" role="region" aria-label="पांडुलिपि अभिलेख: ${this.escapeHtml(ms.title)}">
         <!-- Top Navigation Bar -->
         <div class="manuscript-top-bar">
-          <a href="${ROUTES.POEMS}" data-link class="manuscript-nav-back" aria-label="काव्य पुस्तकालय पर लौटें">
-            ${getIconSvg('arrow-left', 'nav-icon')}
-            <span>पुस्तकालय</span>
-          </a>
+          <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+            <a href="${ROUTES.MANUSCRIPTS || '/manuscripts'}" data-link class="manuscript-nav-back" aria-label="पांडुलिपि वीथिका पर लौटें">
+              ${getIconSvg('arrow-left', 'nav-icon')}
+              <span>वीथिका</span>
+            </a>
+
+            ${prevManuscript || nextManuscript ? `
+              <div class="manuscript-prev-next-group" role="navigation" aria-label="पांडुलिपि अनुक्रम">
+                ${prevManuscript ? `
+                  <a href="/manuscripts/${encodeURIComponent(prevManuscript.id)}" data-link class="manuscript-nav-arrow" title="पिछली: ${this.escapeHtml(prevManuscript.title)}" aria-label="पिछली पांडुलिपि">
+                    ${getIconSvg('arrow-left', 'nav-icon')}
+                    <span>पिछली</span>
+                  </a>
+                ` : `
+                  <span class="manuscript-nav-arrow disabled" aria-disabled="true">
+                    ${getIconSvg('arrow-left', 'nav-icon')}
+                    <span>पिछली</span>
+                  </span>
+                `}
+                ${nextManuscript ? `
+                  <a href="/manuscripts/${encodeURIComponent(nextManuscript.id)}" data-link class="manuscript-nav-arrow" title="अगली: ${this.escapeHtml(nextManuscript.title)}" aria-label="अगली पांडुलिपि">
+                    <span>अगली</span>
+                    ${getIconSvg('arrow-left', 'nav-icon nav-icon-flip')}
+                  </a>
+                ` : `
+                  <span class="manuscript-nav-arrow disabled" aria-disabled="true">
+                    <span>अगली</span>
+                    ${getIconSvg('arrow-left', 'nav-icon nav-icon-flip')}
+                  </span>
+                `}
+              </div>
+            ` : ''}
+          </div>
 
           <div style="display: flex; gap: var(--space-2); align-items: center;">
             <a
@@ -778,21 +843,21 @@ export class ManuscriptView {
             ` : ''}
 
             <!-- View Tabs (Switch between Original & Derived) -->
-            ${hasDerived || hasUncommittedEdits ? `
-              <div class="manuscript-view-tabs" role="tablist" aria-label="पांडुलिपि प्रति चयन">
-                <button
-                  type="button"
-                  class="manuscript-view-tab ${!isViewingDerived && !hasUncommittedEdits ? 'active' : ''}"
-                  data-action="switch-tab"
-                  data-tab="original"
-                  role="tab"
-                  aria-selected="${!isViewingDerived && !hasUncommittedEdits}"
-                  aria-label="मूल अपरिवर्तित पांडुलिपि देखें"
-                >
-                  ${getIconSvg('book', 'tab-icon')}
-                  <span>मूल पांडुलिपि (अपरिवर्तित)</span>
-                </button>
+            <div class="manuscript-view-tabs" role="tablist" aria-label="पांडुलिपि प्रति चयन">
+              <button
+                type="button"
+                class="manuscript-view-tab ${!isViewingDerived && !hasUncommittedEdits ? 'active' : ''}"
+                data-action="switch-tab"
+                data-tab="original"
+                role="tab"
+                aria-selected="${!isViewingDerived && !hasUncommittedEdits}"
+                aria-label="मूल अपरिवर्तित पांडुलिपि देखें"
+              >
+                ${getIconSvg('book', 'tab-icon')}
+                <span>मूल पांडुलिपि (अपरिवर्तित)</span>
+              </button>
 
+              ${hasDerived || hasUncommittedEdits ? `
                 <button
                   type="button"
                   class="manuscript-view-tab ${isViewingDerived || hasUncommittedEdits ? 'active' : ''}"
@@ -805,8 +870,22 @@ export class ManuscriptView {
                   ${getIconSvg('edit', 'tab-icon')}
                   <span>संपादित प्रति ${hasUncommittedEdits ? '(असुरक्षित बदलाव)' : ''}</span>
                 </button>
-              </div>
-            ` : ''}
+              ` : `
+                <button
+                  type="button"
+                  class="manuscript-view-tab disabled"
+                  disabled
+                  role="tab"
+                  aria-selected="false"
+                  aria-disabled="true"
+                  title="कोई संपादित प्रति उपलब्ध नहीं है"
+                  aria-label="संपादित प्रति उपलब्ध नहीं"
+                >
+                  ${getIconSvg('edit', 'tab-icon')}
+                  <span>संपादित प्रति (अनुपलब्ध)</span>
+                </button>
+              `}
+            </div>
           </div>
 
           <!-- Transformation Action Toolbar -->
@@ -942,11 +1021,20 @@ export class ManuscriptView {
           <!-- Archival Image Showcase -->
           <div class="manuscript-archival-display">
             <figure class="manuscript-archival-frame" style="margin: 0; position: relative; display: inline-block;">
-              <img
-                src="${displaySrc}"
-                alt="${isViewingDerived ? 'संपादित पांडुलिपि प्रति' : 'मूल पांडुलिपि'}: ${this.escapeHtml(ms.title)}"
-                class="manuscript-archival-img"
-              />
+              ${displaySrc ? `
+                <img
+                  src="${displaySrc}"
+                  alt="${isViewingDerived ? 'संपादित पांडुलिपि प्रति' : 'मूल पांडुलिपि'}: ${this.escapeHtml(ms.title)}"
+                  class="manuscript-archival-img"
+                />
+              ` : `
+                <div class="manuscript-missing-image-box" role="alert" style="padding: var(--space-8); text-align: center;">
+                  <div style="font-size: 2rem; color: var(--color-accent-terracotta);" aria-hidden="true">⚠️</div>
+                  <p style="margin: var(--space-2) 0 0 0; font-family: var(--font-interface); color: var(--color-text-muted);">
+                    पांडुलिपि छवि डेटा अप्राप्य है।
+                  </p>
+                </div>
+              `}
               ${this.isCropMode ? `
                 <div
                   class="crop-interactive-surface"
@@ -1008,6 +1096,13 @@ export class ManuscriptView {
               <span class="manuscript-meta-label">उद्गम स्रोत</span>
               <span class="manuscript-meta-value">${this.formatSource(prov.source)}</span>
             </div>
+
+            ${dimsText ? `
+              <div class="manuscript-meta-item">
+                <span class="manuscript-meta-label">छवि आयाम (Dimensions)</span>
+                <span class="manuscript-meta-value">${this.escapeHtml(dimsText)}</span>
+              </div>
+            ` : ''}
           </div>
 
           <!-- Provenance Notes Section -->

@@ -24,6 +24,7 @@ import { CollectionsView } from '../collections/CollectionsView.js';
 import { CollectionDetailView } from '../collections/CollectionDetailView.js';
 import { ManuscriptCapture } from '../manuscripts/ManuscriptCapture.js';
 import { ManuscriptView } from '../manuscripts/ManuscriptView.js';
+import { ManuscriptGallery } from '../manuscripts/ManuscriptGallery.js';
 import { collectionRepository } from '../../services/CollectionRepository.js';
 import { poemRepository } from '../../services/PoemRepository.js';
 import { manuscriptRepository } from '../../services/ManuscriptRepository.js';
@@ -45,6 +46,7 @@ export class AppShell {
     this.activeCollectionDetailView = null;
     this.activeManuscriptCapture = null;
     this.activeManuscriptView = null;
+    this.activeManuscriptGallery = null;
   }
 
   /**
@@ -140,6 +142,10 @@ export class AppShell {
     if (this.activeManuscriptView) {
       this.activeManuscriptView.unmount();
       this.activeManuscriptView = null;
+    }
+    if (this.activeManuscriptGallery) {
+      this.activeManuscriptGallery.unmount();
+      this.activeManuscriptGallery = null;
     }
 
     // 1. Home / Foyer Screen
@@ -245,7 +251,17 @@ export class AppShell {
       return;
     }
 
-    // 12. Manuscript Archival Detail Screen (/manuscripts/:id)
+    // 12. Manuscript Gallery Screen (/manuscripts)
+    if (currentPath === ROUTES.MANUSCRIPTS || currentPath === '/manuscripts') {
+      this.activeManuscriptGallery = new ManuscriptGallery({
+        container: this.contentContainer,
+        router: this.router
+      });
+      this.activeManuscriptGallery.mount();
+      return;
+    }
+
+    // 13. Manuscript Archival Detail Screen (/manuscripts/:id)
     if (
       currentPath.startsWith('/manuscripts/') &&
       currentPath !== ROUTES.MANUSCRIPT_NEW &&
@@ -388,6 +404,7 @@ export class AppShell {
       case ROUTES.FAVORITES: return 'heart';
       case ROUTES.COLLECTIONS: return 'collection';
       case ROUTES.SEARCH: return 'search';
+      case ROUTES.MANUSCRIPTS: return 'archive';
       case ROUTES.ARCHIVE: return 'archive';
       case ROUTES.SETTINGS: return 'settings';
       case ROUTES.NEW_POEM: return 'quill';
@@ -399,6 +416,11 @@ export class AppShell {
    * Updates browser document title
    */
   updateDocumentTitle(path) {
+    if (path === ROUTES.MANUSCRIPTS || path === '/manuscripts') {
+      document.title = 'पांडुलिपि वीथिका | काव्यकलश (KavyaVault)';
+      return;
+    }
+
     if (path === ROUTES.SEARCH) {
       document.title = 'काव्य अन्वेषण | काव्यकलश (KavyaVault)';
       return;

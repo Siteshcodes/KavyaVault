@@ -12,6 +12,7 @@ export const ROUTES = {
   ARCHIVE: '/archive',
   SETTINGS: '/settings',
   NEW_POEM: '/poems/new',
+  MANUSCRIPTS: '/manuscripts',
   MANUSCRIPT_NEW: '/manuscripts/new',
   TYPOGRAPHY_TEST: '/typography-test',
   PERSISTENCE_TEST: '/persistence-test'
@@ -64,6 +65,15 @@ export const NAVIGATION_ITEMS = [
     description: 'पंक्तियों एवं रचनाकारों का अन्वेषण'
   },
   {
+    id: 'manuscripts',
+    path: ROUTES.MANUSCRIPTS,
+    label: 'पांडुलिपियाँ',
+    mobileLabel: 'पांडुलिपि',
+    enLabel: 'Manuscripts',
+    icon: 'archive',
+    description: 'हस्तलिखित पांडुलिपि वीथिका एवं मूल अभिलेख'
+  },
+  {
     id: 'archive',
     path: ROUTES.ARCHIVE,
     label: 'अभिलेख',
@@ -99,7 +109,7 @@ export const DESKTOP_PRIMARY_ITEMS = NAVIGATION_ITEMS.filter(item =>
 );
 
 export const DESKTOP_SECONDARY_ITEMS = NAVIGATION_ITEMS.filter(item => 
-  ['archive', 'settings'].includes(item.id)
+  ['manuscripts', 'archive', 'settings'].includes(item.id)
 );
 
 export const DESKTOP_ACTION_ITEM = NAVIGATION_ITEMS.find(item => item.id === 'new-poem');
@@ -115,7 +125,7 @@ export const MOBILE_NAV_ITEMS = [
 
 // Mobile secondary menu items (accessible via mobile header drawer)
 export const MOBILE_DRAWER_ITEMS = NAVIGATION_ITEMS.filter(item => 
-  ['collections', 'archive', 'settings'].includes(item.id)
+  ['collections', 'manuscripts', 'archive', 'settings'].includes(item.id)
 );
 
 // Route metadata for page titles and accessible descriptions
@@ -159,6 +169,11 @@ export const ROUTE_METADATA = {
     title: 'नई रचना',
     tagline: 'एकांत, ध्यानमग्न लेखन कक्ष',
     placeholder: 'एकांत लेखन कक्ष एवं देवनागरी अक्षर सहायिका जल्द ही उपलब्ध होगी।'
+  },
+  [ROUTES.MANUSCRIPTS]: {
+    title: 'पांडुलिपि वीथिका',
+    tagline: 'हस्तलिखित पृष्ठ, डायरी व ऐतिहासिक पन्नों का संचयन',
+    placeholder: 'सहेजी गई पांडुलिपियों की वीथिका यहाँ उपलब्ध होगी।'
   },
   [ROUTES.MANUSCRIPT_NEW]: {
     title: 'पांडुलिपि संरक्षण',

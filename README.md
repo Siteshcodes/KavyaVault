@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-231%2F231%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-257%2F257%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -202,7 +202,7 @@ KavyaVault features a 100% reproducible, standalone automated test suite execute
 npm test
 ```
 
-### Test Suite Summary (231 / 231 Tests Passing — 100% Pass Rate):
+### Test Suite Summary (257 / 257 Tests Passing — 100% Pass Rate):
 | Test Suite | Test File | Test Count | Key Verification Areas |
 |---|---|:---:|---|
 | **Local Persistence** | `test_persistence.js` | **10** | Storage adapter, serialization, error classification |
@@ -216,7 +216,8 @@ npm test
 | **Manuscript Preservation** | `test_manuscripts.js` | **34** | Manuscript creation, immutability, validation, migration, Unicode |
 | **Manuscript Capture & Import** | `test_manuscripts_capture.js` | **30** | Intake validation, lossless bytes, quota handling, preview safety |
 | **Non-Destructive Transformation** | `test_manuscript_transform.js` | **36** | Rotation (0/90/180/270), user-selectable mouse/touch crop, coordinate mapping, byte immutability, versioning, tabs, reset |
-| **TOTAL** | | **231 / 231** | **0 Failures (100% Success)** |
+| **Manuscript Gallery & Reader** | `test_manuscript_gallery.js` | **26** | Dedicated gallery route (`/manuscripts`), thumbnail resolution (derived prioritized over original), deterministic title/status/source filtering, XSS escaping, prev/next sequential navigation, image dimensions |
+| **TOTAL** | | **257 / 257** | **0 Failures (100% Success)** |
 
 ---
 
@@ -271,9 +272,14 @@ Phase 2 focuses on **manuscript preservation** — the ability to capture, store
   - **ORIGINAL:** Original captured/imported bytes (JPEG, PNG, WebP) remain completely untouched, immutable, and preserved byte-for-byte.
   - **DERIVED:** Transformed output is saved as a discrete `derivedManuscript` artifact with a brand-new `kv_art_<uuid>` ID and `sourceArtifactId` referencing the original artifact, containing a newly rendered lossless PNG.
   - **UI/UX:** Dual view tabs (`मूल पांडुलिपि (अपरिवर्तित)` vs `संपादित प्रति`), live transformation preview, clear reassurance messaging (*"मूल पांडुलिपि सुरक्षित है"*), transformation version tracking (`transformVersion`), clean reset (`clearDerivedManuscript`), storage quota resilience, and full Devanagari Unicode preservation. 36 dedicated tests passing (231/231 total tests passing: 131 Phase 1 baseline + 34 Task 2.1 + 30 Task 2.2 + 36 Task 2.3).
+- ✅ **Task 2.4 — Manuscript Gallery & Reader**: Dedicated gallery route (`/manuscripts`) and archival reading experience for preserved handwritten poetry.
+  - **Archival Gallery:** Responsive grid of museum-grade manuscript cards displaying thumbnail previews (`derivedManuscript.data` if present, else falling back to `originalManuscript.data`), poetic capture date, status badge, derived-version indicator, provenance summary, and notes.
+  - **Deterministic Filtering:** Real-time search by title, notes, and filename, alongside dropdown filters for transcription status (`अप्रतिलिपिबद्ध`, `प्रारूप`, `प्रमाणित`) and provenance source (`हस्तलिखित पांडुलिपि`, `स्कैन`, `कैमरा`), plus one-click filter reset.
+  - **Archival Reader:** Dedicated reader view featuring direct back navigation to the gallery (`/manuscripts`), sequential previous/next manuscript browsing, permanent original vs. derived view tabs with disabled state and reassurance messaging when only the original is available, and dimension badge when safely available.
+  - **Integrity & Security:** Strict byte-for-byte immutability of the original artifact, complete XSS sanitization of all user-controlled text, and graceful handling of corrupted or missing records. 26 dedicated tests passing (257/257 total tests passing: 131 Phase 1 baseline + 34 Task 2.1 + 30 Task 2.2 + 36 Task 2.3 + 26 Task 2.4).
 
 ### Upcoming:
-- **Task 2.4 — Manuscript Gallery & Reader**: Browse, filter, and read manuscripts with side-by-side view.
+- **Task 2.5 — Manuscript Transcription Canvas**: Side-by-side editing canvas to transcribe handwritten manuscripts into clean Devanagari digital text.
 - **Chhand & Metre Analysis**: Automated Devanagari syllable and matra analysis for classical metres (*Doha, Chaupai, Rola, Soratha*).
 - **Import & Export Engine**: Clean data export and backup in JSON, Markdown, and formatted Plain Text.
 

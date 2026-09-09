@@ -927,4 +927,411 @@
   line-height: var(--leading-relaxed);
 }
 
+/* ==========================================================================
+   10. Manuscript Gallery Layout & Cards (Phase 2 / Task 2.4)
+   ========================================================================== */
+
+.manuscript-gallery-view {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding-bottom: var(--space-16);
+}
+
+/* Filter Bar */
+.manuscript-filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (min-width: 768px) {
+  .manuscript-filter-bar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.filter-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-search-icon {
+  position: absolute;
+  left: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+.gallery-search-input {
+  width: 100%;
+  height: 44px;
+  padding: var(--space-2) var(--space-4) var(--space-2) 38px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text-primary);
+  transition: all 0.2s ease;
+}
+
+.gallery-search-input:focus {
+  outline: none;
+  border-color: var(--color-accent-gold);
+  background: var(--color-bg-card);
+  box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.12);
+}
+
+.filter-selects-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.filter-select-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.filter-label {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.filter-select {
+  height: 44px;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--color-accent-gold);
+  box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.12);
+}
+
+.btn-reset-filters {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 44px;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-accent-terracotta);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-reset-filters:hover {
+  background: rgba(180, 40, 40, 0.08);
+  border-color: var(--color-accent-terracotta);
+}
+
+/* Subhead */
+.manuscript-gallery-subhead {
+  margin-bottom: var(--space-4);
+}
+
+.gallery-count-badge {
+  display: inline-block;
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-subtle);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+}
+
+/* Gallery Grid */
+.manuscript-gallery-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+}
+
+@media (min-width: 640px) {
+  .manuscript-gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .manuscript-gallery-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Manuscript Archival Card */
+.manuscript-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.manuscript-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--color-accent-gold);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+}
+
+.manuscript-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.manuscript-card-link:focus-visible {
+  outline: 2px solid var(--color-accent-gold);
+  outline-offset: 3px;
+  border-radius: var(--radius-lg);
+}
+
+/* Thumbnail Frame */
+.manuscript-card-thumb-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: rgba(20, 16, 12, 0.05);
+  border-bottom: 1px solid var(--color-border-subtle);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.manuscript-card-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: var(--space-2);
+  transition: transform 0.3s ease;
+}
+
+.manuscript-card:hover .manuscript-card-thumb {
+  transform: scale(1.02);
+}
+
+.manuscript-card-thumb-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+}
+
+.thumb-fallback-icon {
+  width: 32px;
+  height: 32px;
+  opacity: 0.5;
+}
+
+/* Badges on Thumbnail */
+.manuscript-card-badges {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+  z-index: 2;
+}
+
+.manuscript-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-interface);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.3px;
+  backdrop-filter: blur(4px);
+}
+
+.badge-pill-derived {
+  background: rgba(184, 134, 11, 0.9);
+  color: #1a150e;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.badge-pill-original {
+  background: rgba(26, 21, 14, 0.85);
+  color: #f5f0e6;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.pill-icon {
+  width: 12px;
+  height: 12px;
+}
+
+/* Card Body */
+.manuscript-card-body {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: var(--space-2);
+}
+
+.manuscript-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.manuscript-card-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-body-large);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.manuscript-card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+
+.card-meta-dot {
+  opacity: 0.5;
+}
+
+.manuscript-card-filename {
+  font-family: var(--font-interface);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-subtle);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+  align-self: flex-start;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manuscript-card-notes {
+  margin: var(--space-1) 0 0 0;
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-normal);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   11. Reader Enhancements (Prev/Next Navigation & Disabled Tabs)
+   ========================================================================== */
+
+.manuscript-prev-next-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.manuscript-nav-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 44px;
+  min-width: 44px;
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.manuscript-nav-arrow:hover:not(.disabled) {
+  color: var(--color-text-primary);
+  border-color: var(--color-accent-gold);
+  background: var(--color-bg-card);
+}
+
+.manuscript-nav-arrow.disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+.nav-icon-flip {
+  transform: rotate(180deg);
+}
+
+.manuscript-view-tab.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+  border-style: dashed;
+}
+
+.manuscript-missing-image-box {
+  background: var(--color-bg-secondary);
+  border: 1px dashed var(--color-accent-terracotta);
+  border-radius: var(--radius-md);
+  padding: var(--space-8);
+  text-align: center;
+}
+
+
 
