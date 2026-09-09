@@ -12,6 +12,7 @@ export const ROUTES = {
   ARCHIVE: '/archive',
   SETTINGS: '/settings',
   NEW_POEM: '/poems/new',
+  MANUSCRIPT_NEW: '/manuscripts/new',
   TYPOGRAPHY_TEST: '/typography-test',
   PERSISTENCE_TEST: '/persistence-test'
 };
@@ -158,6 +159,11 @@ export const ROUTE_METADATA = {
     title: 'नई रचना',
     tagline: 'एकांत, ध्यानमग्न लेखन कक्ष',
     placeholder: 'एकांत लेखन कक्ष एवं देवनागरी अक्षर सहायिका जल्द ही उपलब्ध होगी।'
+  },
+  [ROUTES.MANUSCRIPT_NEW]: {
+    title: 'पांडुलिपि संरक्षण',
+    tagline: 'हस्तलिखित पृष्ठ, डायरी व ऐतिहासिक पन्नों का संचयन',
+    placeholder: 'पुरानी हस्तलिखित पांडुलिपियों का मूल रूप में डिजिटल संरक्षण।'
   },
   [ROUTES.TYPOGRAPHY_TEST]: {
     title: 'मुद्रणकला परीक्षण',

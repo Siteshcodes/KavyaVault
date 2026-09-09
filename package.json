@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node test_persistence.js && node test_library.js && node test_editor.js && node test_reader.js && node test_search.js && node test_favorites_archive.js && node test_collections.js && node test_hardening.js"
+    "test": "node test_persistence.js && node test_library.js && node test_editor.js && node test_reader.js && node test_search.js && node test_favorites_archive.js && node test_collections.js && node test_hardening.js && node test_manuscripts.js && node test_manuscripts_capture.js"
   },
   "devDependencies": {
     "vite": "^6.2.0"

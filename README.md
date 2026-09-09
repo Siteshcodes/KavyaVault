@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-131%2F131%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-195%2F195%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -32,9 +32,10 @@ KavyaVault enforces a strictly decoupled, layered domain architecture:
                              ▼
 ┌──────────────────────────────────────────────────────────┐
 │             Domain Repositories Layer                    │
-│        PoemRepository      |     CollectionRepository     │
+│  PoemRepository | CollectionRepository | ManuscriptRepository│
 │  - CRUD & Validation       │  - Thematic Groupings        │
 │  - Draft Autosave/Recovery │  - Referential Integrity     │
+│  - Manuscript Preservation │  - Image Immutability        │
 │  - Query & Sorting Logic   │  - Cascade Deletion Cleanup  │
 └────────────────────────────┬─────────────────────────────┘
                              │
@@ -59,6 +60,7 @@ KavyaVault enforces a strictly decoupled, layered domain architecture:
 │             Browser Storage Engine                       │
 │  - 'kavyavault:poems'         - 'kavyavault:drafts'       │
 │  - 'kavyavault:collections'   - 'kavyavault:metadata'     │
+│  - 'kavyavault:manuscripts'                                │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -140,6 +142,7 @@ KavyaVault/
 │   ├── services/
 │   │   ├── PoemRepository.js    # Poem domain repository, CRUD, drafts & lifecycle
 │   │   ├── CollectionRepository.js # Collections domain repository & cascade cleanup
+│   │   ├── ManuscriptRepository.js # Manuscript preservation, immutability enforcement
 │   │   ├── SearchService.js     # Unicode normalization, scoring & highlights
 │   │   ├── router.js            # Client-side SPA hash/history router
 │   │   ├── theme.js             # 4-theme provider & system preference listener
@@ -179,7 +182,9 @@ KavyaVault/
     ├── test_search.js           # Hindi search, NFC normalization, ranking (20 tests)
     ├── test_favorites_archive.js# Favorites & archive isolation and restore (20 tests)
     ├── test_collections.js      # Collection relationships & cascade cleanup (25 tests)
-    └── test_hardening.js        # Release gate, XSS, quota, non-destructive reads (26 tests)
+    ├── test_hardening.js        # Release gate, XSS, quota, non-destructive reads (26 tests)
+    ├── test_manuscripts.js      # Manuscript preservation, immutability, migration (34 tests)
+    └── test_manuscripts_capture.js # Capture intake, byte preservation, quota resilience (30 tests)
 ```
 
 ---
@@ -193,7 +198,7 @@ KavyaVault features a 100% reproducible, standalone automated test suite execute
 npm test
 ```
 
-### Test Suite Summary (131 / 131 Tests Passing — 100% Pass Rate):
+### Test Suite Summary (195 / 195 Tests Passing — 100% Pass Rate):
 | Test Suite | Test File | Test Count | Key Verification Areas |
 |---|---|:---:|---|
 | **Local Persistence** | `test_persistence.js` | **10** | Storage adapter, serialization, error classification |
@@ -204,7 +209,9 @@ npm test
 | **Favorites & Archive** | `test_favorites_archive.js` | **20** | Dedicated views, archive isolation, restore flow |
 | **Collections Foundation** | `test_collections.js` | **25** | Collection CRUD, duplicate prevention, cascade cleanup |
 | **Final Hardening** | `test_hardening.js` | **26** | Quota limits, extreme payloads, Unicode rigor, XSS, downgrade protection |
-| **TOTAL** | | **131 / 131** | **0 Failures (100% Success)** |
+| **Manuscript Preservation** | `test_manuscripts.js` | **34** | Manuscript creation, immutability, validation, migration, Unicode |
+| **Manuscript Capture & Import** | `test_manuscripts_capture.js` | **30** | Intake validation, lossless bytes, quota handling, preview safety |
+| **TOTAL** | | **195 / 195** | **0 Failures (100% Success)** |
 
 ---
 
@@ -248,13 +255,18 @@ npm run preview
 
 ---
 
-## 🗺️ Phase 2 Roadmap Preview
+## 🗺️ Phase 2: Preserve Old Poems
 
-Following the successful completion and approval of Phase 1 (Tasks 1.1 through 1.15), upcoming Phase 2 milestones include:
+Phase 2 focuses on **manuscript preservation** — the ability to capture, store, and transcribe handwritten poetry from diaries, notebooks, and family collections.
+
+### Completed:
+- ✅ **Task 2.1 — Manuscript Preservation Foundation**: Data model and repository layer for handwritten manuscript records. Enforces immutability of the original manuscript image artifact while allowing independent transcription and metadata updates. Schema upgraded from v1 to v2 with non-destructive migration. 34 dedicated tests passing.
+- ✅ **Task 2.2 — Manuscript Capture & Import**: Archival-grade intake workflow (`Photo / File → Original Manuscript Artifact → ManuscriptRepository`). Features dual input mechanisms (file upload + mobile device camera capture via `capture="environment"`), drag-and-drop intake, lossless raw byte preservation with zero compression, cropping, or pixel manipulation, temporary object URL preview with safe lifecycle cleanup, LocalStorage quota-aware error handling preserving user input for retry, and an archival detail view (`/manuscripts/:id`) presenting the original manuscript prominently with complete provenance metadata and `untranscribed` status. 30 dedicated tests passing (195/195 total tests passing: 131 Phase 1 baseline + 34 Task 2.1 + 30 Task 2.2).
+
+### Upcoming:
+- **Task 2.3 — Manuscript Gallery & Reader**: Browse, filter, and read manuscripts with side-by-side view.
 - **Chhand & Metre Analysis**: Automated Devanagari syllable and matra analysis for classical metres (*Doha, Chaupai, Rola, Soratha*).
 - **Import & Export Engine**: Clean data export and backup in JSON, Markdown, and formatted Plain Text.
-- **Poetry Recitation Audio Memos**: In-browser audio recording allowing poets to capture oral recitations alongside the written verse.
-- **Manuscript Image Attachment**: Ability to capture or attach photos of handwritten diary pages to digital records.
 
 ---
 

@@ -28,6 +28,15 @@ export function renderHomeView() {
             ${getIconSvg('quill', 'nav-icon')}
             <span>नई कविता</span>
           </a>
+          <a
+            href="${ROUTES.MANUSCRIPT_NEW}"
+            data-link
+            class="btn-secondary-action"
+            aria-label="पुरानी पांडुलिपि सहेजें"
+          >
+            ${getIconSvg('upload', 'nav-icon')}
+            <span>पांडुलिपि सहेजें</span>
+          </a>
         </div>
       </section>
 

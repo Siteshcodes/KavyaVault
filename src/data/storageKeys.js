@@ -10,5 +10,6 @@ export const STORAGE_KEYS = {
   DRAFTS: `${STORAGE_PREFIX}drafts`,
   METADATA: `${STORAGE_PREFIX}metadata`,
   THEME: `${STORAGE_PREFIX}theme`,
-  COLLECTIONS: `${STORAGE_PREFIX}collections`
+  COLLECTIONS: `${STORAGE_PREFIX}collections`,
+  MANUSCRIPTS: `${STORAGE_PREFIX}manuscripts`
 };

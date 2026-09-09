@@ -4,6 +4,7 @@
  */
 
 import './layout.css';
+import '../manuscripts/manuscripts.css';
 import { Navigation } from '../navigation/Navigation.js';
 import { renderPageHeader } from './PageHeader.js';
 import { renderEmptyState } from './EmptyState.js';
@@ -21,8 +22,11 @@ import { FavoritesView } from '../favorites/FavoritesView.js';
 import { ArchiveView } from '../archive/ArchiveView.js';
 import { CollectionsView } from '../collections/CollectionsView.js';
 import { CollectionDetailView } from '../collections/CollectionDetailView.js';
+import { ManuscriptCapture } from '../manuscripts/ManuscriptCapture.js';
+import { ManuscriptView } from '../manuscripts/ManuscriptView.js';
 import { collectionRepository } from '../../services/CollectionRepository.js';
 import { poemRepository } from '../../services/PoemRepository.js';
+import { manuscriptRepository } from '../../services/ManuscriptRepository.js';
 import { formatPoeticDate } from '../../utils/date.js';
 
 export class AppShell {
@@ -39,6 +43,8 @@ export class AppShell {
     this.activeArchiveView = null;
     this.activeCollectionsView = null;
     this.activeCollectionDetailView = null;
+    this.activeManuscriptCapture = null;
+    this.activeManuscriptView = null;
   }
 
   /**
@@ -126,6 +132,14 @@ export class AppShell {
     if (this.activeCollectionDetailView) {
       this.activeCollectionDetailView.unmount();
       this.activeCollectionDetailView = null;
+    }
+    if (this.activeManuscriptCapture) {
+      this.activeManuscriptCapture.unmount();
+      this.activeManuscriptCapture = null;
+    }
+    if (this.activeManuscriptView) {
+      this.activeManuscriptView.unmount();
+      this.activeManuscriptView = null;
     }
 
     // 1. Home / Foyer Screen
@@ -218,6 +232,32 @@ export class AppShell {
         collectionId
       });
       this.activeCollectionDetailView.mount();
+      return;
+    }
+
+    // 11. Manuscript Capture Screen (/manuscripts/new & /manuscripts/import)
+    if (currentPath === ROUTES.MANUSCRIPT_NEW || currentPath === '/manuscripts/import') {
+      this.activeManuscriptCapture = new ManuscriptCapture({
+        container: this.contentContainer,
+        router: this.router
+      });
+      this.activeManuscriptCapture.mount();
+      return;
+    }
+
+    // 12. Manuscript Archival Detail Screen (/manuscripts/:id)
+    if (
+      currentPath.startsWith('/manuscripts/') &&
+      currentPath !== ROUTES.MANUSCRIPT_NEW &&
+      currentPath !== '/manuscripts/import'
+    ) {
+      const manuscriptId = currentPath.slice('/manuscripts/'.length);
+      this.activeManuscriptView = new ManuscriptView({
+        container: this.contentContainer,
+        router: this.router,
+        manuscriptId
+      });
+      this.activeManuscriptView.mount();
       return;
     }
 
@@ -390,6 +430,20 @@ export class AppShell {
 
     if (path === ROUTES.NEW_POEM) {
       document.title = 'नई रचना | काव्यकलश (KavyaVault)';
+      return;
+    }
+
+    if (path === ROUTES.MANUSCRIPT_NEW || path === '/manuscripts/import') {
+      document.title = 'पांडुलिपि संरक्षण | काव्यकलश (KavyaVault)';
+      return;
+    }
+
+    if (path.startsWith('/manuscripts/') && path !== ROUTES.MANUSCRIPT_NEW && path !== '/manuscripts/import') {
+      const msId = path.slice('/manuscripts/'.length);
+      const ms = manuscriptRepository.getById(msId);
+      document.title = ms
+        ? `${ms.title} | पांडुलिपि | काव्यकलश (KavyaVault)`
+        : 'पांडुलिपि | काव्यकलश (KavyaVault)';
       return;
     }
 

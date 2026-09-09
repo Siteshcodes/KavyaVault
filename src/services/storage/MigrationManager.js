@@ -6,7 +6,7 @@
 import { STORAGE_KEYS } from '../../data/storageKeys.js';
 import { StorageError, StorageErrorCode } from './StorageError.js';
 
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 export class MigrationManager {
   constructor(adapter) {
@@ -49,6 +49,9 @@ export class MigrationManager {
       if (!this.adapter.has(STORAGE_KEYS.DRAFTS)) {
         this.adapter.set(STORAGE_KEYS.DRAFTS, null);
       }
+      if (!this.adapter.has(STORAGE_KEYS.MANUSCRIPTS)) {
+        this.adapter.set(STORAGE_KEYS.MANUSCRIPTS, []);
+      }
 
       return {
         status: 'INITIALIZED',
@@ -76,14 +79,13 @@ export class MigrationManager {
       };
     }
 
-    // 3. Stepwise upgrade pipeline (for future schema evolution)
+    // 3. Stepwise upgrade pipeline
     let currentV = version;
-    /* Example future upgrade step:
+
     if (currentV === 1) {
-      await this.migrateV1ToV2();
+      this._migrateV1ToV2();
       currentV = 2;
     }
-    */
 
     metadata.schemaVersion = CURRENT_SCHEMA_VERSION;
     metadata.lastMigratedAt = now;
@@ -94,6 +96,16 @@ export class MigrationManager {
       previousVersion: version,
       currentVersion: CURRENT_SCHEMA_VERSION
     };
+  }
+
+  /**
+   * V1 → V2: Initialize manuscripts storage for Phase 2 preservation foundation.
+   * Non-destructive: only creates the manuscripts key if it does not already exist.
+   */
+  _migrateV1ToV2() {
+    if (!this.adapter.has(STORAGE_KEYS.MANUSCRIPTS)) {
+      this.adapter.set(STORAGE_KEYS.MANUSCRIPTS, []);
+    }
   }
 
   /**
