@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-315%2F315%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-355%2F355%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -197,7 +197,8 @@ KavyaVault/
     ├── test_manuscript_transform.js # Non-destructive rotation, interactive crop, immutability (36 tests)
     ├── test_manuscript_gallery.js # Dedicated gallery route, thumbnails, filtering (26 tests)
     ├── test_manuscript_poem_linking.js # Manuscript ↔ poem linking, referential integrity (26 tests)
-    └── test_manuscript_transcription.js # Manual transcription workspace, status lifecycle (32 tests)
+    ├── test_manuscript_transcription.js # Manual transcription workspace, status lifecycle (32 tests)
+    └── test_manuscript_versioning.js # Lightweight version history, restore audit trail (40 tests)
 ```
 
 ---
@@ -211,7 +212,7 @@ KavyaVault features a 100% reproducible, standalone automated test suite execute
 npm test
 ```
 
-### Test Suite Summary (315 / 315 Tests Passing — 100% Pass Rate):
+### Test Suite Summary (355 / 355 Tests Passing — 100% Pass Rate):
 | Test Suite | Test File | Test Count | Key Verification Areas |
 |---|---|:---:|---|
 | **Local Persistence** | `test_persistence.js` | **10** | Storage adapter, serialization, error classification |
@@ -228,7 +229,8 @@ npm test
 | **Manuscript Gallery & Reader** | `test_manuscript_gallery.js` | **26** | Dedicated gallery route (`/manuscripts`), thumbnail resolution (derived prioritized over original), deterministic title/status/source filtering, XSS escaping, prev/next sequential navigation, image dimensions |
 | **Manuscript ↔ Poem Linking** | `test_manuscript_poem_linking.js` | **26** | Explicit linking (`manuscript.poemId`), safe unlinking, poem existence validation, one-to-many relationship, cascade cleanup on poem delete, archival byte immutability, reader UI integration |
 | **Manuscript Transcription Workspace** | `test_manuscript_transcription.js` | **32** | Manual transcription canvas (`/manuscripts/:id/transcribe`), status lifecycle (`untranscribed` → `draft` → `verified`), text edit downgrade, verifiedAt clearing, quota resilience, Unicode/Devanagari rigor, reader preview, linked poem independence |
-| **TOTAL** | | **315 / 315** | **0 Failures (100% Success)** |
+| **Manuscript & Transcription Version History** | `test_manuscript_versioning.js` | **40** | Lightweight version snapshots, restore flow creating new versions, status lifecycle preservation, duplicate save protection, 25-version cap, immutability, quota resilience |
+| **TOTAL** | | **355 / 355** | **0 Failures (100% Success)** |
 
 ---
 
@@ -304,6 +306,15 @@ Phase 2 focuses on **manuscript preservation** — the ability to capture, store
   - **Literary Metrics & Hindi Rigor:** Full Unicode preservation (Devanagari conjuncts, matras, nuktas, chandrabindu, danda, double danda, mixed Hindi/English, emojis) with Unicode-safe word, character, and line counters.
   - **Poem Independence Guarantee:** Even if a manuscript is linked to a poem, transcription is completely independent and does NOT overwrite or synchronize with `poem.body`.
   - **Strict Scope Boundaries:** Explicitly operates WITHOUT OCR, AI transcription, or automatic manuscript-to-poem text synchronization. 32 dedicated tests passing (315/315 total tests passing: 131 Phase 1 baseline + 34 Task 2.1 + 30 Task 2.2 + 36 Task 2.3 + 26 Task 2.4 + 26 Task 2.5 + 32 Task 2.6).
+- ✅ **Task 2.7 — Manuscript & Transcription Version History**: Lightweight, archival-grade version history foundation for handwritten manuscript transcriptions.
+  - **Three-Layer Archival Model:** Strict boundary between (1) Original Manuscript (immutable evidence), (2) Current Transcription (active editable state), and (3) Transcription History (ordered, immutable historical snapshots).
+  - **Monotonic Snapshots & Immutability:** Every meaningful save creates an immutable historical snapshot (`id`, `versionNumber`, `text`, `status`, `verifiedAt`, `createdAt`, `source`, `changeNote`). Older snapshots are never mutated in place.
+  - **Duplicate Save Protection:** Repeated saves or autosaves with identical text, status, and verification timestamp do NOT generate redundant snapshots.
+  - **Non-Destructive Restore Semantics:** Restoring a prior version ($v_k$) does NOT delete that version. It sets the text of $v_k$ as active and generates a new linear audit snapshot ($v_{n+1}$, `source: 'restore'`).
+  - **Deterministic History Cap:** Enforces `MAX_TRANSCRIPTION_HISTORY = 25` to prevent unbounded LocalStorage growth while deterministically preserving the newest 25 snapshots and never touching current text or original images.
+  - **UI History Panel & Modal Workflows:** Collapsible "प्रतिलिपि इतिहास" panel, read-only version preview dialogs, and explicit restore confirmation dialogs explaining audit guarantees.
+  - **Poem Independence:** Creating or restoring versions never alters `poem.title`, `poem.body`, or `manuscript.poemId`.
+  - **Strict Boundaries:** Explicitly operates WITHOUT OCR, AI transcription, AI-generated summaries, or cloud sync. 40 dedicated tests passing (355/355 total tests passing: 131 Phase 1 baseline + 34 Task 2.1 + 30 Task 2.2 + 36 Task 2.3 + 26 Task 2.4 + 26 Task 2.5 + 32 Task 2.6 + 40 Task 2.7).
 
 ### Upcoming:
 - **Chhand & Metre Analysis**: Automated Devanagari syllable and matra analysis for classical metres (*Doha, Chaupai, Rola, Soratha*).

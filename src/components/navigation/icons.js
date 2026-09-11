@@ -164,6 +164,18 @@ export function getIconSvg(iconName, className = 'nav-icon') {
         <path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"/>
         <path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"/>
       </svg>
+    `,
+    clock: `
+      <svg class="${className}" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    `,
+    eye: `
+      <svg class="${className}" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
     `
   };
 

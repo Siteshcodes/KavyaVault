@@ -81,6 +81,41 @@ const ALLOWED_MIME_TYPES = [
 const VALID_TRANSCRIPTION_STATUSES = ['untranscribed', 'draft', 'verified'];
 
 // ============================================================================
+// Transcription Versioning Constants
+// ============================================================================
+
+export const MAX_TRANSCRIPTION_HISTORY = 25;
+export const VALID_VERSION_SOURCES = ['manual-save', 'verification', 'restore'];
+
+/**
+ * Generates a unique identifier for transcription history versions
+ */
+function generateVersionId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `kv_trv_${crypto.randomUUID()}`;
+  }
+  return `kv_trv_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
+
+/**
+ * Safely normalizes manuscript schema for version history migration
+ */
+function normalizeManuscript(m) {
+  if (!m || typeof m !== 'object') return m;
+  const trans = m.transcription || { text: '', status: 'untranscribed', verifiedAt: null };
+  return {
+    ...m,
+    transcription: {
+      text: typeof trans.text === 'string' ? trans.text : '',
+      status: VALID_TRANSCRIPTION_STATUSES.includes(trans.status) ? trans.status : 'untranscribed',
+      verifiedAt: trans.verifiedAt || null,
+      currentVersionId: trans.currentVersionId || null
+    },
+    transcriptionHistory: Array.isArray(m.transcriptionHistory) ? m.transcriptionHistory : []
+  };
+}
+
+// ============================================================================
 // Manuscript Repository
 // ============================================================================
 
@@ -121,7 +156,7 @@ export class ManuscriptRepository {
         console.warn('[ManuscriptRepository] Stored manuscripts data was not an array. Returning empty collection safely.');
         return [];
       }
-      return data;
+      return data.map(m => normalizeManuscript(m));
     } catch (err) {
       if (err instanceof StorageError && err.code === StorageErrorCode.DESERIALIZATION_ERROR) {
         console.error('[ManuscriptRepository] Corrupted manuscripts storage detected. Returning empty set safely.');
@@ -554,13 +589,19 @@ export class ManuscriptRepository {
       ? {
           text: typeof data.transcription.text === 'string' ? data.transcription.text : '',
           status: VALID_TRANSCRIPTION_STATUSES.includes(data.transcription.status) ? data.transcription.status : 'untranscribed',
-          verifiedAt: data.transcription.verifiedAt || null
+          verifiedAt: data.transcription.verifiedAt || null,
+          currentVersionId: data.transcription.currentVersionId || null
         }
       : {
           text: '',
           status: 'untranscribed',
-          verifiedAt: null
+          verifiedAt: null,
+          currentVersionId: null
         };
+
+    const transcriptionHistory = Array.isArray(data.transcriptionHistory)
+      ? deepClone(data.transcriptionHistory)
+      : [];
 
     // Build provenance with safe defaults
     const provenance = data.provenance && typeof data.provenance === 'object'
@@ -597,6 +638,7 @@ export class ManuscriptRepository {
         ? deepClone(data.transformation)
         : null,
       transcription,
+      transcriptionHistory,
       provenance,
       createdAt: data.createdAt || now,
       updatedAt: data.updatedAt || now
@@ -681,9 +723,10 @@ export class ManuscriptRepository {
    *
    * @param {string} id
    * @param {Object} transcription - May contain: text, status, verifiedAt
+   * @param {Object} [options={}] - Options: createVersion, source, changeNote
    * @returns {Object} Updated manuscript record (deep-cloned)
    */
-  updateTranscription(id, transcription) {
+  updateTranscription(id, transcription, options = {}) {
     if (!id || typeof id !== 'string' || id.trim() === '') {
       throw new StorageError(
         'पांडुलिपि आईडी (id) एक गैर-रिक्त स्ट्रिंग होनी चाहिए।',
@@ -708,7 +751,8 @@ export class ManuscriptRepository {
 
     const current = manuscripts[index];
     const now = new Date().toISOString();
-    const currentTranscription = current.transcription || { text: '', status: 'untranscribed', verifiedAt: null };
+    const currentTranscription = current.transcription || { text: '', status: 'untranscribed', verifiedAt: null, currentVersionId: null };
+    const history = Array.isArray(current.transcriptionHistory) ? [...current.transcriptionHistory] : [];
 
     const newText = transcription.text !== undefined ? transcription.text : currentTranscription.text;
     const isTextChanging = transcription.text !== undefined && transcription.text !== currentTranscription.text;
@@ -749,16 +793,374 @@ export class ManuscriptRepository {
       newVerifiedAt = null;
     }
 
+    // Version creation semantics:
+    // Create a new version if:
+    // 1. options.createVersion is explicitly true OR (options.createVersion !== false AND (newText.trim().length > 0 || history.length > 0))
+    // 2. AND it is NOT a duplicate of the latest version snapshot
+    let currentVersionId = currentTranscription.currentVersionId || null;
+    const shouldCreateVersion = options.createVersion !== false && (newText.trim().length > 0 || history.length > 0);
+
+    if (shouldCreateVersion) {
+      const latestVersion = history.length > 0 ? history[history.length - 1] : null;
+      const isDuplicate = latestVersion &&
+        latestVersion.text === newText &&
+        latestVersion.status === newStatus &&
+        latestVersion.verifiedAt === newVerifiedAt;
+
+      if (!isDuplicate) {
+        let maxVersionNum = 0;
+        for (const h of history) {
+          if (h && typeof h.versionNumber === 'number' && h.versionNumber > maxVersionNum) {
+            maxVersionNum = h.versionNumber;
+          }
+        }
+        const versionNumber = maxVersionNum + 1;
+        const source = options.source || (newStatus === 'verified' ? 'verification' : 'manual-save');
+        const changeNote = typeof options.changeNote === 'string'
+          ? options.changeNote.trim()
+          : (newStatus === 'verified' ? 'प्रमाणित प्रतिलिपि' : (versionNumber === 1 ? 'प्रारंभिक प्रारूप' : ''));
+
+        const snapshot = {
+          id: generateVersionId(),
+          versionNumber,
+          text: newText,
+          status: newStatus,
+          verifiedAt: newVerifiedAt,
+          createdAt: now,
+          source,
+          changeNote
+        };
+
+        history.push(snapshot);
+
+        // Enforce MAX_TRANSCRIPTION_HISTORY cap (25)
+        if (history.length > MAX_TRANSCRIPTION_HISTORY) {
+          const pruneCount = history.length - MAX_TRANSCRIPTION_HISTORY;
+          history.splice(0, pruneCount);
+        }
+
+        currentVersionId = snapshot.id;
+      }
+    }
+
     const updatedTranscription = {
       text: newText,
       status: newStatus,
-      verifiedAt: newVerifiedAt
+      verifiedAt: newVerifiedAt,
+      currentVersionId
     };
 
     const updated = {
       ...current,
       transcription: updatedTranscription,
+      transcriptionHistory: history,
       // originalManuscript, derivedManuscript, transformation, poemId remain untouched
+      updatedAt: now
+    };
+
+    manuscripts[index] = updated;
+    this._writeManuscripts(manuscripts);
+
+    return deepClone(updated);
+  }
+
+  /**
+   * Retrieves the transcription version history for a manuscript.
+   *
+   * @param {string} manuscriptId
+   * @returns {Array<Object>} Deep-cloned array of historical versions (chronological order)
+   */
+  getTranscriptionHistory(manuscriptId) {
+    if (!manuscriptId || typeof manuscriptId !== 'string' || manuscriptId.trim() === '') {
+      throw new StorageError(
+        'पांडुलिपि आईडी (manuscriptId) एक गैर-रिक्त स्ट्रिंग होनी चाहिए।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+    const ms = this.getById(manuscriptId.trim());
+    if (!ms) {
+      throw new StorageError(
+        `आईडी "${manuscriptId.trim()}" वाली पांडुलिपि नहीं मिली।`,
+        StorageErrorCode.KEY_NOT_FOUND,
+        null,
+        { id: manuscriptId.trim() }
+      );
+    }
+    return deepClone(Array.isArray(ms.transcriptionHistory) ? ms.transcriptionHistory : []);
+  }
+
+  /**
+   * Explicitly creates a new transcription version snapshot for a manuscript.
+   *
+   * @param {string} manuscriptId
+   * @param {Object} [metadata={}] - Optional metadata overrides: text, status, verifiedAt, source, changeNote
+   * @returns {Object} Created version snapshot (deep-cloned)
+   */
+  createTranscriptionVersion(manuscriptId, metadata = {}) {
+    if (!manuscriptId || typeof manuscriptId !== 'string' || manuscriptId.trim() === '') {
+      throw new StorageError(
+        'पांडुलिपि आईडी (manuscriptId) एक गैर-रिक्त स्ट्रिंग होनी चाहिए।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    const cleanId = manuscriptId.trim();
+    const manuscripts = this._readManuscripts();
+    const index = manuscripts.findIndex(m => m && m.id === cleanId);
+
+    if (index === -1) {
+      throw new StorageError(
+        `आईडी "${cleanId}" वाली पांडुलिपि नहीं मिली।`,
+        StorageErrorCode.KEY_NOT_FOUND,
+        null,
+        { id: cleanId }
+      );
+    }
+
+    const ms = manuscripts[index];
+    const trans = ms.transcription || { text: '', status: 'untranscribed', verifiedAt: null, currentVersionId: null };
+    const history = Array.isArray(ms.transcriptionHistory) ? [...ms.transcriptionHistory] : [];
+
+    const text = metadata.text !== undefined ? metadata.text : trans.text;
+    const status = metadata.status !== undefined ? metadata.status : trans.status;
+    const verifiedAt = metadata.verifiedAt !== undefined ? metadata.verifiedAt : trans.verifiedAt;
+    const source = metadata.source || 'manual-save';
+    const changeNote = typeof metadata.changeNote === 'string' ? metadata.changeNote.trim() : '';
+
+    if (typeof text !== 'string') {
+      throw new StorageError(
+        'प्रतिलिपि पाठ (text) स्ट्रिंग होना चाहिए।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    if (!VALID_TRANSCRIPTION_STATUSES.includes(status)) {
+      throw new StorageError(
+        `अमान्य स्थिति "${status}"। स्वीकृत: ${VALID_TRANSCRIPTION_STATUSES.join(', ')}`,
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    if (!VALID_VERSION_SOURCES.includes(source)) {
+      throw new StorageError(
+        `अमान्य स्रोत "${source}"। स्वीकृत: ${VALID_VERSION_SOURCES.join(', ')}`,
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    // Duplicate protection
+    const latestVersion = history.length > 0 ? history[history.length - 1] : null;
+    if (
+      latestVersion &&
+      latestVersion.text === text &&
+      latestVersion.status === status &&
+      latestVersion.verifiedAt === verifiedAt
+    ) {
+      return deepClone(latestVersion);
+    }
+
+    let maxVersionNum = 0;
+    for (const h of history) {
+      if (h && typeof h.versionNumber === 'number' && h.versionNumber > maxVersionNum) {
+        maxVersionNum = h.versionNumber;
+      }
+    }
+    const versionNumber = maxVersionNum + 1;
+    const now = new Date().toISOString();
+
+    const snapshot = {
+      id: generateVersionId(),
+      versionNumber,
+      text,
+      status,
+      verifiedAt: verifiedAt || null,
+      createdAt: now,
+      source,
+      changeNote
+    };
+
+    history.push(snapshot);
+
+    if (history.length > MAX_TRANSCRIPTION_HISTORY) {
+      const pruneCount = history.length - MAX_TRANSCRIPTION_HISTORY;
+      history.splice(0, pruneCount);
+    }
+
+    const updated = {
+      ...ms,
+      transcription: {
+        ...trans,
+        currentVersionId: snapshot.id
+      },
+      transcriptionHistory: history,
+      updatedAt: now
+    };
+
+    manuscripts[index] = updated;
+    this._writeManuscripts(manuscripts);
+
+    return deepClone(snapshot);
+  }
+
+  /**
+   * Restores a historical transcription version as the active transcription.
+   * Archival Guarantee: Does NOT delete any historical version. Instead, creates a
+   * NEW version representing the restore action (source: 'restore').
+   * Original manuscript images, derived images, and poem relations remain untouched.
+   *
+   * @param {string} manuscriptId
+   * @param {string} versionId
+   * @returns {Object} Updated manuscript record (deep-cloned)
+   */
+  restoreTranscriptionVersion(manuscriptId, versionId) {
+    if (!manuscriptId || typeof manuscriptId !== 'string' || manuscriptId.trim() === '') {
+      throw new StorageError(
+        'पांडुलिपि आईडी (manuscriptId) एक गैर-रिक्त स्ट्रिंग होनी चाहिए।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+    if (!versionId || typeof versionId !== 'string' || versionId.trim() === '') {
+      throw new StorageError(
+        'संस्करण आईडी (versionId) एक गैर-रिक्त स्ट्रिंग होनी चाहिए।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    const cleanMsId = manuscriptId.trim();
+    const cleanVerId = versionId.trim();
+
+    const manuscripts = this._readManuscripts();
+    const index = manuscripts.findIndex(m => m && m.id === cleanMsId);
+
+    if (index === -1) {
+      throw new StorageError(
+        `आईडी "${cleanMsId}" वाली पांडुलिपि नहीं मिली।`,
+        StorageErrorCode.KEY_NOT_FOUND,
+        null,
+        { id: cleanMsId }
+      );
+    }
+
+    const ms = manuscripts[index];
+    const history = Array.isArray(ms.transcriptionHistory) ? [...ms.transcriptionHistory] : [];
+    const targetVersion = history.find(v => v && v.id === cleanVerId);
+
+    if (!targetVersion) {
+      throw new StorageError(
+        `संस्करण आईडी "${cleanVerId}" नहीं मिला।`,
+        StorageErrorCode.KEY_NOT_FOUND,
+        null,
+        { versionId: cleanVerId }
+      );
+    }
+
+    const now = new Date().toISOString();
+    const isVerified = targetVersion.status === 'verified';
+    const targetStatus = targetVersion.status || (targetVersion.text.trim().length > 0 ? 'draft' : 'untranscribed');
+    const targetVerifiedAt = isVerified ? (targetVersion.verifiedAt || now) : null;
+
+    let maxVersionNum = 0;
+    for (const h of history) {
+      if (h && typeof h.versionNumber === 'number' && h.versionNumber > maxVersionNum) {
+        maxVersionNum = h.versionNumber;
+      }
+    }
+    const newVersionNumber = maxVersionNum + 1;
+
+    const newRestoreSnapshot = {
+      id: generateVersionId(),
+      versionNumber: newVersionNumber,
+      text: targetVersion.text,
+      status: targetStatus,
+      verifiedAt: targetVerifiedAt,
+      createdAt: now,
+      source: 'restore',
+      changeNote: `संस्करण v${targetVersion.versionNumber} पुनर्स्थापित`
+    };
+
+    history.push(newRestoreSnapshot);
+
+    if (history.length > MAX_TRANSCRIPTION_HISTORY) {
+      const pruneCount = history.length - MAX_TRANSCRIPTION_HISTORY;
+      history.splice(0, pruneCount);
+    }
+
+    const updatedTranscription = {
+      text: targetVersion.text,
+      status: targetStatus,
+      verifiedAt: targetVerifiedAt,
+      currentVersionId: newRestoreSnapshot.id
+    };
+
+    const updated = {
+      ...ms,
+      transcription: updatedTranscription,
+      transcriptionHistory: history,
+      // originalManuscript, derivedManuscript, transformation, poemId remain untouched
+      updatedAt: now
+    };
+
+    manuscripts[index] = updated;
+    this._writeManuscripts(manuscripts);
+
+    return deepClone(updated);
+  }
+
+  /**
+   * Deletes a specific historical version snapshot.
+   *
+   * @param {string} manuscriptId
+   * @param {string} versionId
+   * @returns {Object} Updated manuscript record (deep-cloned)
+   */
+  deleteTranscriptionVersion(manuscriptId, versionId) {
+    if (!manuscriptId || typeof manuscriptId !== 'string' || manuscriptId.trim() === '') {
+      throw new StorageError(
+        'पांडुलिपि आईडी (manuscriptId) एक गैर-रिक्त स्ट्रिंग होनी चाहिए।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+    if (!versionId || typeof versionId !== 'string' || versionId.trim() === '') {
+      throw new StorageError(
+        'संस्करण आईडी (versionId) एक गैर-रिक्त स्ट्रिंग होनी चाहिए।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    const cleanMsId = manuscriptId.trim();
+    const cleanVerId = versionId.trim();
+
+    const manuscripts = this._readManuscripts();
+    const index = manuscripts.findIndex(m => m && m.id === cleanMsId);
+
+    if (index === -1) {
+      throw new StorageError(
+        `आईडी "${cleanMsId}" वाली पांडुलिपि नहीं मिली।`,
+        StorageErrorCode.KEY_NOT_FOUND,
+        null,
+        { id: cleanMsId }
+      );
+    }
+
+    const ms = manuscripts[index];
+    const history = Array.isArray(ms.transcriptionHistory) ? [...ms.transcriptionHistory] : [];
+    const vIndex = history.findIndex(v => v && v.id === cleanVerId);
+
+    if (vIndex === -1) {
+      throw new StorageError(
+        `संस्करण आईडी "${cleanVerId}" नहीं मिला।`,
+        StorageErrorCode.KEY_NOT_FOUND,
+        null,
+        { versionId: cleanVerId }
+      );
+    }
+
+    history.splice(vIndex, 1);
+    const now = new Date().toISOString();
+
+    const updated = {
+      ...ms,
+      transcriptionHistory: history,
       updatedAt: now
     };
 

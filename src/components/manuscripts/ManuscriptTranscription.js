@@ -1,18 +1,18 @@
 /**
  * काव्यकलश (KavyaVault) — Manuscript Transcription Workspace (ManuscriptTranscription.js)
  *
- * Phase 2 / Task 2.6: Manuscript Transcription Workspace
- *
- * Dedicated manual transcription canvas allowing writers to view an original
- * manuscript image side-by-side with a Devanagari typing surface.
+ * Phase 2 / Task 2.6 & Task 2.7:
+ * - Dedicated manual transcription canvas (image side-by-side with Devanagari editor)
+ * - Lightweight Version History foundation with immutable historical snapshots
+ * - Restore semantics preserving complete linear audit trail
  *
  * ARCHIVAL INTEGRITY GUARANTEE:
  * - The original manuscript image artifact is 100% immutable and never modified.
  * - The derived manuscript image is never modified.
  * - If linked to a poem, poem.body remains completely separate and untouched.
- * - Transcription is an independent textual representation with lifecycle:
- *   untranscribed → draft → verified.
+ * - Current transcription lifecycle: untranscribed → draft → verified.
  * - Modifying verified text automatically returns status to draft and clears verifiedAt.
+ * - Restoring creates a NEW version snapshot without deleting previous history.
  */
 
 import { manuscriptRepository } from '../../services/ManuscriptRepository.js';
@@ -50,6 +50,12 @@ export class ManuscriptTranscription {
     this.status = 'untranscribed';
     this.verifiedAt = null;
 
+    // Version history state
+    this.history = [];
+    this.historyOpen = false;
+    this.previewVersion = null;
+    this.confirmRestoreVersion = null;
+
     this.saveStatus = 'saved'; // 'saved' | 'saving' | 'unsaved' | 'error'
     this.saveError = null;
     this.isDirty = false;
@@ -76,6 +82,7 @@ export class ManuscriptTranscription {
     this.text = trans.text || '';
     this.status = trans.status || 'untranscribed';
     this.verifiedAt = trans.verifiedAt || null;
+    this.history = this.repository.getTranscriptionHistory(this.manuscriptId);
 
     this.container.innerHTML = this.render();
 
@@ -131,6 +138,19 @@ export class ManuscriptTranscription {
   }
 
   /**
+   * Formats version source into literary Hindi
+   */
+  formatSource(source) {
+    switch (source) {
+      case 'verification': return 'प्रमाणीकरण';
+      case 'restore': return 'पुनर्स्थापित';
+      case 'manual-save':
+      default:
+        return 'सहेजा गया';
+    }
+  }
+
+  /**
    * Resolves the original manuscript image data URL
    */
   getOriginalImageSrc() {
@@ -138,25 +158,27 @@ export class ManuscriptTranscription {
     const raw = orig.data || '';
     if (!raw || typeof raw !== 'string' || raw.trim() === '') return '';
     if (raw.startsWith('data:')) return raw;
-    return `data:${orig.mimeType || 'image/jpeg'};base64,${raw}`;
+    const mime = orig.mimeType || 'image/jpeg';
+    return `data:${mime};base64,${raw}`;
   }
 
   /**
-   * Resolves the derived manuscript image data URL if present
+   * Resolves the derived manuscript image data URL (if one exists)
    */
   getDerivedImageSrc() {
     const derived = this.manuscript?.derivedManuscript;
     if (!derived || !derived.data) return '';
     const raw = derived.data;
     if (raw.startsWith('data:')) return raw;
-    return `data:${derived.mimeType || 'image/png'};base64,${raw}`;
+    const mime = derived.mimeType || 'image/jpeg';
+    return `data:${mime};base64,${raw}`;
   }
 
   /**
-   * Resolves active image source to display in viewer
+   * Resolves active image URL based on active tab
    */
   getActiveImageSrc() {
-    if (this.activeTab === 'derived' && this.manuscript?.derivedManuscript) {
+    if (this.activeTab === 'derived') {
       return this.getDerivedImageSrc();
     }
     return this.getOriginalImageSrc();
@@ -205,7 +227,7 @@ export class ManuscriptTranscription {
   /**
    * Performs the save operation through ManuscriptRepository
    */
-  performAutosave() {
+  performAutosave(options = {}) {
     this.updateSaveStatus('saving');
 
     try {
@@ -216,16 +238,21 @@ export class ManuscriptTranscription {
       const updated = this.repository.updateTranscription(this.manuscriptId, {
         text: this.text,
         status: targetStatus
-      });
+      }, options);
 
       this.manuscript = updated;
       this.status = updated.transcription.status;
       this.verifiedAt = updated.transcription.verifiedAt;
+      this.history = this.repository.getTranscriptionHistory(this.manuscriptId);
       this.isDirty = false;
       this.saveError = null;
 
       this.updateSaveStatus('saved');
       this.updateStatusPill();
+      this.updateHistoryButton();
+      if (this.historyOpen) {
+        this.updateHistoryList();
+      }
     } catch (err) {
       console.error('[ManuscriptTranscription] Save error:', err);
       this.saveStatus = 'error';
@@ -326,6 +353,34 @@ export class ManuscriptTranscription {
   }
 
   /**
+   * Updates history toggle button in header
+   */
+  updateHistoryButton() {
+    const btn = this.container.querySelector('[data-action="toggle-history"]');
+    if (!btn) return;
+    btn.classList.toggle('active', this.historyOpen);
+    btn.setAttribute('aria-expanded', String(this.historyOpen));
+    const label = btn.querySelector('.history-count-label');
+    if (label) {
+      label.textContent = `इतिहास (${this.history.length})`;
+    }
+  }
+
+  /**
+   * Re-renders history card list
+   */
+  updateHistoryList() {
+    const content = this.container.querySelector('#transcription-history-content');
+    if (!content) return;
+    content.innerHTML = this.renderHistoryContent();
+
+    const countEl = this.container.querySelector('.history-total-count');
+    if (countEl) {
+      countEl.textContent = `(${this.history.length} संस्करण)`;
+    }
+  }
+
+  /**
    * Handles click events via event delegation
    */
   handleClick(e) {
@@ -359,7 +414,7 @@ export class ManuscriptTranscription {
         clearTimeout(this.autosaveTimeout);
         this.autosaveTimeout = null;
       }
-      this.performAutosave();
+      this.performAutosave({ source: 'manual-save', createVersion: true });
       return;
     }
 
@@ -376,6 +431,77 @@ export class ManuscriptTranscription {
     if (resetBtn) {
       e.preventDefault();
       this.handleReset();
+      return;
+    }
+
+    // 5. Toggle history panel
+    const toggleHistoryBtn = target.closest('[data-action="toggle-history"]');
+    if (toggleHistoryBtn) {
+      e.preventDefault();
+      this.historyOpen = !this.historyOpen;
+      const panel = this.container.querySelector('#transcription-history-panel');
+      if (panel) {
+        panel.style.display = this.historyOpen ? 'block' : 'none';
+        panel.classList.toggle('is-open', this.historyOpen);
+      }
+      this.updateHistoryButton();
+      if (this.historyOpen) {
+        this.updateHistoryList();
+      }
+      return;
+    }
+
+    // 6. Preview historical version
+    const previewBtn = target.closest('[data-action="preview-version"]');
+    if (previewBtn) {
+      e.preventDefault();
+      const versionId = previewBtn.getAttribute('data-version-id');
+      const found = this.history.find(v => v && v.id === versionId);
+      if (found) {
+        this.previewVersion = found;
+        this.renderModals();
+      }
+      return;
+    }
+
+    // 7. Close preview modal
+    const closePreviewBtn = target.closest('[data-action="close-preview"]');
+    if (closePreviewBtn) {
+      e.preventDefault();
+      this.previewVersion = null;
+      this.renderModals();
+      return;
+    }
+
+    // 8. Request restore (opens confirmation dialog)
+    const requestRestoreBtn = target.closest('[data-action="request-restore"]');
+    if (requestRestoreBtn) {
+      e.preventDefault();
+      const versionId = requestRestoreBtn.getAttribute('data-version-id');
+      const found = this.history.find(v => v && v.id === versionId);
+      if (found) {
+        this.previewVersion = null; // close preview if open
+        this.confirmRestoreVersion = found;
+        this.renderModals();
+      }
+      return;
+    }
+
+    // 9. Cancel restore
+    const cancelRestoreBtn = target.closest('[data-action="cancel-restore"]');
+    if (cancelRestoreBtn) {
+      e.preventDefault();
+      this.confirmRestoreVersion = null;
+      this.renderModals();
+      return;
+    }
+
+    // 10. Confirm restore
+    const confirmRestoreBtn = target.closest('[data-action="confirm-restore"]');
+    if (confirmRestoreBtn) {
+      e.preventDefault();
+      const versionId = confirmRestoreBtn.getAttribute('data-version-id');
+      this.handleRestore(versionId);
       return;
     }
   }
@@ -404,16 +530,21 @@ export class ManuscriptTranscription {
       const updated = this.repository.updateTranscription(this.manuscriptId, {
         text: this.text,
         status: 'verified'
-      });
+      }, { source: 'verification', changeNote: 'प्रमाणित प्रतिलिपि', createVersion: true });
 
       this.manuscript = updated;
       this.status = 'verified';
       this.verifiedAt = updated.transcription.verifiedAt;
+      this.history = this.repository.getTranscriptionHistory(this.manuscriptId);
       this.isDirty = false;
       this.saveError = null;
 
       this.updateSaveStatus('saved');
       this.updateStatusPill();
+      this.updateHistoryButton();
+      if (this.historyOpen) {
+        this.updateHistoryList();
+      }
     } catch (err) {
       this.saveStatus = 'error';
       this.saveError = err.message || 'प्रमाणित करने में त्रुटि हुई।';
@@ -441,6 +572,43 @@ export class ManuscriptTranscription {
   }
 
   /**
+   * Restores a historical version as active transcription and creates a restore version snapshot
+   */
+  handleRestore(versionId) {
+    if (!versionId) return;
+
+    try {
+      const updated = this.repository.restoreTranscriptionVersion(this.manuscriptId, versionId);
+      this.manuscript = updated;
+      this.text = updated.transcription.text || '';
+      this.status = updated.transcription.status || 'draft';
+      this.verifiedAt = updated.transcription.verifiedAt || null;
+      this.history = this.repository.getTranscriptionHistory(this.manuscriptId);
+      this.isDirty = false;
+      this.saveError = null;
+
+      const textarea = this.container.querySelector('#transcription-textarea');
+      if (textarea) textarea.value = this.text;
+
+      this.updateMetrics();
+      this.updateStatusPill();
+      this.updateSaveStatus('saved');
+      this.updateHistoryButton();
+      if (this.historyOpen) {
+        this.updateHistoryList();
+      }
+
+      this.confirmRestoreVersion = null;
+      this.previewVersion = null;
+      this.renderModals();
+    } catch (err) {
+      this.saveStatus = 'error';
+      this.saveError = err.message || 'पुनर्स्थापित करने में त्रुटि हुई।';
+      this.updateSaveStatus('error');
+    }
+  }
+
+  /**
    * Keydown handler for keyboard shortcuts (Ctrl+S / Cmd+S to save)
    */
   handleKeyDown(e) {
@@ -450,7 +618,7 @@ export class ManuscriptTranscription {
         clearTimeout(this.autosaveTimeout);
         this.autosaveTimeout = null;
       }
-      this.performAutosave();
+      this.performAutosave({ source: 'manual-save', createVersion: true });
     }
   }
 
@@ -459,14 +627,8 @@ export class ManuscriptTranscription {
    */
   renderNotFound() {
     this.container.innerHTML = `
-      <div class="transcription-workspace-view standard-page-view" role="region" aria-label="पांडुलिपि अप्राप्य">
-        <div class="manuscript-top-bar">
-          <a href="${ROUTES.MANUSCRIPTS || '/manuscripts'}" data-link class="manuscript-nav-back" aria-label="पांडुलिपि वीथिका पर लौटें">
-            ${getIconSvg('arrow-left', 'nav-icon')}
-            <span>वीथिका</span>
-          </a>
-        </div>
-        <div class="transcription-not-found" style="text-align: center; padding: var(--space-12) var(--space-4);">
+      <div class="transcription-workspace-view" role="region" aria-label="पांडुलिपि प्रतिलिपि त्रुटि">
+        <div style="max-width: 600px; margin: var(--space-12) auto; text-align: center; padding: var(--space-8);">
           <div style="font-size: 3rem; margin-bottom: var(--space-3);" aria-hidden="true">📜</div>
           <h2 style="font-family: var(--font-display); font-size: var(--text-h2); color: var(--color-text-primary); margin: 0 0 var(--space-2) 0;">
             पांडुलिपि अप्राप्य
@@ -480,6 +642,181 @@ export class ManuscriptTranscription {
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Renders history card list content
+   */
+  renderHistoryContent() {
+    if (!this.history || this.history.length === 0) {
+      return `
+        <div class="history-empty-state">
+          <p class="history-empty-text">अभी तक कोई पिछला संस्करण सहेजा नहीं गया है। प्रतिलिपि सहेजने पर स्वतः संस्करण निर्मित होंगे।</p>
+        </div>
+      `;
+    }
+
+    const sorted = [...this.history].reverse();
+    const activeVersionId = this.manuscript?.transcription?.currentVersionId;
+
+    return `
+      <div class="history-card-list" role="list">
+        ${sorted.map(v => {
+          const isActive = v.id === activeVersionId;
+          const snippet = v.text ? v.text.split(/\r?\n/).slice(0, 2).join(' ') : '—';
+          return `
+            <article class="history-card ${isActive ? 'is-active' : ''}" role="listitem">
+              <div class="history-card-header">
+                <div class="history-card-meta">
+                  <span class="history-version-badge">v${v.versionNumber}</span>
+                  <span class="transcription-status-pill status-${v.status}">
+                    ${this.formatStatus(v.status)}
+                  </span>
+                  <span class="history-source-badge">${this.formatSource(v.source)}</span>
+                  ${isActive ? '<span class="history-active-badge">वर्तमान सक्रिय</span>' : ''}
+                </div>
+                <time class="history-time">${formatPoeticDate(v.createdAt)}</time>
+              </div>
+
+              ${v.changeNote ? `<div class="history-note"><em>${this.escapeHtml(v.changeNote)}</em></div>` : ''}
+
+              <div class="history-preview-snippet">
+                "${this.escapeHtml(snippet)}"
+              </div>
+
+              <div class="history-card-actions">
+                <button
+                  type="button"
+                  class="btn-history-action btn-history-preview"
+                  data-action="preview-version"
+                  data-version-id="${v.id}"
+                  aria-label="संस्करण ${v.versionNumber} का पूर्वावलोकन करें"
+                >
+                  ${getIconSvg('eye', 'btn-icon')}
+                  <span>पूर्वावलोकन</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-history-action btn-history-restore"
+                  data-action="request-restore"
+                  data-version-id="${v.id}"
+                  aria-label="संस्करण ${v.versionNumber} पुनर्स्थापित करें"
+                >
+                  ${getIconSvg('restore', 'btn-icon')}
+                  <span>पुनर्स्थापित करें</span>
+                </button>
+              </div>
+            </article>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  /**
+   * Renders modal dialogs for preview and restore confirmation
+   */
+  renderModals() {
+    const modalContainer = this.container.querySelector('#transcription-modal-container');
+    if (!modalContainer) return;
+
+    if (this.previewVersion) {
+      const v = this.previewVersion;
+      modalContainer.innerHTML = `
+        <div class="transcription-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="preview-modal-title">
+          <div class="transcription-modal-box">
+            <header class="transcription-modal-header">
+              <div>
+                <h3 id="preview-modal-title" class="transcription-modal-title">
+                  संस्करण v${v.versionNumber} — पूर्वावलोकन (केवल पढ़ने योग्य)
+                </h3>
+                <p class="transcription-modal-subtitle">
+                  यह एक सुरक्षित, केवल पढ़ने योग्य पूर्वावलोकन है। आपके मौजूदा कार्य में कोई परिवर्तन नहीं हुआ है।
+                </p>
+              </div>
+              <button type="button" class="btn-modal-close" data-action="close-preview" aria-label="पूर्वावलोकन बंद करें">
+                ${getIconSvg('close', 'btn-icon')}
+              </button>
+            </header>
+
+            <div class="transcription-modal-meta">
+              <span class="history-version-badge">v${v.versionNumber}</span>
+              <span class="transcription-status-pill status-${v.status}">${this.formatStatus(v.status)}</span>
+              <span class="history-source-badge">${this.formatSource(v.source)}</span>
+              <time class="history-time">${formatPoeticDate(v.createdAt)}</time>
+            </div>
+
+            <div class="transcription-modal-content">
+              <pre class="transcription-modal-pre">${this.escapeHtml(v.text || '—')}</pre>
+            </div>
+
+            <footer class="transcription-modal-footer">
+              <button type="button" class="btn-modal-secondary" data-action="close-preview">
+                वर्तमान संस्करण रखें
+              </button>
+              <button
+                type="button"
+                class="btn-modal-primary"
+                data-action="request-restore"
+                data-version-id="${v.id}"
+              >
+                ${getIconSvg('restore', 'btn-icon')}
+                <span>यह संस्करण पुनर्स्थापित करें</span>
+              </button>
+            </footer>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    if (this.confirmRestoreVersion) {
+      const v = this.confirmRestoreVersion;
+      modalContainer.innerHTML = `
+        <div class="transcription-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+          <div class="transcription-modal-box confirm-box">
+            <header class="transcription-modal-header">
+              <h3 id="confirm-modal-title" class="transcription-modal-title">
+                पुनर्स्थापना की पुष्टि
+              </h3>
+              <button type="button" class="btn-modal-close" data-action="cancel-restore" aria-label="रद्द करें">
+                ${getIconSvg('close', 'btn-icon')}
+              </button>
+            </header>
+
+            <div class="transcription-modal-body">
+              <p class="confirm-prompt">
+                क्या आप <strong>संस्करण v${v.versionNumber}</strong> को वर्तमान प्रतिलिपि के रूप में पुनर्स्थापित करना चाहते हैं?
+              </p>
+              <div class="confirm-archival-note">
+                <span class="note-icon" aria-hidden="true">ℹ️</span>
+                <p>
+                  <strong>पुरातात्विक सुरक्षा:</strong> आपकी वर्तमान प्रतिलिपि सुरक्षित रहेगी। पुनर्स्थापना एक नया संस्करण बनाएगी। मूल पांडुलिपि छवि और संबद्ध कविता पूर्णतः अपरिवर्तित रहेंगी।
+                </p>
+              </div>
+            </div>
+
+            <footer class="transcription-modal-footer">
+              <button type="button" class="btn-modal-secondary" data-action="cancel-restore">
+                रद्द करें
+              </button>
+              <button
+                type="button"
+                class="btn-modal-confirm"
+                data-action="confirm-restore"
+                data-version-id="${v.id}"
+              >
+                ${getIconSvg('restore', 'btn-icon')}
+                <span>हाँ, संस्करण v${v.versionNumber} पुनर्स्थापित करें</span>
+              </button>
+            </footer>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    modalContainer.innerHTML = '';
   }
 
   /**
@@ -528,6 +865,19 @@ export class ManuscriptTranscription {
               <span class="status-dot"></span>
               <span class="status-label">सहेजा गया</span>
             </div>
+
+            <!-- Version History Toggle Button -->
+            <button
+              type="button"
+              class="btn-workspace-action btn-workspace-history ${this.historyOpen ? 'active' : ''}"
+              data-action="toggle-history"
+              aria-expanded="${this.historyOpen}"
+              aria-label="प्रतिलिपि संस्करण इतिहास देखें"
+              title="संस्करण इतिहास"
+            >
+              ${getIconSvg('clock', 'btn-icon')}
+              <span class="history-count-label">इतिहास (${this.history ? this.history.length : 0})</span>
+            </button>
 
             <button
               type="button"
@@ -670,6 +1020,32 @@ export class ManuscriptTranscription {
             </footer>
           </section>
         </div>
+
+        <!-- Collapsible Version History Section -->
+        <section
+          id="transcription-history-panel"
+          class="transcription-history-section ${this.historyOpen ? 'is-open' : ''}"
+          aria-label="प्रतिलिपि संस्करण इतिहास"
+          style="${this.historyOpen ? 'display: block;' : 'display: none;'}"
+        >
+          <div class="history-section-header">
+            <div style="display: flex; align-items: center; gap: var(--space-2);">
+              ${getIconSvg('clock', 'history-header-icon')}
+              <h3 class="history-section-title">प्रतिलिपि संस्करण इतिहास</h3>
+              <span class="history-total-count">(${this.history ? this.history.length : 0} संस्करण)</span>
+            </div>
+            <p class="history-section-desc">
+              प्रत्येक सहेजे गए परिवर्तन का पुरातात्विक स्नैपशॉट। पिछला संस्करण पुनर्स्थापित करने पर एक नया ऑडिट संस्करण बनेगा।
+            </p>
+          </div>
+
+          <div id="transcription-history-content">
+            ${this.renderHistoryContent()}
+          </div>
+        </section>
+
+        <!-- Modal Container for Preview and Restore Confirmation -->
+        <div id="transcription-modal-container"></div>
       </div>
     `;
   }
