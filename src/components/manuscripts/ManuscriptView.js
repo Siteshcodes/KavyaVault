@@ -14,6 +14,7 @@
  */
 
 import { manuscriptRepository } from '../../services/ManuscriptRepository.js';
+import { poemRepository } from '../../services/PoemRepository.js';
 import { StorageError, StorageErrorCode } from '../../services/storage/StorageError.js';
 import {
   ManuscriptImageTransformer,
@@ -30,12 +31,15 @@ export class ManuscriptView {
    * @param {HTMLElement} options.container Root mounting container
    * @param {Object} options.router Client router instance
    * @param {string} options.manuscriptId Unique manuscript identifier
+   * @param {Object} [options.repository=manuscriptRepository] Manuscript repository
+   * @param {Object} [options.poemRepo=poemRepository] Poem repository
    */
-  constructor({ container, router, manuscriptId, repository = manuscriptRepository }) {
+  constructor({ container, router, manuscriptId, repository = manuscriptRepository, poemRepo = poemRepository }) {
     this.container = container;
     this.router = router;
     this.manuscriptId = manuscriptId;
     this.repository = repository;
+    this.poemRepo = poemRepo;
     this.manuscript = null;
 
     // View state: 'original' or 'derived'
@@ -58,9 +62,18 @@ export class ManuscriptView {
     // Modals
     this.showDeleteModal = false;
     this.showClearDerivedModal = false;
+    this.showLinkModal = false;
+    this.showUnlinkModal = false;
+
+    // Linking state
+    this.poemSearchQuery = '';
+    this.selectedPoemId = null;
+    this.linkError = null;
+    this.linkSuccessMessage = null;
 
     // Bound handlers
     this.boundClickHandler = this.handleClick.bind(this);
+    this.boundInputHandler = this.handleInput.bind(this);
     this.boundKeyDownHandler = this.handleKeyDown.bind(this);
     this.boundPointerDown = this.handlePointerDown.bind(this);
     this.boundPointerMove = this.handlePointerMove.bind(this);
@@ -89,6 +102,7 @@ export class ManuscriptView {
     this.update();
     if (this.container?.addEventListener) {
       this.container.addEventListener('click', this.boundClickHandler);
+      this.container.addEventListener('input', this.boundInputHandler);
     }
     if (typeof document !== 'undefined' && document.addEventListener) {
       document.addEventListener('keydown', this.boundKeyDownHandler);
@@ -102,6 +116,7 @@ export class ManuscriptView {
     this.detachCropListeners();
     if (this.container?.removeEventListener) {
       this.container.removeEventListener('click', this.boundClickHandler);
+      this.container.removeEventListener('input', this.boundInputHandler);
     }
     if (typeof document !== 'undefined' && document.removeEventListener) {
       document.removeEventListener('keydown', this.boundKeyDownHandler);
@@ -546,10 +561,101 @@ export class ManuscriptView {
     if (confirmDeleteBtn) {
       e.preventDefault();
       try {
-        manuscriptRepository.delete(this.manuscriptId);
+        this.repository.delete(this.manuscriptId);
         this.router.navigate(ROUTES.MANUSCRIPTS || '/manuscripts');
       } catch (err) {
         console.error('[ManuscriptView] Error deleting manuscript:', err);
+      }
+      return;
+    }
+
+    // 15. Open Link Poem Modal
+    const openLinkBtn = target.closest('[data-action="open-link-modal"]');
+    if (openLinkBtn) {
+      e.preventDefault();
+      this.showLinkModal = true;
+      this.selectedPoemId = this.manuscript?.poemId || null;
+      this.poemSearchQuery = '';
+      this.linkError = null;
+      this.update();
+      return;
+    }
+
+    // 16. Close Link Poem Modal
+    const closeLinkBtn = target.closest('[data-action="close-link-modal"]');
+    if (closeLinkBtn) {
+      e.preventDefault();
+      this.showLinkModal = false;
+      this.update();
+      return;
+    }
+
+    // 17. Select Poem in Modal
+    const selectPoemOption = target.closest('[data-action="select-poem"]');
+    if (selectPoemOption) {
+      e.preventDefault();
+      this.selectedPoemId = decodeURIComponent(selectPoemOption.getAttribute('data-poem-id'));
+      const listEl = this.container.querySelector('.link-poem-list');
+      if (listEl) {
+        listEl.innerHTML = this.renderPoemListItems();
+      }
+      const confirmBtn = this.container.querySelector('[data-action="confirm-link"]');
+      if (confirmBtn) {
+        confirmBtn.removeAttribute('disabled');
+        confirmBtn.style.cursor = 'pointer';
+        confirmBtn.style.opacity = '1';
+      }
+      return;
+    }
+
+    // 18. Confirm Link Poem
+    const confirmLinkBtn = target.closest('[data-action="confirm-link"]');
+    if (confirmLinkBtn) {
+      e.preventDefault();
+      if (!this.selectedPoemId) return;
+      try {
+        const updated = this.repository.linkToPoem(this.manuscriptId, this.selectedPoemId);
+        this.manuscript = updated;
+        this.showLinkModal = false;
+        this.linkSuccessMessage = 'पांडुलिपि को कविता से सफलतापूर्वक संबद्ध कर दिया गया है।';
+        this.update();
+      } catch (err) {
+        this.linkError = err.message || 'संबद्ध करने में त्रुटि हुई।';
+        this.update();
+      }
+      return;
+    }
+
+    // 19. Open Unlink Modal
+    const openUnlinkBtn = target.closest('[data-action="open-unlink-modal"]');
+    if (openUnlinkBtn) {
+      e.preventDefault();
+      this.showUnlinkModal = true;
+      this.update();
+      return;
+    }
+
+    // 20. Close Unlink Modal
+    const closeUnlinkBtn = target.closest('[data-action="close-unlink-modal"]');
+    if (closeUnlinkBtn) {
+      e.preventDefault();
+      this.showUnlinkModal = false;
+      this.update();
+      return;
+    }
+
+    // 21. Confirm Unlink
+    const confirmUnlinkBtn = target.closest('[data-action="confirm-unlink"]');
+    if (confirmUnlinkBtn) {
+      e.preventDefault();
+      try {
+        const updated = this.repository.unlinkFromPoem(this.manuscriptId);
+        this.manuscript = updated;
+        this.showUnlinkModal = false;
+        this.linkSuccessMessage = 'कविता से संबंध सफलतापूर्वक हटा दिया गया है।';
+        this.update();
+      } catch (err) {
+        console.error('[ManuscriptView] Error unlinking from poem:', err);
       }
       return;
     }
@@ -630,6 +736,27 @@ export class ManuscriptView {
         e.preventDefault();
         this.showClearDerivedModal = false;
         this.update();
+      } else if (this.showLinkModal) {
+        e.preventDefault();
+        this.showLinkModal = false;
+        this.update();
+      } else if (this.showUnlinkModal) {
+        e.preventDefault();
+        this.showUnlinkModal = false;
+        this.update();
+      }
+    }
+  }
+
+  /**
+   * Handles real-time input in dialog search
+   */
+  handleInput(e) {
+    if (e.target && e.target.matches('[data-action="search-poem-input"]')) {
+      this.poemSearchQuery = e.target.value;
+      const listEl = this.container.querySelector('.link-poem-list');
+      if (listEl) {
+        listEl.innerHTML = this.renderPoemListItems();
       }
     }
   }
@@ -1112,6 +1239,9 @@ export class ManuscriptView {
               <div class="manuscript-notes-body">${this.escapeHtml(prov.notes)}</div>
             </div>
           ` : ''}
+
+          <!-- Linked Poem Archival Section -->
+          ${this.renderLinkedPoemSection()}
         </article>
 
         <!-- Delete Entire Manuscript Modal -->
@@ -1119,6 +1249,12 @@ export class ManuscriptView {
 
         <!-- Clear Derived Version Confirmation Modal -->
         ${this.showClearDerivedModal ? this.renderClearDerivedModal() : ''}
+
+        <!-- Link Poem Modal -->
+        ${this.showLinkModal ? this.renderLinkModal() : ''}
+
+        <!-- Unlink Poem Modal -->
+        ${this.showUnlinkModal ? this.renderUnlinkModal() : ''}
       </div>
     `;
   }
@@ -1208,6 +1344,294 @@ export class ManuscriptView {
               style="background: var(--color-accent-terracotta); color: #fff; min-height: 44px;"
             >
               हाँ, हटाएँ
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Renders the linked poem archival section in the reader
+   */
+  renderLinkedPoemSection() {
+    const ms = this.manuscript;
+    if (!ms) return '';
+
+    let linkedPoem = null;
+    if (ms.poemId) {
+      try {
+        linkedPoem = this.repository.getLinkedPoem
+          ? this.repository.getLinkedPoem(this.manuscriptId)
+          : (this.poemRepo ? this.poemRepo.getById(ms.poemId) : null);
+      } catch (_) {
+        linkedPoem = null;
+      }
+    }
+
+    return `
+      <section class="manuscript-linked-poem-section" aria-labelledby="linked-poem-heading">
+        <div class="manuscript-linked-header">
+          <div style="display: flex; align-items: center; gap: var(--space-2);">
+            ${getIconSvg('quill', 'meta-icon')}
+            <h2 id="linked-poem-heading" class="manuscript-linked-heading">इस पांडुलिपि से संबंधित कविता</h2>
+          </div>
+          ${linkedPoem ? `
+            <button
+              type="button"
+              class="btn-manuscript-unlink"
+              data-action="open-unlink-modal"
+              aria-label="कविता से संबंध हटाएं"
+              title="कविता से संबंध हटाएं"
+            >
+              ${getIconSvg('close', 'icon-inline')}
+              <span>संबंध हटाएँ</span>
+            </button>
+          ` : ''}
+        </div>
+
+        ${this.linkSuccessMessage ? `
+          <div class="manuscript-feedback-banner feedback-success" role="status" style="margin-bottom: var(--space-4);">
+            ${getIconSvg('check', 'banner-icon')}
+            <span>${this.escapeHtml(this.linkSuccessMessage)}</span>
+          </div>
+        ` : ''}
+
+        ${linkedPoem ? `
+          <div class="manuscript-linked-card" role="region" aria-label="संबद्ध कविता विवरण">
+            <div class="linked-card-info">
+              <h3 class="linked-card-title">${this.escapeHtml(linkedPoem.title || 'शीर्षकहीन रचना')}</h3>
+              <div class="linked-card-meta">
+                <span class="linked-card-author">${this.escapeHtml(linkedPoem.author || 'अज्ञात')}</span>
+                <span class="card-meta-dot" aria-hidden="true">•</span>
+                <time datetime="${linkedPoem.updatedAt || linkedPoem.createdAt}">
+                  अद्यतन: ${formatPoeticDate(linkedPoem.updatedAt || linkedPoem.createdAt)}
+                </time>
+              </div>
+            </div>
+            <div class="linked-card-actions">
+              <a
+                href="/poems/${encodeURIComponent(linkedPoem.id)}"
+                data-link
+                class="btn-read-linked-poem"
+                aria-label="${this.escapeHtml(linkedPoem.title)} कविता पढ़ें"
+              >
+                ${getIconSvg('book', 'icon-inline')}
+                <span>कविता पढ़ें</span>
+              </a>
+              <button
+                type="button"
+                class="btn-relink-poem"
+                data-action="open-link-modal"
+                aria-label="अन्य कविता से जोड़ें"
+                title="अन्य कविता से जोड़ें"
+              >
+                ${getIconSvg('edit', 'icon-inline')}
+                <span>बदलें</span>
+              </button>
+            </div>
+          </div>
+        ` : `
+          <div class="manuscript-unlinked-box">
+            <p class="manuscript-unlinked-text">अभी किसी कविता से संबद्ध नहीं</p>
+            <button
+              type="button"
+              class="btn-link-poem-cta"
+              data-action="open-link-modal"
+              aria-label="इस पांडुलिपि को कविता से जोड़ें"
+            >
+              ${getIconSvg('quill', 'icon-inline')}
+              <span>कविता से जोड़ें</span>
+            </button>
+          </div>
+        `}
+      </section>
+    `;
+  }
+
+  /**
+   * Renders the list items for the poem selection modal
+   * @returns {string} HTML string
+   */
+  renderPoemListItems() {
+    let poems = [];
+    try {
+      const allPoems = this.poemRepo ? this.poemRepo.getAll({ includeArchived: true }) : [];
+      const query = (this.poemSearchQuery || '').toLowerCase().trim();
+      poems = allPoems.filter(p => {
+        if (!p || typeof p !== 'object') return false;
+        if (!query) return true;
+        const t = (p.title || '').toLowerCase();
+        const a = (p.author || '').toLowerCase();
+        return t.includes(query) || a.includes(query);
+      });
+    } catch (err) {
+      poems = [];
+    }
+
+    if (poems.length === 0) {
+      return `
+        <div style="text-align: center; padding: var(--space-6); color: var(--color-text-muted); font-family: var(--font-interface); font-size: var(--text-body-small);">
+          कोई कविता नहीं मिली।
+        </div>
+      `;
+    }
+
+    return poems.map(poem => {
+      const isSelected = this.selectedPoemId === poem.id;
+      return `
+        <div
+          class="link-poem-option ${isSelected ? 'selected' : ''}"
+          data-action="select-poem"
+          data-poem-id="${encodeURIComponent(poem.id)}"
+          role="radio"
+          aria-checked="${isSelected}"
+          tabindex="0"
+          style="display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border: 1px solid ${isSelected ? 'var(--color-accent-gold)' : 'var(--color-border-subtle)'}; background: ${isSelected ? 'rgba(184, 134, 11, 0.08)' : 'var(--color-bg-secondary)'}; cursor: pointer; transition: all 0.2s ease;"
+        >
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-family: var(--font-display); font-weight: 600; color: var(--color-text-primary); font-size: var(--text-body-small);">
+              ${this.escapeHtml(poem.title || 'शीर्षकहीन')}
+            </span>
+            <span style="font-family: var(--font-interface); font-size: 12px; color: var(--color-text-muted);">
+              ${this.escapeHtml(poem.author || 'अज्ञात')} • ${formatPoeticDate(poem.createdAt)}
+            </span>
+          </div>
+          <div style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid ${isSelected ? 'var(--color-accent-gold)' : 'var(--color-border-subtle)'}; display: flex; align-items: center; justify-content: center; background: ${isSelected ? 'var(--color-accent-gold)' : 'transparent'};">
+            ${isSelected ? '<span style="width: 8px; height: 8px; border-radius: 50%; background: #fff;"></span>' : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  /**
+   * Renders the modal dialog to link the manuscript to a poem
+   */
+  renderLinkModal() {
+    return `
+      <div
+        class="modal-backdrop"
+        style="position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: var(--space-4);"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="link-dialog-title"
+      >
+        <div
+          class="modal-dialog link-poem-dialog"
+          style="background: var(--color-bg-card); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); max-width: 520px; width: 100%; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 16px 36px rgba(0,0,0,0.4);"
+        >
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+            <h3 id="link-dialog-title" style="font-family: var(--font-display); font-size: var(--text-h3); color: var(--color-text-primary); margin: 0;">
+              पांडुलिपि को कविता से जोड़ें
+            </h3>
+            <button
+              type="button"
+              data-action="close-link-modal"
+              aria-label="संवाद बंद करें"
+              style="background: transparent; border: none; cursor: pointer; color: var(--color-text-muted); padding: var(--space-1);"
+            >
+              ${getIconSvg('close', 'icon-inline')}
+            </button>
+          </div>
+
+          <p style="font-family: var(--font-interface); font-size: var(--text-body-small); color: var(--color-text-secondary); margin: 0 0 var(--space-4) 0; line-height: var(--leading-normal);">
+            इस हस्तलिखित पांडुलिपि से संबंधित डिजिटल कविता का चयन करें:
+          </p>
+
+          <!-- Search filter input -->
+          <div style="margin-bottom: var(--space-4);">
+            <input
+              type="search"
+              class="link-poem-search-input"
+              data-action="search-poem-input"
+              placeholder="शीर्षक या रचनाकार खोजें..."
+              value="${this.escapeHtml(this.poemSearchQuery)}"
+              aria-label="कविता खोजें"
+              style="width: 100%; height: 44px; padding: 0 var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border-subtle); background: var(--color-bg-secondary); color: var(--color-text-primary); font-family: var(--font-interface); font-size: var(--text-body-small); box-sizing: border-box;"
+            />
+          </div>
+
+          ${this.linkError ? `
+            <div class="manuscript-feedback-banner feedback-error" role="alert" style="margin-bottom: var(--space-3);">
+              ${getIconSvg('alert', 'banner-icon')}
+              <span>${this.escapeHtml(this.linkError)}</span>
+            </div>
+          ` : ''}
+
+          <!-- Scrollable Poem Selection List -->
+          <div class="link-poem-list" role="radiogroup" aria-label="उपलब्ध कविताएं" style="overflow-y: auto; max-height: 300px; margin-bottom: var(--space-6); display: flex; flex-direction: column; gap: var(--space-2); padding-right: var(--space-1);">
+            ${this.renderPoemListItems()}
+          </div>
+
+          <!-- Dialog Actions -->
+          <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: auto;">
+            <button
+              type="button"
+              class="btn-modal-cancel"
+              data-action="close-link-modal"
+              aria-label="रद्द करें"
+              style="min-height: 48px; padding: 0 var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--color-border-subtle); background: transparent; color: var(--color-text-primary); cursor: pointer; font-family: var(--font-interface);"
+            >
+              रद्द करें
+            </button>
+            <button
+              type="button"
+              class="btn-modal-confirm"
+              data-action="confirm-link"
+              ${!this.selectedPoemId ? 'disabled' : ''}
+              aria-label="संबद्ध करें"
+              style="min-height: 48px; padding: 0 var(--space-5); border-radius: var(--radius-md); border: none; background: var(--color-accent-gold); color: #1a150e; font-weight: 600; cursor: ${!this.selectedPoemId ? 'not-allowed' : 'pointer'}; opacity: ${!this.selectedPoemId ? '0.5' : '1'}; font-family: var(--font-interface);"
+            >
+              संबद्ध करें
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Renders confirmation modal to unlink manuscript from poem
+   */
+  renderUnlinkModal() {
+    return `
+      <div
+        class="modal-backdrop"
+        style="position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: var(--space-4);"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="unlink-dialog-title"
+      >
+        <div
+          class="modal-dialog"
+          style="background: var(--color-bg-card); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); max-width: 440px; width: 100%; box-shadow: 0 16px 36px rgba(0,0,0,0.4);"
+        >
+          <h3 id="unlink-dialog-title" style="font-family: var(--font-display); font-size: var(--text-h3); color: var(--color-text-primary); margin: 0 0 var(--space-2) 0;">
+            कविता से संबंध हटाएँ?
+          </h3>
+          <p style="font-family: var(--font-interface); font-size: var(--text-body-small); color: var(--color-text-secondary); margin: 0 0 var(--space-6) 0; line-height: var(--leading-normal);">
+            क्या आप इस पांडुलिपि का कविता से संबंध हटाना चाहते हैं? आपकी पांडुलिपि और कविता दोनों पूरी तरह सुरक्षित रहेंगी।
+          </p>
+
+          <div style="display: flex; justify-content: flex-end; gap: var(--space-3);">
+            <button
+              type="button"
+              class="btn-modal-cancel"
+              data-action="close-unlink-modal"
+              aria-label="रद्द करें"
+              style="min-height: 48px; padding: 0 var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--color-border-subtle); background: transparent; color: var(--color-text-primary); cursor: pointer; font-family: var(--font-interface);"
+            >
+              रद्द करें
+            </button>
+            <button
+              type="button"
+              class="btn-modal-confirm"
+              data-action="confirm-unlink"
+              aria-label="संबंध हटाएँ"
+              style="min-height: 48px; padding: 0 var(--space-4); border-radius: var(--radius-md); border: none; background: var(--color-accent-terracotta); color: #fff; font-weight: 600; cursor: pointer; font-family: var(--font-interface);"
+            >
+              संबंध हटाएँ
             </button>
           </div>
         </div>

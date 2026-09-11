@@ -1333,5 +1333,183 @@
   text-align: center;
 }
 
+/* ==========================================================================
+   12. Manuscript ↔ Poem Linking (Task 2.5)
+   ========================================================================== */
+
+.manuscript-linked-poem-section {
+  padding: var(--space-6);
+  border-top: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-card);
+}
+
+.manuscript-linked-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.manuscript-linked-heading {
+  font-family: var(--font-display);
+  font-size: var(--text-h4);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.btn-manuscript-unlink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-accent-terracotta);
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-manuscript-unlink:hover {
+  background: rgba(180, 40, 40, 0.08);
+  border-color: var(--color-accent-terracotta);
+}
+
+.manuscript-linked-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  transition: border-color 0.2s ease;
+}
+
+.manuscript-linked-card:hover {
+  border-color: var(--color-accent-gold);
+}
+
+.linked-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.linked-card-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-body-large);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.linked-card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+
+.linked-card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.btn-read-linked-poem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-accent-gold);
+  color: #1a150e;
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.btn-read-linked-poem:hover {
+  opacity: 0.9;
+}
+
+.btn-relink-poem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-relink-poem:hover {
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  border-color: var(--color-accent-gold);
+}
+
+.manuscript-unlinked-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-4);
+  background: var(--color-bg-secondary);
+  border: 1px dashed var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.manuscript-unlinked-text {
+  margin: 0;
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text-muted);
+}
+
+.btn-link-poem-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: 0 var(--space-5);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-accent-gold);
+  border-radius: var(--radius-md);
+  color: var(--color-accent-gold);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-link-poem-cta:hover {
+  background: var(--color-accent-gold);
+  color: #1a150e;
+}
+
+
 
 

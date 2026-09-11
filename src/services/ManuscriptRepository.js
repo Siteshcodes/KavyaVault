@@ -25,6 +25,7 @@
 import { LocalStorageAdapter } from './storage/LocalStorageAdapter.js';
 import { StorageError, StorageErrorCode } from './storage/StorageError.js';
 import { STORAGE_KEYS } from '../data/storageKeys.js';
+import { poemRepository } from './PoemRepository.js';
 
 // ============================================================================
 // Shared Utilities
@@ -85,10 +86,21 @@ const VALID_TRANSCRIPTION_STATUSES = ['untranscribed', 'draft', 'verified'];
 
 export class ManuscriptRepository {
   /**
-   * @param {import('./storage/IStorageAdapter.js').IStorageAdapter} adapter
+   * @param {import('./storage/IStorageAdapter.js').IStorageAdapter} [adapter=null]
+   * @param {import('./PoemRepository.js').PoemRepository} [poemRepo=null]
    */
-  constructor(adapter = null) {
+  constructor(adapter = null, poemRepo = null) {
     this.adapter = adapter || new LocalStorageAdapter();
+    this.poemRepo = poemRepo;
+  }
+
+  /**
+   * Internal helper: returns the active PoemRepository instance
+   * @returns {import('./PoemRepository.js').PoemRepository}
+   */
+  _getPoemRepo() {
+    if (this.poemRepo) return this.poemRepo;
+    return poemRepository;
   }
 
   // --------------------------------------------------------------------------
@@ -941,6 +953,187 @@ export class ManuscriptRepository {
     });
 
     return deepClone(matches);
+  }
+
+  /**
+   * Retrieves all manuscripts linked to a specific poem ID (alias for getByPoemId).
+   * @param {string} poemId
+   * @returns {Array} Deep-cloned array of matching manuscript records
+   */
+  getManuscriptsForPoem(poemId) {
+    return this.getByPoemId(poemId);
+  }
+
+  /**
+   * Links a manuscript to an existing poem.
+   *
+   * Enforces referential integrity:
+   * - Validates manuscript exists
+   * - Validates poem exists in PoemRepository
+   * - Does NOT mutate original or derived manuscript artifacts
+   * - Idempotent if already linked to the same poem
+   *
+   * @param {string} manuscriptId Unique manuscript ID
+   * @param {string} poemId Unique poem ID
+   * @returns {Object} Deep-cloned updated manuscript
+   */
+  linkToPoem(manuscriptId, poemId) {
+    if (!manuscriptId || typeof manuscriptId !== 'string' || manuscriptId.trim() === '') {
+      throw new StorageError(
+        'पांडुलिपि आईडी (manuscriptId) एक गैर-रिक्त स्ट्रिंग होनी चाहिए।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    if (!poemId || typeof poemId !== 'string' || poemId.trim() === '') {
+      throw new StorageError(
+        'कविता आईडी (poemId) एक गैर-रिक्त स्ट्रिंग होनी चाहिए।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    const cleanMsId = manuscriptId.trim();
+    const cleanPoemId = poemId.trim();
+
+    const manuscripts = this._readManuscripts();
+    const index = manuscripts.findIndex(m => m && m.id === cleanMsId);
+
+    if (index === -1) {
+      throw new StorageError(
+        `आईडी "${cleanMsId}" वाली पांडुलिपि नहीं मिली।`,
+        StorageErrorCode.KEY_NOT_FOUND,
+        null,
+        { id: cleanMsId }
+      );
+    }
+
+    // Validate poem existence
+    const poemRepo = this._getPoemRepo();
+    const poem = poemRepo ? poemRepo.getById(cleanPoemId) : null;
+    if (!poem) {
+      throw new StorageError(
+        `आईडी "${cleanPoemId}" वाली कविता उपस्थित नहीं है।`,
+        StorageErrorCode.KEY_NOT_FOUND,
+        null,
+        { poemId: cleanPoemId }
+      );
+    }
+
+    const current = manuscripts[index];
+
+    // Idempotent: already linked to the exact same poem
+    if (current.poemId === cleanPoemId) {
+      return deepClone(current);
+    }
+
+    const now = new Date().toISOString();
+    const updated = {
+      ...current,
+      poemId: cleanPoemId,
+      updatedAt: now
+    };
+
+    manuscripts[index] = updated;
+    this._writeManuscripts(manuscripts);
+
+    return deepClone(updated);
+  }
+
+  /**
+   * Unlinks a manuscript from any associated poem.
+   *
+   * Idempotent if already unlinked.
+   *
+   * @param {string} manuscriptId Unique manuscript ID
+   * @returns {Object} Deep-cloned updated manuscript
+   */
+  unlinkFromPoem(manuscriptId) {
+    if (!manuscriptId || typeof manuscriptId !== 'string' || manuscriptId.trim() === '') {
+      throw new StorageError(
+        'पांडुलिपि आईडी (manuscriptId) एक गैर-रिक्त स्ट्रिंग होनी चाहिए।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    const cleanMsId = manuscriptId.trim();
+    const manuscripts = this._readManuscripts();
+    const index = manuscripts.findIndex(m => m && m.id === cleanMsId);
+
+    if (index === -1) {
+      throw new StorageError(
+        `आईडी "${cleanMsId}" वाली पांडुलिपि नहीं मिली।`,
+        StorageErrorCode.KEY_NOT_FOUND,
+        null,
+        { id: cleanMsId }
+      );
+    }
+
+    const current = manuscripts[index];
+
+    // Idempotent: already unlinked
+    if (current.poemId === null) {
+      return deepClone(current);
+    }
+
+    const now = new Date().toISOString();
+    const updated = {
+      ...current,
+      poemId: null,
+      updatedAt: now
+    };
+
+    manuscripts[index] = updated;
+    this._writeManuscripts(manuscripts);
+
+    return deepClone(updated);
+  }
+
+  /**
+   * Retrieves the linked poem record for a manuscript, if present and valid.
+   * @param {string} manuscriptId Unique manuscript ID
+   * @returns {Object|null} Deep-cloned poem or null
+   */
+  getLinkedPoem(manuscriptId) {
+    if (!manuscriptId || typeof manuscriptId !== 'string') return null;
+    const ms = this.getById(manuscriptId.trim());
+    if (!ms || !ms.poemId) return null;
+
+    const poemRepo = this._getPoemRepo();
+    if (!poemRepo) return null;
+    return poemRepo.getById(ms.poemId);
+  }
+
+  /**
+   * Unlinks all manuscripts pointing to a specific poem ID (used during poem deletion).
+   * Safe, non-destructive to manuscript images.
+   * @param {string} poemId
+   * @returns {number} Count of unlinked manuscripts
+   */
+  unlinkAllFromPoem(poemId) {
+    if (!poemId || typeof poemId !== 'string') return 0;
+    const cleanPoemId = poemId.trim();
+
+    const manuscripts = this._readManuscripts();
+    let unlinkedCount = 0;
+    const now = new Date().toISOString();
+
+    const updated = manuscripts.map(m => {
+      if (m && m.poemId === cleanPoemId) {
+        unlinkedCount++;
+        return {
+          ...m,
+          poemId: null,
+          updatedAt: now
+        };
+      }
+      return m;
+    });
+
+    if (unlinkedCount > 0) {
+      this._writeManuscripts(updated);
+    }
+
+    return unlinkedCount;
   }
 }
 

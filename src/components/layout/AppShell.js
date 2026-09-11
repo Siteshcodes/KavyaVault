@@ -5,6 +5,7 @@
 
 import './layout.css';
 import '../manuscripts/manuscripts.css';
+import '../reader/reader.css';
 import { Navigation } from '../navigation/Navigation.js';
 import { renderPageHeader } from './PageHeader.js';
 import { renderEmptyState } from './EmptyState.js';

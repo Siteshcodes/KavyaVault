@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-257%2F257%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-283%2F283%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -188,7 +188,9 @@ KavyaVault/
     ├── test_hardening.js        # Release gate, XSS, quota, non-destructive reads (26 tests)
     ├── test_manuscripts.js      # Manuscript preservation, immutability, migration (34 tests)
     ├── test_manuscripts_capture.js # Capture intake, byte preservation, quota resilience (30 tests)
-    └── test_manuscript_transform.js # Non-destructive rotation, interactive crop, immutability (36 tests)
+    ├── test_manuscript_transform.js # Non-destructive rotation, interactive crop, immutability (36 tests)
+    ├── test_manuscript_gallery.js # Dedicated gallery route, thumbnails, filtering (26 tests)
+    └── test_manuscript_poem_linking.js # Manuscript ↔ poem linking, referential integrity (26 tests)
 ```
 
 ---
@@ -202,7 +204,7 @@ KavyaVault features a 100% reproducible, standalone automated test suite execute
 npm test
 ```
 
-### Test Suite Summary (257 / 257 Tests Passing — 100% Pass Rate):
+### Test Suite Summary (283 / 283 Tests Passing — 100% Pass Rate):
 | Test Suite | Test File | Test Count | Key Verification Areas |
 |---|---|:---:|---|
 | **Local Persistence** | `test_persistence.js` | **10** | Storage adapter, serialization, error classification |
@@ -217,7 +219,8 @@ npm test
 | **Manuscript Capture & Import** | `test_manuscripts_capture.js` | **30** | Intake validation, lossless bytes, quota handling, preview safety |
 | **Non-Destructive Transformation** | `test_manuscript_transform.js` | **36** | Rotation (0/90/180/270), user-selectable mouse/touch crop, coordinate mapping, byte immutability, versioning, tabs, reset |
 | **Manuscript Gallery & Reader** | `test_manuscript_gallery.js` | **26** | Dedicated gallery route (`/manuscripts`), thumbnail resolution (derived prioritized over original), deterministic title/status/source filtering, XSS escaping, prev/next sequential navigation, image dimensions |
-| **TOTAL** | | **257 / 257** | **0 Failures (100% Success)** |
+| **Manuscript ↔ Poem Linking** | `test_manuscript_poem_linking.js` | **26** | Explicit linking (`manuscript.poemId`), safe unlinking, poem existence validation, one-to-many relationship, cascade cleanup on poem delete, archival byte immutability, reader UI integration |
+| **TOTAL** | | **283 / 283** | **0 Failures (100% Success)** |
 
 ---
 
@@ -277,9 +280,16 @@ Phase 2 focuses on **manuscript preservation** — the ability to capture, store
   - **Deterministic Filtering:** Real-time search by title, notes, and filename, alongside dropdown filters for transcription status (`अप्रतिलिपिबद्ध`, `प्रारूप`, `प्रमाणित`) and provenance source (`हस्तलिखित पांडुलिपि`, `स्कैन`, `कैमरा`), plus one-click filter reset.
   - **Archival Reader:** Dedicated reader view featuring direct back navigation to the gallery (`/manuscripts`), sequential previous/next manuscript browsing, permanent original vs. derived view tabs with disabled state and reassurance messaging when only the original is available, and dimension badge when safely available.
   - **Integrity & Security:** Strict byte-for-byte immutability of the original artifact, complete XSS sanitization of all user-controlled text, and graceful handling of corrupted or missing records. 26 dedicated tests passing (257/257 total tests passing: 131 Phase 1 baseline + 34 Task 2.1 + 30 Task 2.2 + 36 Task 2.3 + 26 Task 2.4).
+- ✅ **Task 2.5 — Manuscript ↔ Poem Linking**: Clean relationship management linking preserved handwritten manuscripts to digital poem records (`manuscript.poemId = poem.id`) without merging data models or duplicating content/bytes.
+  - **Data Model & Repository:** Pure ID-based association. Extended `ManuscriptRepository` with `linkToPoem`, `unlinkFromPoem`, `getLinkedPoem`, `getManuscriptsForPoem`, and `unlinkAllFromPoem`. Validates poem existence via `PoemRepository` before linking.
+  - **Referential Integrity & Safe Deletion:** Deleting a poem safely clears `poemId` on linked manuscripts without deleting manuscript records or touching image bytes. Deleting a manuscript leaves the poem intact. Archiving poems preserves the relationship.
+  - **One-to-Many Architecture:** A manuscript links to at most one poem; a poem can have multiple linked manuscripts.
+  - **Manuscript Reader (`ManuscriptView`):** Dedicated "इस पांडुलिपि से संबंधित कविता" section with unlinked state ("कविता से जोड़ें" CTA) and linked state (poem title, date, "कविता पढ़ें" navigation, and "संबंध हटाएँ" action). Accessible poem selection modal with live search.
+  - **Poem Reader (`PoemReader`):** Subtle "मूल पांडुलिपि" section at the base of the poem reading sanctuary displaying thumbnail, title, and "पांडुलिपि देखें" link to view historical evidence without cluttering the contemplative reading flow.
+  - **Strict Immutability & Security:** Raw image bytes (`originalManuscript.data` and `derivedManuscript.data`) remain 100% byte-for-byte immutable during linking/unlinking. All titles and metadata are fully escaped against XSS. 26 dedicated tests passing (283/283 total tests passing: 131 Phase 1 baseline + 34 Task 2.1 + 30 Task 2.2 + 36 Task 2.3 + 26 Task 2.4 + 26 Task 2.5).
 
 ### Upcoming:
-- **Task 2.5 — Manuscript Transcription Canvas**: Side-by-side editing canvas to transcribe handwritten manuscripts into clean Devanagari digital text.
+- **Task 2.6 — Manuscript Transcription Canvas**: Side-by-side editing canvas to transcribe handwritten manuscripts into clean Devanagari digital text.
 - **Chhand & Metre Analysis**: Automated Devanagari syllable and matra analysis for classical metres (*Doha, Chaupai, Rola, Soratha*).
 - **Import & Export Engine**: Clean data export and backup in JSON, Markdown, and formatted Plain Text.
 

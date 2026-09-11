@@ -4,8 +4,8 @@
  * Archive/Restore, Delete confirmation modal, and Edit routing.
  */
 
-import './reader.css';
 import { poemRepository } from '../../services/PoemRepository.js';
+import { manuscriptRepository } from '../../services/ManuscriptRepository.js';
 import { formatPoeticDate } from '../../utils/date.js';
 import { ROUTES } from '../../data/navigation.js';
 import { getIconSvg } from '../navigation/icons.js';
@@ -16,11 +16,13 @@ export class PoemReader {
    * @param {HTMLElement} options.container Root mounting container
    * @param {Object} options.router Client router instance
    * @param {string} options.poemId Unique poem ID
+   * @param {Object} [options.manuscriptRepo=manuscriptRepository] Manuscript repository instance
    */
-  constructor({ container, router, poemId }) {
+  constructor({ container, router, poemId, manuscriptRepo = manuscriptRepository }) {
     this.container = container;
     this.router = router;
     this.poemId = poemId;
+    this.manuscriptRepo = manuscriptRepo;
     this.poem = null;
     this.showDeleteModal = false;
 
@@ -294,6 +296,9 @@ export class PoemReader {
             ${this.renderStanzas(poem.body)}
           </main>
 
+          <!-- Linked Archival Manuscripts -->
+          ${this.renderLinkedManuscriptsSection()}
+
           <!-- Reader Footer: Dingbat & Timestamps -->
           <footer class="reader-footer">
             <div class="reader-ornament" aria-hidden="true">❦</div>
@@ -415,5 +420,74 @@ export class PoemReader {
       event.preventDefault();
       this.closeDeleteModal();
     }
+  }
+
+  /**
+   * Renders archival linked manuscripts section beneath poem verses
+   * @returns {string} HTML string
+   */
+  renderLinkedManuscriptsSection() {
+    let linkedManuscripts = [];
+    try {
+      const repo = this.manuscriptRepo || manuscriptRepository;
+      linkedManuscripts = repo.getManuscriptsForPoem
+        ? repo.getManuscriptsForPoem(this.poemId)
+        : (repo.getByPoemId ? repo.getByPoemId(this.poemId) : []);
+    } catch (_) {
+      linkedManuscripts = [];
+    }
+
+    if (!Array.isArray(linkedManuscripts) || linkedManuscripts.length === 0) {
+      return '';
+    }
+
+    return `
+      <section class="reader-linked-manuscripts-section" aria-labelledby="reader-linked-ms-title">
+        <div class="reader-linked-ms-header">
+          <span class="reader-linked-ms-icon" aria-hidden="true">📜</span>
+          <h2 id="reader-linked-ms-title" class="reader-linked-ms-title">
+            मूल पांडुलिपि${linkedManuscripts.length > 1 ? 'याँ' : ''}
+          </h2>
+        </div>
+
+        <div class="reader-linked-ms-grid">
+          ${linkedManuscripts.map(ms => {
+            const orig = ms.originalManuscript || {};
+            const derived = ms.derivedManuscript || {};
+            const raw = derived.data || orig.data || '';
+            const mime = derived.data ? (derived.mimeType || 'image/png') : (orig.mimeType || 'image/jpeg');
+            const imgSrc = raw.startsWith('data:') ? raw : (raw ? `data:${mime};base64,${raw}` : '');
+            const captureDate = orig.capturedAt ? formatPoeticDate(orig.capturedAt) : formatPoeticDate(ms.createdAt);
+
+            return `
+              <div class="reader-linked-ms-card" role="region" aria-label="पांडुलिपि: ${this.escapeHtml(ms.title)}">
+                <div class="reader-linked-ms-thumb-frame">
+                  ${imgSrc ? `
+                    <img src="${imgSrc}" alt="${this.escapeHtml(ms.title)}" class="reader-linked-ms-thumb" />
+                  ` : `
+                    <span class="reader-linked-ms-thumb-fallback">📜</span>
+                  `}
+                </div>
+                <div class="reader-linked-ms-info">
+                  <h3 class="reader-linked-ms-name">${this.escapeHtml(ms.title || 'शीर्षकहीन पांडुलिपि')}</h3>
+                  <span class="reader-linked-ms-date">${captureDate}</span>
+                </div>
+                <div class="reader-linked-ms-action">
+                  <a
+                    href="/manuscripts/${encodeURIComponent(ms.id)}"
+                    data-link
+                    class="btn-reader-view-manuscript"
+                    aria-label="${this.escapeHtml(ms.title)} पांडुलिपि देखें"
+                  >
+                    ${getIconSvg('archive', 'icon-inline')}
+                    <span>पांडुलिपि देखें</span>
+                  </a>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </section>
+    `;
   }
 }

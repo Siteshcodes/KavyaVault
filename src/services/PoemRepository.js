@@ -32,12 +32,14 @@ function generateUniqueId() {
 
 export class PoemRepository {
   /**
-   * @param {import('./storage/IStorageAdapter.js').IStorageAdapter} adapter
+   * @param {import('./storage/IStorageAdapter.js').IStorageAdapter} [adapter=null]
    * @param {import('./CollectionRepository.js').CollectionRepository} [collectionRepo=null]
+   * @param {import('./ManuscriptRepository.js').ManuscriptRepository} [manuscriptRepo=null]
    */
-  constructor(adapter = null, collectionRepo = null) {
+  constructor(adapter = null, collectionRepo = null, manuscriptRepo = null) {
     this.adapter = adapter || new LocalStorageAdapter();
     this.collectionRepo = collectionRepo || new CollectionRepository(this.adapter);
+    this.manuscriptRepo = manuscriptRepo;
   }
 
   /**
@@ -348,6 +350,30 @@ export class PoemRepository {
     try {
       if (this.collectionRepo && typeof this.collectionRepo.removePoemFromAll === 'function') {
         this.collectionRepo.removePoemFromAll(id);
+      }
+    } catch {
+      // Safe fallback
+    }
+
+    // Safely unlink any manuscripts pointing to this deleted poem
+    try {
+      if (this.manuscriptRepo && typeof this.manuscriptRepo.unlinkAllFromPoem === 'function') {
+        this.manuscriptRepo.unlinkAllFromPoem(id);
+      } else {
+        const raw = this.adapter.get(STORAGE_KEYS.MANUSCRIPTS);
+        if (Array.isArray(raw)) {
+          let changed = false;
+          const updated = raw.map(m => {
+            if (m && m.poemId === id) {
+              changed = true;
+              return { ...m, poemId: null, updatedAt: new Date().toISOString() };
+            }
+            return m;
+          });
+          if (changed) {
+            this.adapter.set(STORAGE_KEYS.MANUSCRIPTS, updated);
+          }
+        }
       }
     } catch {
       // Safe fallback
