@@ -265,6 +265,13 @@ export class ManuscriptRepository {
           { status: transcription.status, allowed: VALID_TRANSCRIPTION_STATUSES }
         );
       }
+
+      if (transcription.status === 'verified' && transcription.text !== undefined && transcription.text.trim() === '') {
+        throw new StorageError(
+          'प्रमाणित स्थिति (verified) के लिए सार्थक प्रतिलिपि पाठ अनिवार्य है।',
+          StorageErrorCode.VALIDATION_ERROR
+        );
+      }
     }
 
     if (transcription.verifiedAt !== undefined && transcription.verifiedAt !== null) {
@@ -661,47 +668,97 @@ export class ManuscriptRepository {
    * Updates the digital transcription of a manuscript.
    *
    * PRESERVATION GUARANTEE: This method will NEVER modify the originalManuscript
-   * artifact data. It only updates the transcription text, status, and verifiedAt.
+   * or derivedManuscript artifact data. It only updates transcription text,
+   * status, and verifiedAt.
+   *
+   * Status lifecycle:
+   * - "untranscribed": initial state with no transcription.
+   * - "draft": actively being edited or unverified transcription.
+   * - "verified": confirmed transcription with ISO verifiedAt timestamp. Requires non-empty text.
+   * - Editing text of a verified transcription automatically drops status back to "draft"
+   *   and clears verifiedAt to null unless explicitly verified in the same call.
+   * - Transitioning to "draft" or "untranscribed" always clears verifiedAt.
    *
    * @param {string} id
    * @param {Object} transcription - May contain: text, status, verifiedAt
    * @returns {Object} Updated manuscript record (deep-cloned)
    */
   updateTranscription(id, transcription) {
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      throw new StorageError(
+        'पांडुलिपि आईडी (id) एक गैर-रिक्त स्ट्रिंग होनी चाहिए।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
     this._validateTranscriptionInput(transcription);
 
+    const cleanId = id.trim();
     const manuscripts = this._readManuscripts();
-    const index = manuscripts.findIndex(m => m && m.id === id);
+    const index = manuscripts.findIndex(m => m && m.id === cleanId);
 
     if (index === -1) {
       throw new StorageError(
-        `आईडी "${id}" वाली पांडुलिपि नहीं मिली।`,
+        `आईडी "${cleanId}" वाली पांडुलिपि नहीं मिली।`,
         StorageErrorCode.KEY_NOT_FOUND,
         null,
-        { id }
+        { id: cleanId }
       );
     }
 
     const current = manuscripts[index];
     const now = new Date().toISOString();
-
     const currentTranscription = current.transcription || { text: '', status: 'untranscribed', verifiedAt: null };
 
-    const updatedTranscription = {
-      text: transcription.text !== undefined ? transcription.text : currentTranscription.text,
-      status: transcription.status !== undefined ? transcription.status : currentTranscription.status,
-      verifiedAt: transcription.verifiedAt !== undefined ? transcription.verifiedAt : currentTranscription.verifiedAt
-    };
+    const newText = transcription.text !== undefined ? transcription.text : currentTranscription.text;
+    const isTextChanging = transcription.text !== undefined && transcription.text !== currentTranscription.text;
 
-    // Auto-set verifiedAt when status transitions to 'verified' and no explicit verifiedAt given
-    if (updatedTranscription.status === 'verified' && !updatedTranscription.verifiedAt) {
-      updatedTranscription.verifiedAt = now;
+    // Determine target status
+    let newStatus;
+    if (transcription.status !== undefined) {
+      newStatus = transcription.status;
+    } else if (isTextChanging) {
+      // Modifying text without explicit status transitions/downgrades to 'draft'
+      newStatus = 'draft';
+    } else {
+      newStatus = currentTranscription.status;
     }
+
+    // Verified status requires meaningful non-empty text
+    if (newStatus === 'verified') {
+      if (!newText || typeof newText !== 'string' || newText.trim() === '') {
+        throw new StorageError(
+          'प्रमाणित स्थिति (verified) के लिए सार्थक प्रतिलिपि पाठ अनिवार्य है।',
+          StorageErrorCode.VALIDATION_ERROR
+        );
+      }
+    }
+
+    // Manage verifiedAt timestamp
+    let newVerifiedAt = null;
+    if (newStatus === 'verified') {
+      if (transcription.verifiedAt !== undefined) {
+        newVerifiedAt = transcription.verifiedAt;
+      } else if (currentTranscription.status === 'verified' && !isTextChanging && currentTranscription.verifiedAt) {
+        newVerifiedAt = currentTranscription.verifiedAt;
+      } else {
+        newVerifiedAt = now;
+      }
+    } else {
+      // Draft or untranscribed clears verifiedAt
+      newVerifiedAt = null;
+    }
+
+    const updatedTranscription = {
+      text: newText,
+      status: newStatus,
+      verifiedAt: newVerifiedAt
+    };
 
     const updated = {
       ...current,
       transcription: updatedTranscription,
-      // originalManuscript is NEVER touched here
+      // originalManuscript, derivedManuscript, transformation, poemId remain untouched
       updatedAt: now
     };
 

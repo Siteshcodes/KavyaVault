@@ -185,6 +185,19 @@ export class ManuscriptView {
   }
 
   /**
+   * Formats transcription status into literary Hindi
+   */
+  formatTranscriptionStatus(status) {
+    switch (status) {
+      case 'verified': return 'प्रमाणित';
+      case 'draft': return 'प्रारूप';
+      case 'untranscribed':
+      default:
+        return 'अप्रतिलिपिबद्ध';
+    }
+  }
+
+  /**
    * Helper to resolve the raw image source for the original manuscript
    */
   getOriginalImageSrc() {
@@ -934,11 +947,11 @@ export class ManuscriptView {
               </h1>
             </div>
 
-            <!-- Transcription Status (Untranscribed) -->
+            <!-- Transcription Status Badge -->
             <div>
-              <span class="manuscript-status-badge status-untranscribed" title="प्रतिलिपि की स्थिति">
+              <span class="manuscript-status-badge status-${trans.status || 'untranscribed'}" title="प्रतिलिपि की स्थिति">
                 ${getIconSvg('book', 'badge-icon')}
-                <span>${trans.status === 'untranscribed' ? 'अप्रतिलिपिबद्ध' : this.escapeHtml(trans.status)}</span>
+                <span>${this.formatTranscriptionStatus(trans.status)}</span>
               </span>
             </div>
           </header>
@@ -1240,6 +1253,9 @@ export class ManuscriptView {
             </div>
           ` : ''}
 
+          <!-- Digital Transcription Section -->
+          ${this.renderTranscriptionSection()}
+
           <!-- Linked Poem Archival Section -->
           ${this.renderLinkedPoemSection()}
         </article>
@@ -1348,6 +1364,92 @@ export class ManuscriptView {
           </div>
         </div>
       </div>
+    `;
+  }
+
+  /**
+   * Renders the digital transcription section with concise preview and workspace navigation
+   */
+  renderTranscriptionSection() {
+    const ms = this.manuscript;
+    if (!ms) return '';
+
+    const trans = ms.transcription || {};
+    const hasText = Boolean(trans.text && trans.text.trim().length > 0);
+    const statusLabel = this.formatTranscriptionStatus(trans.status);
+    const statusClass = trans.status || 'untranscribed';
+
+    let previewLines = [];
+    let wordCount = 0;
+    let charCount = 0;
+
+    if (hasText) {
+      const allLines = trans.text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      previewLines = allLines.slice(0, 4);
+      wordCount = trans.text.trim().split(/\s+/).filter(Boolean).length;
+      charCount = Array.from(trans.text).length;
+    }
+
+    const verifiedDate = trans.verifiedAt ? formatPoeticDate(trans.verifiedAt) : null;
+
+    return `
+      <section class="manuscript-transcription-section" aria-labelledby="manuscript-transcription-title">
+        <div class="manuscript-transcription-header">
+          <div style="display: flex; align-items: center; gap: var(--space-2);">
+            <span class="manuscript-transcription-icon" aria-hidden="true">✍️</span>
+            <h2 id="manuscript-transcription-title" class="manuscript-transcription-heading">
+              डिजिटल प्रतिलिपि (Devanagari Transcription)
+            </h2>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+            <span class="transcription-status-pill status-${statusClass}">
+              ${statusLabel}
+            </span>
+            ${verifiedDate ? `
+              <span class="transcription-verified-date" title="सत्यापन तिथि">
+                सत्यापित: ${verifiedDate}
+              </span>
+            ` : ''}
+          </div>
+        </div>
+
+        ${hasText ? `
+          <div class="manuscript-transcription-preview-box">
+            <div class="transcription-preview-lines">
+              ${previewLines.map(line => `
+                <div class="transcription-preview-line">${this.escapeHtml(line)}</div>
+              `).join('')}
+              ${previewLines.length < trans.text.split(/\r?\n/).filter(Boolean).length ? `
+                <div class="transcription-preview-more">...</div>
+              ` : ''}
+            </div>
+
+            <div class="transcription-preview-metrics">
+              <span>शब्द: <strong>${wordCount}</strong></span>
+              <span>वर्ण: <strong>${charCount}</strong></span>
+            </div>
+          </div>
+        ` : `
+          <div class="manuscript-transcription-empty">
+            <p class="transcription-empty-text">
+              अभी इस पांडुलिपि की कोई डिजिटल प्रतिलिपि दर्ज नहीं है। मूल छवि को देखकर प्रतिलिपि कक्ष में लेखन प्रारंभ करें।
+            </p>
+          </div>
+        `}
+
+        <div class="manuscript-transcription-actions">
+          <a
+            href="/manuscripts/${encodeURIComponent(ms.id)}/transcribe"
+            data-link
+            class="btn-open-transcription"
+            aria-label="${hasText ? 'प्रतिलिपि खोलें व संपादित करें' : 'प्रतिलिपि लिखें'}"
+          >
+            ${getIconSvg('quill', 'icon-inline')}
+            <span>${hasText ? 'प्रतिलिपि खोलें व संपादित करें' : 'प्रतिलिपि लिखें'}</span>
+          </a>
+        </div>
+      </section>
     `;
   }
 

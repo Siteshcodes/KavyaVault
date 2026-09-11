@@ -26,6 +26,7 @@ import { CollectionDetailView } from '../collections/CollectionDetailView.js';
 import { ManuscriptCapture } from '../manuscripts/ManuscriptCapture.js';
 import { ManuscriptView } from '../manuscripts/ManuscriptView.js';
 import { ManuscriptGallery } from '../manuscripts/ManuscriptGallery.js';
+import { ManuscriptTranscription } from '../manuscripts/ManuscriptTranscription.js';
 import { collectionRepository } from '../../services/CollectionRepository.js';
 import { poemRepository } from '../../services/PoemRepository.js';
 import { manuscriptRepository } from '../../services/ManuscriptRepository.js';
@@ -48,6 +49,7 @@ export class AppShell {
     this.activeManuscriptCapture = null;
     this.activeManuscriptView = null;
     this.activeManuscriptGallery = null;
+    this.activeManuscriptTranscription = null;
   }
 
   /**
@@ -147,6 +149,10 @@ export class AppShell {
     if (this.activeManuscriptGallery) {
       this.activeManuscriptGallery.unmount();
       this.activeManuscriptGallery = null;
+    }
+    if (this.activeManuscriptTranscription) {
+      this.activeManuscriptTranscription.unmount();
+      this.activeManuscriptTranscription = null;
     }
 
     // 1. Home / Foyer Screen
@@ -262,11 +268,26 @@ export class AppShell {
       return;
     }
 
-    // 13. Manuscript Archival Detail Screen (/manuscripts/:id)
+    // 13. Manuscript Transcription Workspace Screen (/manuscripts/:id/transcribe)
+    if (currentPath.startsWith('/manuscripts/') && currentPath.endsWith('/transcribe')) {
+      const manuscriptId = currentPath.slice('/manuscripts/'.length, -'/transcribe'.length);
+      if (manuscriptId && manuscriptId !== 'new') {
+        this.activeManuscriptTranscription = new ManuscriptTranscription({
+          container: this.contentContainer,
+          router: this.router,
+          manuscriptId
+        });
+        this.activeManuscriptTranscription.mount();
+        return;
+      }
+    }
+
+    // 14. Manuscript Archival Detail Screen (/manuscripts/:id)
     if (
       currentPath.startsWith('/manuscripts/') &&
       currentPath !== ROUTES.MANUSCRIPT_NEW &&
-      currentPath !== '/manuscripts/import'
+      currentPath !== '/manuscripts/import' &&
+      !currentPath.endsWith('/transcribe')
     ) {
       const manuscriptId = currentPath.slice('/manuscripts/'.length);
       this.activeManuscriptView = new ManuscriptView({

@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-283%2F283%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-315%2F315%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -27,6 +27,7 @@ KavyaVault enforces a strictly decoupled, layered domain architecture:
 │                   Presentation Layer (UI)                │
 │  LibraryView | PoetryEditor | PoemReader | SearchView     │
 │  CollectionsView | CollectionDetailView | FavoritesView   │
+│  ManuscriptGallery | ManuscriptView | ManuscriptTranscription│
 └────────────────────────────┬─────────────────────────────┘
                              │
                              ▼
@@ -37,6 +38,7 @@ KavyaVault enforces a strictly decoupled, layered domain architecture:
 │  - Draft Autosave/Recovery │  - Referential Integrity     │
 │  - Manuscript Preservation │  - Image Immutability        │
 │  - Query & Sorting Logic   │  - Cascade Deletion Cleanup  │
+│  - Manual Transcription    │  - Verified Status Lifecycle │
 └────────────────────────────┬─────────────────────────────┘
                              │
                              ▼
@@ -65,11 +67,11 @@ KavyaVault enforces a strictly decoupled, layered domain architecture:
 ```
 
 ### Core Architectural Principles:
-1. **Domain Isolation**: UI components never interact directly with `localStorage`. All state flows through domain repositories (`PoemRepository`, `CollectionRepository`) and the `IStorageAdapter` contract.
+1. **Domain Isolation**: UI components never interact directly with `localStorage`. All state flows through domain repositories (`PoemRepository`, `CollectionRepository`, `ManuscriptRepository`) and the `IStorageAdapter` contract.
 2. **Immutability Guarantee**: Every object returned from or written to repositories is deeply cloned using `structuredClone` (with JSON serialization fallback) to prevent accidental state mutation.
 3. **Non-Destructive Reads**: Encountering malformed or corrupted storage data returns safe fallbacks in memory without overwriting raw user storage, preserving recoverable data.
 4. **Schema Evolution & Downgrade Protection**: Managed by `MigrationManager`. If an existing installation detects data written by a newer schema version, it safely aborts migration rather than forcing an accidental downgrade.
-5. **Strict XSS Sanitization**: Dynamic user input (titles, verse stanzas, author names, tags, search queries) is safely sanitized and escaped across cards, the reader sanctuary, and search highlight marks.
+5. **Strict XSS Sanitization**: Dynamic user input (titles, verse stanzas, author names, tags, search queries, transcriptions) is safely sanitized and escaped across cards, the reader sanctuary, and search highlight marks.
 
 ---
 
@@ -142,7 +144,7 @@ KavyaVault/
 │   ├── services/
 │   │   ├── PoemRepository.js    # Poem domain repository, CRUD, drafts & lifecycle
 │   │   ├── CollectionRepository.js # Collections domain repository & cascade cleanup
-│   │   ├── ManuscriptRepository.js # Manuscript preservation, immutability enforcement
+│   │   ├── ManuscriptRepository.js # Manuscript preservation, immutability, transcription
 │   │   ├── SearchService.js     # Unicode normalization, scoring & highlights
 │   │   ├── router.js            # Client-side SPA hash/history router
 │   │   ├── theme.js             # 4-theme provider & system preference listener
@@ -165,7 +167,11 @@ KavyaVault/
 │   │   ├── collections/         # Collections index & collection detail view
 │   │   ├── favorites/           # Favorites view
 │   │   ├── archive/             # Archive view
-│   │   ├── manuscripts/         # Manuscript capture intake & non-destructive view
+│   │   ├── manuscripts/         # Manuscript capture, gallery, reader & transcription workspace
+│   │   │   ├── ManuscriptCapture.js      # Intake & lossless byte capture
+│   │   │   ├── ManuscriptGallery.js      # Archival gallery & filtering
+│   │   │   ├── ManuscriptView.js         # Detail view, transformation & linking
+│   │   │   └── ManuscriptTranscription.js # Manual transcription workspace
 │   │   └── settings/            # Theme switcher & preferences
 │   │
 │   ├── styles/
@@ -190,7 +196,8 @@ KavyaVault/
     ├── test_manuscripts_capture.js # Capture intake, byte preservation, quota resilience (30 tests)
     ├── test_manuscript_transform.js # Non-destructive rotation, interactive crop, immutability (36 tests)
     ├── test_manuscript_gallery.js # Dedicated gallery route, thumbnails, filtering (26 tests)
-    └── test_manuscript_poem_linking.js # Manuscript ↔ poem linking, referential integrity (26 tests)
+    ├── test_manuscript_poem_linking.js # Manuscript ↔ poem linking, referential integrity (26 tests)
+    └── test_manuscript_transcription.js # Manual transcription workspace, status lifecycle (32 tests)
 ```
 
 ---
@@ -204,7 +211,7 @@ KavyaVault features a 100% reproducible, standalone automated test suite execute
 npm test
 ```
 
-### Test Suite Summary (283 / 283 Tests Passing — 100% Pass Rate):
+### Test Suite Summary (315 / 315 Tests Passing — 100% Pass Rate):
 | Test Suite | Test File | Test Count | Key Verification Areas |
 |---|---|:---:|---|
 | **Local Persistence** | `test_persistence.js` | **10** | Storage adapter, serialization, error classification |
@@ -220,7 +227,8 @@ npm test
 | **Non-Destructive Transformation** | `test_manuscript_transform.js` | **36** | Rotation (0/90/180/270), user-selectable mouse/touch crop, coordinate mapping, byte immutability, versioning, tabs, reset |
 | **Manuscript Gallery & Reader** | `test_manuscript_gallery.js` | **26** | Dedicated gallery route (`/manuscripts`), thumbnail resolution (derived prioritized over original), deterministic title/status/source filtering, XSS escaping, prev/next sequential navigation, image dimensions |
 | **Manuscript ↔ Poem Linking** | `test_manuscript_poem_linking.js` | **26** | Explicit linking (`manuscript.poemId`), safe unlinking, poem existence validation, one-to-many relationship, cascade cleanup on poem delete, archival byte immutability, reader UI integration |
-| **TOTAL** | | **283 / 283** | **0 Failures (100% Success)** |
+| **Manuscript Transcription Workspace** | `test_manuscript_transcription.js` | **32** | Manual transcription canvas (`/manuscripts/:id/transcribe`), status lifecycle (`untranscribed` → `draft` → `verified`), text edit downgrade, verifiedAt clearing, quota resilience, Unicode/Devanagari rigor, reader preview, linked poem independence |
+| **TOTAL** | | **315 / 315** | **0 Failures (100% Success)** |
 
 ---
 
@@ -287,9 +295,17 @@ Phase 2 focuses on **manuscript preservation** — the ability to capture, store
   - **Manuscript Reader (`ManuscriptView`):** Dedicated "इस पांडुलिपि से संबंधित कविता" section with unlinked state ("कविता से जोड़ें" CTA) and linked state (poem title, date, "कविता पढ़ें" navigation, and "संबंध हटाएँ" action). Accessible poem selection modal with live search.
   - **Poem Reader (`PoemReader`):** Subtle "मूल पांडुलिपि" section at the base of the poem reading sanctuary displaying thumbnail, title, and "पांडुलिपि देखें" link to view historical evidence without cluttering the contemplative reading flow.
   - **Strict Immutability & Security:** Raw image bytes (`originalManuscript.data` and `derivedManuscript.data`) remain 100% byte-for-byte immutable during linking/unlinking. All titles and metadata are fully escaped against XSS. 26 dedicated tests passing (283/283 total tests passing: 131 Phase 1 baseline + 34 Task 2.1 + 30 Task 2.2 + 36 Task 2.3 + 26 Task 2.4 + 26 Task 2.5).
+- ✅ **Task 2.6 — Manuscript Transcription Workspace**: Dedicated manual transcription workspace (`/manuscripts/:id/transcribe`) allowing writers to transcribe handwritten poetry into clean Devanagari digital text.
+  - **Archival Immutability:** Original manuscript image bytes and derived working versions remain 100% byte-for-byte immutable.
+  - **Independent Transcription Model:** Transcription is a separate textual entity stored in `manuscript.transcription = { text, status, verifiedAt }`.
+  - **Status Lifecycle:** `untranscribed` (initial) → `draft` (active editing) → `verified` (confirmed with ISO timestamp). Editing a verified transcription automatically drops the status back to `draft` and clears `verifiedAt` to null, requiring deliberate re-verification.
+  - **Two-Column Archival Layout:** Side-by-side composition on desktop (left: original/derived image showcase; right: Devanagari writing canvas) and stacked column on mobile (390px) with minimum 48px touch targets and zero horizontal scroll.
+  - **Autosave Engine:** Non-blocking ~750ms debounced autosave with live status indicator (*"सहेजा जा रहा है…"*, *"सहेजा गया"*, *"सहेजने में त्रुटि"*), preserving textarea contents during storage quota limits.
+  - **Literary Metrics & Hindi Rigor:** Full Unicode preservation (Devanagari conjuncts, matras, nuktas, chandrabindu, danda, double danda, mixed Hindi/English, emojis) with Unicode-safe word, character, and line counters.
+  - **Poem Independence Guarantee:** Even if a manuscript is linked to a poem, transcription is completely independent and does NOT overwrite or synchronize with `poem.body`.
+  - **Strict Scope Boundaries:** Explicitly operates WITHOUT OCR, AI transcription, or automatic manuscript-to-poem text synchronization. 32 dedicated tests passing (315/315 total tests passing: 131 Phase 1 baseline + 34 Task 2.1 + 30 Task 2.2 + 36 Task 2.3 + 26 Task 2.4 + 26 Task 2.5 + 32 Task 2.6).
 
 ### Upcoming:
-- **Task 2.6 — Manuscript Transcription Canvas**: Side-by-side editing canvas to transcribe handwritten manuscripts into clean Devanagari digital text.
 - **Chhand & Metre Analysis**: Automated Devanagari syllable and matra analysis for classical metres (*Doha, Chaupai, Rola, Soratha*).
 - **Import & Export Engine**: Clean data export and backup in JSON, Markdown, and formatted Plain Text.
 
