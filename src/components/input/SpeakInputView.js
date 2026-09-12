@@ -277,8 +277,8 @@ export class SpeakInputView {
         <!-- Header & Breadcrumbs -->
         <header class="speak-view-header">
           <div class="speak-header-left">
-            <a href="#${ROUTES.INPUT}" class="speak-back-link" id="link-back-to-input" aria-label="इनपुट विकल्पों पर वापस जाएं">
-              ← इनपुट विकल्प
+            <a href="${ROUTES.INPUT_MODES}" data-link class="speak-back-link" id="link-back-to-input" aria-label="काव्य सृजन माध्यम पर वापस जाएं">
+              ← अन्य तरीका चुनें
             </a>
             <h1 class="speak-view-title">
               बोलकर लिखें <span class="hindi-badge">ध्वनि माध्यम</span>
@@ -304,7 +304,7 @@ export class SpeakInputView {
         <div class="speak-privacy-banner" role="note">
           <span class="privacy-icon">🛡️</span>
           <span class="privacy-text">
-            <strong>पूर्णतः निजी:</strong> यह सुविधा केवल आपके ब्राउज़र की मूल वाक् पहचान (Web Speech API) का उपयोग करती है। कोई भी ऑडियो या पाठ किसी बाह्य AI या क्लाउड सेवा को नहीं भेजा जाता।
+            <strong>पूर्णतः निजी:</strong> काव्यकलश इस सुविधा के लिए किसी बाहरी AI या क्लाउड API को सीधे कॉल नहीं करता। यह सुविधा केवल आपके ब्राउज़र की मूल वाक् पहचान (Web Speech API) का उपयोग करती है। कोई भी ऑडियो या पाठ किसी बाह्य AI या क्लाउड सेवा को नहीं भेजा जाता।
           </span>
         </div>
 
@@ -412,6 +412,19 @@ export class SpeakInputView {
   }
 
   bindEvents() {
+    const backLink = this.container.querySelector('#link-back-to-input');
+    if (backLink) {
+      backLink.addEventListener('click', (e) => {
+        if (this.adapter && this.adapter.isListening()) {
+          this.adapter.stop();
+        }
+        if (this.router && typeof this.router.navigate === 'function') {
+          e.preventDefault();
+          this.router.navigate(ROUTES.INPUT_MODES);
+        }
+      });
+    }
+
     const micBtn = this.container.querySelector('#btn-mic-toggle');
     if (micBtn) {
       micBtn.addEventListener('click', () => this._handleMicToggle());

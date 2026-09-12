@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-524%2F524%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-541%2F541%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -370,6 +370,15 @@ Phase 3 expands KavyaVault from a typing-only workflow into a multi-modal creati
   - **Validation & Non-Persistent Draft Handoff:** Empty or whitespace transcriptions are blocked with clear Hindi guidance. "कविता के रूप में उपयोग करें" constructs a non-persistent draft (`source: 'speak'`, `metadata: { language }`) and navigates to `PoetryEditor` without premature persistence.
   - **Full Unicode Devanagari Integrity:** Complex conjuncts (`क्ष, त्र, ज्ञ, श्र, द्व, द्घ, हृ`), nuktas, matras, chandrabindu, virama, and punctuation survive faithfully.
   - **Comprehensive Verification:** 67 dedicated automated tests added in `test_speak_to_poem.js` (524/524 total tests passing: 131 Phase 1 baseline + 261 Phase 2 baseline + 42 Task 3.1 + 23 Task 3.2 + 67 Task 3.3).
+
+- ✅ **Task 3.4 — Unified Modern Input UX**: Seamless integration and hardening uniting the three modern input modes (`Type`, `Scan`, `Speak`) under a single coherent KavyaVault experience.
+  - **Canonical `/input` Entry Point:** All modern input flows originate from `/input`, offering clear Hindi-first options: *लिखें (Type)*, *स्कैन करें (Scan)*, and *बोलें (Speak)* with consistent typography, badges, and card geometry.
+  - **Bidirectional Navigation:** Every workflow provides immediate and clear return paths to `/input` (*"← अन्य तरीका चुनें"* from Speak, *"काव्य सृजन माध्यम"* from Scan, and *"माध्यम"* from PoetryEditor).
+  - **Lifecycle Cleanup & Safety:** Exiting or returning from Speak halts active speech recognition and destroys the adapter immediately; exiting Scan revokes temporary object URLs and detaches file/camera/drag-drop listeners.
+  - **Technically Honest Privacy Copy:** Standardized, provable wording across views (*"काव्यकलश इस सुविधा के लिए किसी बाहरी AI या क्लाउड API को सीधे कॉल नहीं करता। आपकी रचनाएँ, पांडुलिपियाँ एवं ध्वनि इनपुट केवल आपके अपने उपकरण में सुरक्षित रहते हैं।"*).
+  - **Mobile & Desktop Responsive Design:** Thumb-friendly touch targets ($\ge 48\text{px}$) for all action buttons; single-column stacked layout on 390px mobile, 2-column on 768px tablet, and elegant, spacious 3-column literary grid on 1024px and 1440px desktop displays.
+  - **Draft Continuity & Zero Premature Persistence:** Navigating between modes, toggling details, or exiting never writes premature poem records to `PoemRepository`. Final poems are created strictly through the user's explicit "सहेजें" action inside `PoetryEditor`.
+  - **Comprehensive Verification:** 17 dedicated automated tests added in `test_modern_input_ux.js` (541/541 total tests passing: 131 Phase 1 baseline + 261 Phase 2 baseline + 42 Task 3.1 + 23 Task 3.2 + 67 Task 3.3 + 17 Task 3.4).
 
 ---
 

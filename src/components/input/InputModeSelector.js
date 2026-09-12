@@ -103,7 +103,7 @@ export class InputModeSelector {
           <div class="privacy-banner-content">
             <span class="privacy-banner-title">स्थानीय एवं एकांत रचना (100% Local Privacy)</span>
             <p class="privacy-banner-text">
-              आपकी रचनाएँ, पांडुलिपियाँ एवं ध्वनि इनपुट केवल आपके अपने उपकरण में सुरक्षित रहते हैं। कोई भी डेटा किसी बाह्य सर्वर, क्लाउड या एआई मॉडल को नहीं भेजा जाता।
+              काव्यकलश इस सुविधा के लिए किसी बाहरी AI या क्लाउड API को सीधे कॉल नहीं करता। आपकी रचनाएँ, पांडुलिपियाँ एवं ध्वनि इनपुट केवल आपके अपने उपकरण में सुरक्षित रहते हैं। कोई भी डेटा किसी बाह्य सर्वर, क्लाउड या एआई मॉडल को नहीं भेजा जाता।
             </p>
           </div>
         </div>
@@ -117,7 +117,7 @@ export class InputModeSelector {
               <div class="input-mode-icon" aria-hidden="true">✍️</div>
               <span class="input-mode-badge badge-ready">सक्रिय (Active)</span>
             </div>
-            <h2 class="input-mode-title">टाइप करें (Type)</h2>
+            <h2 class="input-mode-title">लिखें / टाइप करें (Type)</h2>
             <p class="input-mode-desc">
               पारंपरिक एवं एकांत लेखन कक्ष। कीबोर्ड अथवा टच-स्क्रीन द्वारा देवनागरी में सीधे अपनी रचना लिखें।
             </p>
@@ -132,15 +132,21 @@ export class InputModeSelector {
           <article class="input-mode-card ${this.currentMode === 'scan' ? 'active-mode' : ''}" role="listitem">
             <div class="input-mode-card-header">
               <div class="input-mode-icon" aria-hidden="true">📜</div>
-              <span class="input-mode-badge badge-contract">अनुबंध तैयार (Next)</span>
+              <div class="badge-group" style="display: flex; gap: 4px;">
+                <span class="input-mode-badge badge-ready">सक्रिय (Active)</span>
+                <span class="input-mode-badge badge-contract" style="display: none;" aria-hidden="true">अनुबंध तैयार (Next)</span>
+              </div>
             </div>
             <h2 class="input-mode-title">स्कैन करें (Scan)</h2>
             <p class="input-mode-desc">
               हस्तलिखित पांडुलिपि अथवा डायरी के पन्नों से पाठ प्राप्त कर सीधे काव्य प्रारूप में रूपांतरित करें।
             </p>
             <div class="input-mode-action">
-              <button type="button" class="btn-input-action btn-input-secondary" id="btn-mode-scan" aria-label="स्कैन माध्यम विवरण एवं अनुबंध देखें">
-                <span>अनुबंध एवं विवरण →</span>
+              <a href="${ROUTES.INPUT_SCAN}" data-link class="btn-input-action btn-input-primary" id="btn-mode-scan-direct" aria-label="स्कैन कक्ष में प्रवेश करें" style="text-decoration: none; margin-bottom: 8px;">
+                <span>स्कैन प्रारंभ करें →</span>
+              </a>
+              <button type="button" class="btn-input-action btn-input-secondary btn-contract-toggle" id="btn-mode-scan" aria-label="स्कैन माध्यम अनुबंध एवं विवरण देखें">
+                <span>अनुबंध एवं विवरण</span>
               </button>
             </div>
           </article>
@@ -151,14 +157,17 @@ export class InputModeSelector {
               <div class="input-mode-icon" aria-hidden="true">🎙️</div>
               <span class="input-mode-badge badge-ready">सक्रिय (Active)</span>
             </div>
-            <h2 class="input-mode-title">बोलकर लिखें (Speak)</h2>
+            <h2 class="input-mode-title">बोलें / बोलकर लिखें (Speak)</h2>
             <p class="input-mode-desc">
               अपनी वाणी में कविता का पाठ करें। ब्राउज़र की स्थानीय वाक्-पहचान द्वारा शब्द सीधे प्रारूप में दर्ज होंगे।
             </p>
             <div class="input-mode-action">
-              <a href="${ROUTES.INPUT_SPEAK}" data-link class="btn-input-action btn-input-primary" id="btn-mode-speak" aria-label="बोलकर लिखें कक्ष में प्रवेश करें" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+              <a href="${ROUTES.INPUT_SPEAK}" data-link class="btn-input-action btn-input-primary" id="btn-mode-speak" aria-label="बोलकर लिखें कक्ष में प्रवेश करें" style="text-decoration: none;">
                 <span>बोलना प्रारंभ करें →</span>
               </a>
+              <button type="button" class="btn-input-action btn-input-secondary btn-contract-toggle" id="btn-mode-speak-details" aria-label="ध्वनि माध्यम अनुबंध एवं विवरण देखें" style="margin-top: 8px;">
+                <span>अनुबंध एवं विवरण</span>
+              </button>
             </div>
           </article>
 
@@ -288,17 +297,34 @@ export class InputModeSelector {
       return;
     }
 
-    // Scan mode card button
+    // Scan mode card button (details toggle)
     if (target.id === 'btn-mode-scan') {
       event.preventDefault();
       this.setMode('scan');
       return;
     }
 
-    // Speak mode card button
-    if (target.id === 'btn-mode-speak') {
+    // Speak mode details toggle
+    if (target.id === 'btn-mode-speak-details') {
       event.preventDefault();
       this.setMode('speak');
+      return;
+    }
+
+    // Direct scan button
+    if (target.id === 'btn-mode-scan-direct') {
+      event.preventDefault();
+      this.router.navigate(ROUTES.INPUT_SCAN);
+      return;
+    }
+
+    // Speak mode card button
+    if (target.id === 'btn-mode-speak') {
+      // If anchor, allow default or navigate via router
+      if (this.router && typeof this.router.navigate === 'function') {
+        event.preventDefault();
+        this.router.navigate(ROUTES.INPUT_SPEAK);
+      }
       return;
     }
 
