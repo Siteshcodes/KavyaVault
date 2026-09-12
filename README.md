@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-355%2F355%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-392%2F392%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -39,6 +39,7 @@ KavyaVault enforces a strictly decoupled, layered domain architecture:
 │  - Manuscript Preservation │  - Image Immutability        │
 │  - Query & Sorting Logic   │  - Cascade Deletion Cleanup  │
 │  - Manual Transcription    │  - Verified Status Lifecycle │
+│  - Provenance & Archival   │  - Canonical Source Enums    │
 └────────────────────────────┬─────────────────────────────┘
                              │
                              ▼
@@ -71,7 +72,7 @@ KavyaVault enforces a strictly decoupled, layered domain architecture:
 2. **Immutability Guarantee**: Every object returned from or written to repositories is deeply cloned using `structuredClone` (with JSON serialization fallback) to prevent accidental state mutation.
 3. **Non-Destructive Reads**: Encountering malformed or corrupted storage data returns safe fallbacks in memory without overwriting raw user storage, preserving recoverable data.
 4. **Schema Evolution & Downgrade Protection**: Managed by `MigrationManager`. If an existing installation detects data written by a newer schema version, it safely aborts migration rather than forcing an accidental downgrade.
-5. **Strict XSS Sanitization**: Dynamic user input (titles, verse stanzas, author names, tags, search queries, transcriptions) is safely sanitized and escaped across cards, the reader sanctuary, and search highlight marks.
+5. **Strict XSS Sanitization**: Dynamic user input (titles, verse stanzas, author names, tags, search queries, transcriptions, provenance notes) is safely sanitized and escaped across cards, the reader sanctuary, and search highlight marks.
 
 ---
 
@@ -198,7 +199,8 @@ KavyaVault/
     ├── test_manuscript_gallery.js # Dedicated gallery route, thumbnails, filtering (26 tests)
     ├── test_manuscript_poem_linking.js # Manuscript ↔ poem linking, referential integrity (26 tests)
     ├── test_manuscript_transcription.js # Manual transcription workspace, status lifecycle (32 tests)
-    └── test_manuscript_versioning.js # Lightweight version history, restore audit trail (40 tests)
+    ├── test_manuscript_versioning.js # Lightweight version history, restore audit trail (40 tests)
+    └── test_manuscript_metadata.js # Archival metadata, provenance hardening, migration (37 tests)
 ```
 
 ---
@@ -212,7 +214,7 @@ KavyaVault features a 100% reproducible, standalone automated test suite execute
 npm test
 ```
 
-### Test Suite Summary (355 / 355 Tests Passing — 100% Pass Rate):
+### Test Suite Summary (392 / 392 Tests Passing — 100% Pass Rate):
 | Test Suite | Test File | Test Count | Key Verification Areas |
 |---|---|:---:|---|
 | **Local Persistence** | `test_persistence.js` | **10** | Storage adapter, serialization, error classification |
@@ -230,7 +232,8 @@ npm test
 | **Manuscript ↔ Poem Linking** | `test_manuscript_poem_linking.js` | **26** | Explicit linking (`manuscript.poemId`), safe unlinking, poem existence validation, one-to-many relationship, cascade cleanup on poem delete, archival byte immutability, reader UI integration |
 | **Manuscript Transcription Workspace** | `test_manuscript_transcription.js` | **32** | Manual transcription canvas (`/manuscripts/:id/transcribe`), status lifecycle (`untranscribed` → `draft` → `verified`), text edit downgrade, verifiedAt clearing, quota resilience, Unicode/Devanagari rigor, reader preview, linked poem independence |
 | **Manuscript & Transcription Version History** | `test_manuscript_versioning.js` | **40** | Lightweight version snapshots, restore flow creating new versions, status lifecycle preservation, duplicate save protection, 25-version cap, immutability, quota resilience |
-| **TOTAL** | | **355 / 355** | **0 Failures (100% Success)** |
+| **Archival Metadata & Provenance** | `test_manuscript_metadata.js` | **37** | Provenance normalization, non-destructive legacy migration, canonical kebab-case source & acquisition method enums with legacy aliases, distinct semantic date separation, metadata editing modal, archival record UI, reassurance blocks, byte immutability, XSS escaping |
+| **TOTAL** | | **392 / 392** | **0 Failures (100% Success)** |
 
 ---
 
@@ -315,6 +318,14 @@ Phase 2 focuses on **manuscript preservation** — the ability to capture, store
   - **UI History Panel & Modal Workflows:** Collapsible "प्रतिलिपि इतिहास" panel, read-only version preview dialogs, and explicit restore confirmation dialogs explaining audit guarantees.
   - **Poem Independence:** Creating or restoring versions never alters `poem.title`, `poem.body`, or `manuscript.poemId`.
   - **Strict Boundaries:** Explicitly operates WITHOUT OCR, AI transcription, AI-generated summaries, or cloud sync. 40 dedicated tests passing (355/355 total tests passing: 131 Phase 1 baseline + 34 Task 2.1 + 30 Task 2.2 + 36 Task 2.3 + 26 Task 2.4 + 26 Task 2.5 + 32 Task 2.6 + 40 Task 2.7).
+- ✅ **Task 2.8 — Archive Metadata & Provenance Hardening**: Hardened archival metadata and provenance tracking for handwritten manuscripts.
+  - **Five-Layer Archival Separation:** Strict domain boundary between (1) Original Artifact (immutable historical evidence bytes), (2) Derived Artifact (non-destructive transformations), (3) Transcription (digital text & verified status lifecycle), (4) History (monotonic snapshots), and (5) Provenance (archival context & origin).
+  - **Controlled Provenance Schema:** Standardized canonical kebab-case source enums (`handwritten-manuscript`, `scanned-document`, `camera-capture`, `imported-image`, `other`) and acquisition methods (`notebook-scan`, `mobile-camera`, `desktop-upload`, `imported-file`, `other`) with full backward-compatible support for legacy aliases.
+  - **Non-Destructive Migration:** Legacy manuscripts missing provenance fields safely normalize without overwriting raw user records or fabricating artificial dates, locations, or identities.
+  - **Semantic Date Separation:** Strict demarcation between `originalManuscript.capturedAt` (photo intake), `provenance.recordedAt` (historical event date), `createdAt` (record inception), `updatedAt` (record modification), `archival.lastVerifiedAt` (verified transcription timestamp), and `archival.lastTranscribedAt` (transcription edit timestamp).
+  - **Archival Integrity & Reassurance UI:** Dedicated "अभिलेखीय विवरण" section in `ManuscriptView` featuring museum-grade metadata display, clear reassuring guidance (*"मूल पांडुलिपि सुरक्षित है — अभिलेखीय विवरण बदलने से मूल छवि प्रभावित नहीं होती।"*), linked poem navigation, verified transcription status, and an accessible metadata edit modal dialog (`role="dialog"`, `aria-modal="true"`, Escape dismissal, >=48px touch targets).
+  - **Preservation Guarantees:** Metadata edits and provenance updates NEVER touch, compress, or alter raw image artifact bytes (`originalManuscript.data` or `derivedManuscript.data`).
+  - **Strict Boundaries:** Zero OCR, zero AI, zero EXIF/GPS scraping, zero cloud sync, and 100% strict XSS escaping. 37 dedicated tests passing (392/392 total tests passing: 131 Phase 1 baseline + 34 Task 2.1 + 30 Task 2.2 + 36 Task 2.3 + 26 Task 2.4 + 26 Task 2.5 + 32 Task 2.6 + 40 Task 2.7 + 37 Task 2.8).
 
 ### Upcoming:
 - **Chhand & Metre Analysis**: Automated Devanagari syllable and matra analysis for classical metres (*Doha, Chaupai, Rola, Soratha*).

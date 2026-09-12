@@ -2485,3 +2485,211 @@
     justify-content: center;
   }
 }
+
+/* ==========================================================================
+   Task 2.8 — Archive Metadata & Provenance Hardening
+   ========================================================================== */
+
+.manuscript-archival-record-section {
+  margin-top: var(--space-8);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+}
+
+.archival-record-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.archival-record-heading {
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.btn-edit-metadata-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: 0 var(--space-4);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  border-radius: var(--radius-md);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-edit-metadata-action:hover {
+  border-color: var(--color-accent-gold);
+  background: var(--color-bg-tertiary);
+}
+
+.btn-edit-metadata-action:focus-visible {
+  outline: 2px solid var(--color-accent-gold);
+  outline-offset: 2px;
+}
+
+.archival-reassurance-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: rgba(184, 134, 11, 0.08);
+  border: 1px solid rgba(184, 134, 11, 0.22);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.reassurance-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.reassurance-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+}
+
+.reassurance-title {
+  font-weight: 600;
+  color: var(--color-accent-gold);
+}
+
+.reassurance-text {
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption);
+}
+
+.archival-details-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .archival-details-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .archival-details-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.archival-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.archival-detail-label {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.archival-detail-value {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text-primary);
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.archival-poem-item {
+  grid-column: 1 / -1;
+}
+
+.archival-poem-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-accent-gold);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.archival-poem-link:hover {
+  text-decoration: underline;
+}
+
+.btn-read-poem-mini {
+  display: inline-block;
+  padding: 2px var(--space-2);
+  background: rgba(184, 134, 11, 0.15);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-caption);
+  color: var(--color-accent-gold);
+  margin-left: var(--space-2);
+}
+
+.archival-unlinked-label {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.archival-verified-detail {
+  display: block;
+  font-size: var(--text-caption);
+  color: #2e7d32;
+  margin-top: var(--space-1);
+}
+
+.archival-notes-wrapper {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.archival-notes-label {
+  font-family: var(--font-display);
+  font-size: var(--text-h4);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-2) 0;
+}
+
+.archival-notes-content {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  white-space: pre-wrap;
+}
+
+/* Metadata editor modal responsive styling */
+.manuscript-metadata-dialog {
+  max-width: 560px;
+  width: 100%;
+}
+
+@media (max-width: 480px) {
+  .manuscript-metadata-dialog {
+    padding: var(--space-4);
+  }
+}
+

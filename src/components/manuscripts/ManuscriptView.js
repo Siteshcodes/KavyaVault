@@ -64,6 +64,11 @@ export class ManuscriptView {
     this.showClearDerivedModal = false;
     this.showLinkModal = false;
     this.showUnlinkModal = false;
+    this.showEditMetadataModal = false;
+
+    // Metadata editing state
+    this.metadataEditError = null;
+    this.editingMetadata = null;
 
     // Linking state
     this.poemSearchQuery = '';
@@ -177,10 +182,43 @@ export class ManuscriptView {
    */
   formatSource(source) {
     switch (source) {
-      case 'handwritten_manuscript': return 'हस्तलिखित पांडुलिपि';
-      case 'scanned_document': return 'स्कैन किया गया दस्तावेज़';
-      case 'photo_capture': return 'कैमरा तस्वीर';
-      default: return source || 'अभिलेख';
+      case 'handwritten-manuscript':
+      case 'handwritten_manuscript':
+      case 'handwritten':
+        return 'हस्तलिखित पांडुलिपि';
+      case 'scanned-document':
+      case 'scanned_document':
+        return 'स्कैन किया गया दस्तावेज़';
+      case 'camera-capture':
+      case 'photo_capture':
+        return 'कैमरा तस्वीर';
+      case 'imported-image':
+      case 'imported_image':
+        return 'आयातित छवि';
+      case 'other':
+        return 'अन्य स्रोत';
+      default:
+        return source || 'अभिलेख';
+    }
+  }
+
+  /**
+   * Formats acquisition method identifier into literary Hindi label
+   */
+  formatAcquisitionMethod(method) {
+    switch (method) {
+      case 'notebook-scan':
+        return 'डायरी/पुस्तिका स्कैन';
+      case 'mobile-camera':
+        return 'मोबाइल कैमरा';
+      case 'desktop-upload':
+        return 'डेस्कटॉप अपलोड';
+      case 'imported-file':
+        return 'आयातित फ़ाइल';
+      case 'other':
+        return 'अन्य माध्यम';
+      default:
+        return method || 'अनिर्दिष्ट';
     }
   }
 
@@ -672,6 +710,101 @@ export class ManuscriptView {
       }
       return;
     }
+
+    // 22. Open Edit Metadata Modal
+    const openEditMetaBtn = target.closest('[data-action="open-edit-metadata-modal"]');
+    if (openEditMetaBtn) {
+      e.preventDefault();
+      this.showEditMetadataModal = true;
+      this.metadataEditError = null;
+      this.editingMetadata = null;
+      this.update();
+      return;
+    }
+
+    // 23. Cancel Edit Metadata
+    const cancelEditMetaBtn = target.closest('[data-action="cancel-edit-metadata"]');
+    if (cancelEditMetaBtn) {
+      e.preventDefault();
+      this.showEditMetadataModal = false;
+      this.metadataEditError = null;
+      this.editingMetadata = null;
+      this.update();
+      return;
+    }
+
+    // 24. Confirm Save Metadata
+    const confirmSaveMetaBtn = target.closest('[data-action="confirm-save-metadata"]');
+    if (confirmSaveMetaBtn) {
+      e.preventDefault();
+      this.handleSaveMetadata();
+      return;
+    }
+  }
+
+  /**
+   * Saves archival metadata through ManuscriptRepository
+   */
+  handleSaveMetadata() {
+    const sourceEl = this.container.querySelector('#meta-source-input');
+    const methodEl = this.container.querySelector('#meta-method-input');
+    const recordedEl = this.container.querySelector('#meta-recorded-at-input');
+    const recordedByEl = this.container.querySelector('#meta-recorded-by-input');
+    const locationEl = this.container.querySelector('#meta-location-input');
+    const notesEl = this.container.querySelector('#meta-notes-input');
+
+    const source = sourceEl ? sourceEl.value : (this.manuscript?.provenance?.source || 'handwritten-manuscript');
+    const acquisitionMethod = (methodEl && methodEl.value.trim()) ? methodEl.value.trim() : null;
+    let recordedAt = null;
+    if (recordedEl && recordedEl.value) {
+      const d = new Date(recordedEl.value);
+      if (isNaN(d.getTime())) {
+        this.metadataEditError = 'अमान्य तिथि। कृपया मान्य तिथि चुनें।';
+        this.update();
+        return;
+      }
+      recordedAt = d.toISOString();
+    } else {
+      recordedAt = this.manuscript?.provenance?.recordedAt || null;
+    }
+    const recordedBy = (recordedByEl && recordedByEl.value.trim()) ? recordedByEl.value.trim() : null;
+    const location = (locationEl && locationEl.value.trim()) ? locationEl.value.trim() : null;
+    const notes = notesEl ? notesEl.value : '';
+
+    this.editingMetadata = {
+      source,
+      acquisitionMethod,
+      recordedAt,
+      recordedBy,
+      location,
+      notes
+    };
+
+    try {
+      const updated = this.repository.updateMetadata(this.manuscriptId, {
+        provenance: {
+          source,
+          acquisitionMethod,
+          recordedAt,
+          recordedBy,
+          location,
+          notes
+        }
+      });
+      this.manuscript = updated;
+      this.showEditMetadataModal = false;
+      this.metadataEditError = null;
+      this.editingMetadata = null;
+      this.update();
+    } catch (err) {
+      console.error('[ManuscriptView] Error saving metadata:', err);
+      if ((err instanceof StorageError && err.code === StorageErrorCode.QUOTA_EXCEEDED) || err.name === 'QuotaExceededError') {
+        this.metadataEditError = 'ब्राउज़र भंडारण सीमा (Storage Quota) समाप्त हो गई है।';
+      } else {
+        this.metadataEditError = err.message || 'अभिलेखीय विवरण सहेजने में त्रुटि हुई।';
+      }
+      this.update();
+    }
   }
 
   /**
@@ -756,6 +889,12 @@ export class ManuscriptView {
       } else if (this.showUnlinkModal) {
         e.preventDefault();
         this.showUnlinkModal = false;
+        this.update();
+      } else if (this.showEditMetadataModal) {
+        e.preventDefault();
+        this.showEditMetadataModal = false;
+        this.metadataEditError = null;
+        this.editingMetadata = null;
         this.update();
       }
     }
@@ -1245,13 +1384,8 @@ export class ManuscriptView {
             ` : ''}
           </div>
 
-          <!-- Provenance Notes Section -->
-          ${prov.notes ? `
-            <div class="manuscript-notes-section">
-              <h2 class="manuscript-notes-heading">उद्गम व साहित्यिक संदर्भ</h2>
-              <div class="manuscript-notes-body">${this.escapeHtml(prov.notes)}</div>
-            </div>
-          ` : ''}
+          <!-- Archival Record Section (Task 2.8 Provenance Hardening) -->
+          ${this.renderArchivalRecordSection()}
 
           <!-- Digital Transcription Section -->
           ${this.renderTranscriptionSection()}
@@ -1271,6 +1405,9 @@ export class ManuscriptView {
 
         <!-- Unlink Poem Modal -->
         ${this.showUnlinkModal ? this.renderUnlinkModal() : ''}
+
+        <!-- Edit Archival Metadata Modal (Task 2.8) -->
+        ${this.showEditMetadataModal ? this.renderEditMetadataModal() : ''}
       </div>
     `;
   }
@@ -1736,6 +1873,373 @@ export class ManuscriptView {
               संबंध हटाएँ
             </button>
           </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Renders the complete archival metadata and provenance section (Task 2.8)
+   * @returns {string}
+   */
+  renderArchivalRecordSection() {
+    const ms = this.manuscript;
+    if (!ms) return '';
+    const prov = ms.provenance || {};
+    const orig = ms.originalManuscript || {};
+    const trans = ms.transcription || {};
+
+    let linkedPoem = null;
+    if (ms.poemId) {
+      try {
+        linkedPoem = this.repository.getLinkedPoem
+          ? this.repository.getLinkedPoem(this.manuscriptId)
+          : (this.poemRepo ? this.poemRepo.getById(ms.poemId) : null);
+      } catch (_) {
+        linkedPoem = null;
+      }
+    }
+
+    const sourceLabel = this.formatSource(prov.source);
+    const methodLabel = prov.acquisitionMethod ? this.formatAcquisitionMethod(prov.acquisitionMethod) : null;
+    const recordedDateStr = prov.recordedAt ? formatPoeticDate(prov.recordedAt) : 'अनिर्दिष्ट';
+    const capturedDateStr = orig.capturedAt ? formatPoeticDate(orig.capturedAt) : formatPoeticDate(ms.createdAt);
+    const createdDateStr = ms.createdAt ? formatPoeticDate(ms.createdAt) : 'सहेजा गया';
+    const updatedDateStr = ms.updatedAt ? formatPoeticDate(ms.updatedAt) : createdDateStr;
+
+    // Transcription verification metadata
+    const isVerified = trans.status === 'verified';
+    const verifiedDateStr = trans.verifiedAt ? formatPoeticDate(trans.verifiedAt) : null;
+    let versionInfoStr = '';
+    if (trans.currentVersionId && Array.isArray(ms.transcriptionHistory)) {
+      const activeVer = ms.transcriptionHistory.find(v => v && v.id === trans.currentVersionId);
+      if (activeVer && typeof activeVer.versionNumber === 'number') {
+        versionInfoStr = `संस्करण v${activeVer.versionNumber}`;
+      }
+    }
+
+    return `
+      <section class="manuscript-archival-record-section" aria-labelledby="archival-record-heading">
+        <div class="archival-record-header">
+          <div style="display: flex; align-items: center; gap: var(--space-2);">
+            <span class="archival-record-icon" aria-hidden="true">🏛️</span>
+            <h2 id="archival-record-heading" class="archival-record-heading">
+              अभिलेखीय विवरण
+            </h2>
+          </div>
+          <button
+            type="button"
+            class="btn-edit-metadata-action"
+            data-action="open-edit-metadata-modal"
+            aria-label="अभिलेखीय विवरण संपादित करें"
+            title="स्रोत, प्राप्ति माध्यम व टिप्पणियाँ बदलें"
+          >
+            ${getIconSvg('edit', 'icon-inline')}
+            <span>विवरण संपादित करें</span>
+          </button>
+        </div>
+
+        <!-- Archival Reassurance Block -->
+        <div class="archival-reassurance-card" role="note">
+          <div class="reassurance-icon" aria-hidden="true">🛡️</div>
+          <div class="reassurance-body">
+            <span class="reassurance-title">मूल पांडुलिपि सुरक्षित है</span>
+            <span class="reassurance-text">अभिलेखीय विवरण बदलने से मूल छवि प्रभावित नहीं होती।</span>
+          </div>
+        </div>
+
+        <!-- Archival Details Grid -->
+        <div class="archival-details-grid">
+          <div class="archival-detail-item">
+            <span class="archival-detail-label">स्रोत</span>
+            <span class="archival-detail-value">${this.escapeHtml(sourceLabel)}</span>
+          </div>
+
+          ${methodLabel ? `
+            <div class="archival-detail-item">
+              <span class="archival-detail-label">प्राप्ति का माध्यम</span>
+              <span class="archival-detail-value">${this.escapeHtml(methodLabel)}</span>
+            </div>
+          ` : ''}
+
+          <div class="archival-detail-item">
+            <span class="archival-detail-label">दर्ज की गई तिथि</span>
+            <span class="archival-detail-value">${this.escapeHtml(recordedDateStr)}</span>
+          </div>
+
+          <div class="archival-detail-item">
+            <span class="archival-detail-label">छवि सुरक्षित की गई</span>
+            <span class="archival-detail-value">${this.escapeHtml(capturedDateStr)}</span>
+          </div>
+
+          <div class="archival-detail-item">
+            <span class="archival-detail-label">अभिलेख बनाया गया</span>
+            <span class="archival-detail-value">${this.escapeHtml(createdDateStr)}</span>
+          </div>
+
+          <div class="archival-detail-item">
+            <span class="archival-detail-label">अंतिम परिवर्तन</span>
+            <span class="archival-detail-value">${this.escapeHtml(updatedDateStr)}</span>
+          </div>
+
+          ${prov.recordedBy ? `
+            <div class="archival-detail-item">
+              <span class="archival-detail-label">अभिलेखक</span>
+              <span class="archival-detail-value">${this.escapeHtml(prov.recordedBy)}</span>
+            </div>
+          ` : ''}
+
+          ${prov.location ? `
+            <div class="archival-detail-item">
+              <span class="archival-detail-label">स्थान</span>
+              <span class="archival-detail-value">${this.escapeHtml(prov.location)}</span>
+            </div>
+          ` : ''}
+
+          <div class="archival-detail-item archival-poem-item">
+            <span class="archival-detail-label">संबंधित कविता</span>
+            <span class="archival-detail-value">
+              ${linkedPoem ? `
+                <a
+                  href="/poems/${encodeURIComponent(linkedPoem.id)}"
+                  data-link
+                  class="archival-poem-link"
+                  aria-label="कविता पढ़ें: ${this.escapeHtml(linkedPoem.title)}"
+                >
+                  <span class="poem-link-title">${this.escapeHtml(linkedPoem.title)}</span>
+                  <span class="btn-read-poem-mini">कविता पढ़ें</span>
+                </a>
+              ` : `
+                <span class="archival-unlinked-label">अभी किसी कविता से संबद्ध नहीं</span>
+              `}
+            </span>
+          </div>
+
+          <div class="archival-detail-item archival-status-item">
+            <span class="archival-detail-label">प्रतिलिपि स्थिति</span>
+            <span class="archival-detail-value">
+              <span class="transcription-status-pill status-${trans.status || 'untranscribed'}">
+                ${this.formatTranscriptionStatus(trans.status)}
+              </span>
+              ${isVerified ? `
+                <span class="archival-verified-detail">
+                  ${verifiedDateStr ? `सत्यापित: ${this.escapeHtml(verifiedDateStr)}` : 'प्रमाणित'}
+                  ${versionInfoStr ? ` • ${this.escapeHtml(versionInfoStr)}` : ''}
+                </span>
+              ` : ''}
+            </span>
+          </div>
+        </div>
+
+        ${prov.notes ? `
+          <div class="manuscript-notes-section archival-notes-wrapper">
+            <h3 class="manuscript-notes-heading archival-notes-label">टिप्पणियाँ</h3>
+            <div class="manuscript-notes-body archival-notes-content">${this.escapeHtml(prov.notes)}</div>
+          </div>
+        ` : ''}
+      </section>
+    `;
+  }
+
+  /**
+   * Renders the compact metadata editing modal dialog (Task 2.8)
+   * @returns {string}
+   */
+  renderEditMetadataModal() {
+    const ms = this.manuscript;
+    const prov = ms?.provenance || {};
+
+    const currentSource = this.editingMetadata?.source !== undefined
+      ? this.editingMetadata.source
+      : (prov.source || 'handwritten-manuscript');
+
+    const currentMethod = this.editingMetadata?.acquisitionMethod !== undefined
+      ? this.editingMetadata.acquisitionMethod
+      : (prov.acquisitionMethod || '');
+
+    let initialDate = '';
+    const rawRecorded = this.editingMetadata?.recordedAt !== undefined
+      ? this.editingMetadata.recordedAt
+      : prov.recordedAt;
+    if (rawRecorded) {
+      try {
+        const d = new Date(rawRecorded);
+        if (!isNaN(d.getTime())) {
+          initialDate = d.toISOString().slice(0, 10);
+        }
+      } catch (_) {}
+    }
+
+    const currentNotes = this.editingMetadata?.notes !== undefined
+      ? this.editingMetadata.notes
+      : (prov.notes || '');
+
+    const currentRecordedBy = this.editingMetadata?.recordedBy !== undefined
+      ? this.editingMetadata.recordedBy
+      : (prov.recordedBy || '');
+
+    const currentLocation = this.editingMetadata?.location !== undefined
+      ? this.editingMetadata.location
+      : (prov.location || '');
+
+    return `
+      <div
+        class="modal-backdrop"
+        style="position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: var(--space-4); overflow-y: auto;"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-metadata-dialog-title"
+      >
+        <div
+          class="modal-dialog manuscript-metadata-dialog"
+          style="background: var(--color-bg-card); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); max-width: 540px; width: 100%; box-shadow: 0 16px 40px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto;"
+        >
+          <div class="metadata-dialog-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-3);">
+            <div style="display: flex; align-items: center; gap: var(--space-2);">
+              <span style="font-size: 1.25rem;" aria-hidden="true">🏛️</span>
+              <h3 id="edit-metadata-dialog-title" style="font-family: var(--font-display); font-size: var(--text-h3); color: var(--color-text-primary); margin: 0;">
+                अभिलेखीय विवरण संपादन
+              </h3>
+            </div>
+            <button
+              type="button"
+              class="btn-close-modal"
+              data-action="cancel-edit-metadata"
+              aria-label="संवाद बंद करें"
+              style="background: transparent; border: none; color: var(--color-text-muted); cursor: pointer; font-size: 1.2rem; min-width: 48px; min-height: 48px; display: inline-flex; align-items: center; justify-content: center;"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div class="archival-reassurance-card" role="note" style="margin-bottom: var(--space-4);">
+            <div class="reassurance-icon" aria-hidden="true">🛡️</div>
+            <div class="reassurance-body">
+              <span class="reassurance-title">मूल पांडुलिपि सुरक्षित है</span>
+              <span class="reassurance-text">अभिलेखीय विवरण बदलने से मूल छवि प्रभावित नहीं होती।</span>
+            </div>
+          </div>
+
+          ${this.metadataEditError ? `
+            <div class="metadata-error-banner" role="alert" style="background: rgba(198, 40, 40, 0.12); border: 1px solid var(--color-accent-terracotta); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-4); color: var(--color-accent-terracotta); font-size: var(--text-body-small);">
+              ${this.escapeHtml(this.metadataEditError)}
+            </div>
+          ` : ''}
+
+          <form id="manuscript-metadata-form" class="metadata-editor-form" style="display: flex; flex-direction: column; gap: var(--space-4);">
+            <!-- Source selection -->
+            <div class="form-group" style="display: flex; flex-direction: column; gap: var(--space-1);">
+              <label for="meta-source-input" style="font-family: var(--font-interface); font-size: var(--text-caption); font-weight: 600; color: var(--color-text-secondary);">
+                स्रोत (Source):
+              </label>
+              <select id="meta-source-input" class="form-select" aria-label="स्रोत चुनें" style="min-height: 48px; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border-subtle); background: var(--color-bg-primary); color: var(--color-text-primary); font-family: var(--font-interface); font-size: var(--text-body-small);">
+                <option value="handwritten-manuscript" ${currentSource === 'handwritten-manuscript' || currentSource === 'handwritten_manuscript' || currentSource === 'handwritten' ? 'selected' : ''}>हस्तलिखित पांडुलिपि (Handwritten Manuscript)</option>
+                <option value="scanned-document" ${currentSource === 'scanned-document' || currentSource === 'scanned_document' ? 'selected' : ''}>स्कैन किया गया दस्तावेज़ (Scanned Document)</option>
+                <option value="camera-capture" ${currentSource === 'camera-capture' || currentSource === 'photo_capture' ? 'selected' : ''}>कैमरा तस्वीर (Camera Capture)</option>
+                <option value="imported-image" ${currentSource === 'imported-image' || currentSource === 'imported_image' ? 'selected' : ''}>आयातित छवि (Imported Image)</option>
+                <option value="other" ${currentSource === 'other' ? 'selected' : ''}>अन्य स्रोत (Other)</option>
+              </select>
+            </div>
+
+            <!-- Acquisition Method selection -->
+            <div class="form-group" style="display: flex; flex-direction: column; gap: var(--space-1);">
+              <label for="meta-method-input" style="font-family: var(--font-interface); font-size: var(--text-caption); font-weight: 600; color: var(--color-text-secondary);">
+                प्राप्ति का माध्यम (Acquisition Method):
+              </label>
+              <select id="meta-method-input" class="form-select" aria-label="प्राप्ति का माध्यम चुनें" style="min-height: 48px; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border-subtle); background: var(--color-bg-primary); color: var(--color-text-primary); font-family: var(--font-interface); font-size: var(--text-body-small);">
+                <option value="" ${!currentMethod ? 'selected' : ''}>-- अनिर्दिष्ट (None) --</option>
+                <option value="notebook-scan" ${currentMethod === 'notebook-scan' ? 'selected' : ''}>डायरी/पुस्तिका स्कैन (Notebook Scan)</option>
+                <option value="mobile-camera" ${currentMethod === 'mobile-camera' ? 'selected' : ''}>मोबाइल कैमरा (Mobile Camera)</option>
+                <option value="desktop-upload" ${currentMethod === 'desktop-upload' ? 'selected' : ''}>डेस्कटॉप अपलोड (Desktop Upload)</option>
+                <option value="imported-file" ${currentMethod === 'imported-file' ? 'selected' : ''}>आयातित फ़ाइल (Imported File)</option>
+                <option value="other" ${currentMethod === 'other' ? 'selected' : ''}>अन्य माध्यम (Other)</option>
+              </select>
+            </div>
+
+            <!-- Recorded Date -->
+            <div class="form-group" style="display: flex; flex-direction: column; gap: var(--space-1);">
+              <label for="meta-recorded-at-input" style="font-family: var(--font-interface); font-size: var(--text-caption); font-weight: 600; color: var(--color-text-secondary);">
+                दर्ज की गई तिथि (Recorded Date):
+              </label>
+              <input
+                type="date"
+                id="meta-recorded-at-input"
+                class="form-input"
+                value="${this.escapeHtml(initialDate)}"
+                style="min-height: 48px; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border-subtle); background: var(--color-bg-primary); color: var(--color-text-primary); font-family: var(--font-interface); font-size: var(--text-body-small);"
+                aria-label="दर्ज की गई तिथि"
+              />
+            </div>
+
+            <!-- Optional recordedBy -->
+            <div class="form-group" style="display: flex; flex-direction: column; gap: var(--space-1);">
+              <label for="meta-recorded-by-input" style="font-family: var(--font-interface); font-size: var(--text-caption); font-weight: 600; color: var(--color-text-secondary);">
+                अभिलेखक (Recorded By - वैकल्पिक):
+              </label>
+              <input
+                type="text"
+                id="meta-recorded-by-input"
+                class="form-input"
+                placeholder="उदा. संग्रहकर्ता या अभिलेखक"
+                value="${this.escapeHtml(currentRecordedBy)}"
+                style="min-height: 48px; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border-subtle); background: var(--color-bg-primary); color: var(--color-text-primary); font-family: var(--font-interface); font-size: var(--text-body-small);"
+                aria-label="अभिलेखक का नाम"
+              />
+            </div>
+
+            <!-- Optional location -->
+            <div class="form-group" style="display: flex; flex-direction: column; gap: var(--space-1);">
+              <label for="meta-location-input" style="font-family: var(--font-interface); font-size: var(--text-caption); font-weight: 600; color: var(--color-text-secondary);">
+                स्थान (Location - वैकल्पिक):
+              </label>
+              <input
+                type="text"
+                id="meta-location-input"
+                class="form-input"
+                placeholder="उदा. वाराणसी, पारिवारिक संदूक"
+                value="${this.escapeHtml(currentLocation)}"
+                style="min-height: 48px; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border-subtle); background: var(--color-bg-primary); color: var(--color-text-primary); font-family: var(--font-interface); font-size: var(--text-body-small);"
+                aria-label="अभिलेखन स्थान"
+              />
+            </div>
+
+            <!-- Notes -->
+            <div class="form-group" style="display: flex; flex-direction: column; gap: var(--space-1);">
+              <label for="meta-notes-input" style="font-family: var(--font-interface); font-size: var(--text-caption); font-weight: 600; color: var(--color-text-secondary);">
+                टिप्पणियाँ व ऐतिहासिक संदर्भ (Notes):
+              </label>
+              <textarea
+                id="meta-notes-input"
+                class="form-textarea"
+                rows="3"
+                placeholder="पांडुलिपि के बारे में ऐतिहासिक या साहित्यिक टिप्पणियाँ..."
+                style="padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border-subtle); background: var(--color-bg-primary); color: var(--color-text-primary); font-family: var(--font-interface); font-size: var(--text-body-small); resize: vertical; min-height: 80px;"
+                aria-label="अभिलेखीय टिप्पणियाँ"
+              >${this.escapeHtml(currentNotes)}</textarea>
+            </div>
+
+            <!-- Footer action buttons -->
+            <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-2); flex-wrap: wrap;">
+              <button
+                type="button"
+                class="btn-preserve-cancel"
+                data-action="cancel-edit-metadata"
+                aria-label="रद्द करें"
+                style="min-height: 48px; padding: 0 var(--space-5);"
+              >
+                रद्द करें
+              </button>
+              <button
+                type="button"
+                class="btn-preserve-primary"
+                data-action="confirm-save-metadata"
+                aria-label="विवरण सहेजें"
+                style="min-height: 48px; padding: 0 var(--space-6); background: var(--color-accent-gold); color: #1a150e; font-weight: 600;"
+              >
+                विवरण सहेजें
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     `;

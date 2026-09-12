@@ -371,6 +371,33 @@ export class PoemReader {
   }
 
   /**
+   * Formats source identifier for archival display in reader
+   * @param {string} source
+   * @returns {string}
+   */
+  formatSource(source) {
+    switch (source) {
+      case 'handwritten-manuscript':
+      case 'handwritten_manuscript':
+      case 'handwritten':
+        return 'हस्तलिखित पांडुलिपि';
+      case 'scanned-document':
+      case 'scanned_document':
+        return 'स्कैन किया गया दस्तावेज़';
+      case 'camera-capture':
+      case 'photo_capture':
+        return 'कैमरा तस्वीर';
+      case 'imported-image':
+      case 'imported_image':
+        return 'आयातित छवि';
+      case 'other':
+        return 'अन्य स्रोत';
+      default:
+        return source || 'अभिलेख';
+    }
+  }
+
+  /**
    * Opens delete confirmation modal
    */
   openDeleteModal() {
@@ -454,10 +481,12 @@ export class PoemReader {
           ${linkedManuscripts.map(ms => {
             const orig = ms.originalManuscript || {};
             const derived = ms.derivedManuscript || {};
+            const prov = ms.provenance || {};
             const raw = derived.data || orig.data || '';
             const mime = derived.data ? (derived.mimeType || 'image/png') : (orig.mimeType || 'image/jpeg');
             const imgSrc = raw.startsWith('data:') ? raw : (raw ? `data:${mime};base64,${raw}` : '');
             const captureDate = orig.capturedAt ? formatPoeticDate(orig.capturedAt) : formatPoeticDate(ms.createdAt);
+            const sourceLabel = prov.source ? this.formatSource(prov.source) : null;
 
             return `
               <div class="reader-linked-ms-card" role="region" aria-label="पांडुलिपि: ${this.escapeHtml(ms.title)}">
@@ -470,7 +499,16 @@ export class PoemReader {
                 </div>
                 <div class="reader-linked-ms-info">
                   <h3 class="reader-linked-ms-name">${this.escapeHtml(ms.title || 'शीर्षकहीन पांडुलिपि')}</h3>
-                  <span class="reader-linked-ms-date">${captureDate}</span>
+                  <div class="reader-linked-ms-meta">
+                    <span class="reader-linked-ms-date">${captureDate}</span>
+                    ${sourceLabel ? `
+                      <span class="reader-linked-ms-dot" aria-hidden="true">•</span>
+                      <span class="reader-linked-ms-source">${this.escapeHtml(sourceLabel)}</span>
+                    ` : ''}
+                  </div>
+                  ${prov.notes ? `
+                    <p class="reader-linked-ms-notes">${this.escapeHtml(prov.notes)}</p>
+                  ` : ''}
                 </div>
                 <div class="reader-linked-ms-action">
                   <a

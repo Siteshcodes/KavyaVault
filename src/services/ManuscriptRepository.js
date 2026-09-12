@@ -87,6 +87,41 @@ const VALID_TRANSCRIPTION_STATUSES = ['untranscribed', 'draft', 'verified'];
 export const MAX_TRANSCRIPTION_HISTORY = 25;
 export const VALID_VERSION_SOURCES = ['manual-save', 'verification', 'restore'];
 
+// ============================================================================
+// Provenance & Archival Constants
+// ============================================================================
+
+export const VALID_PROVENANCE_SOURCES = [
+  'handwritten-manuscript',
+  'scanned-document',
+  'camera-capture',
+  'imported-image',
+  'other',
+  // Legacy & backward-compatible aliases
+  'handwritten_manuscript',
+  'scanned_document',
+  'photo_capture',
+  'handwritten'
+];
+
+export const VALID_ACQUISITION_METHODS = [
+  'notebook-scan',
+  'mobile-camera',
+  'desktop-upload',
+  'imported-file',
+  'other'
+];
+
+/**
+ * Validates ISO-8601 date string format (YYYY-MM-DD...)
+ */
+function isValidIsoDate(str) {
+  if (typeof str !== 'string' || str.trim() === '') return false;
+  const timestamp = Date.parse(str);
+  if (isNaN(timestamp)) return false;
+  return /^\d{4}-\d{2}-\d{2}/.test(str.trim());
+}
+
 /**
  * Generates a unique identifier for transcription history versions
  */
@@ -98,13 +133,54 @@ function generateVersionId() {
 }
 
 /**
- * Safely normalizes manuscript schema for version history migration
+ * Safely normalizes manuscript schema for provenance, archival, and version history migration
  */
 function normalizeManuscript(m) {
   if (!m || typeof m !== 'object') return m;
   const trans = m.transcription || { text: '', status: 'untranscribed', verifiedAt: null };
+
+  const rawProv = m.provenance;
+  let normalizedProvenance;
+  if (!rawProv || typeof rawProv !== 'object') {
+    normalizedProvenance = {
+      source: null,
+      recordedAt: null,
+      notes: '',
+      recordedBy: null,
+      location: null,
+      acquisitionMethod: null
+    };
+  } else {
+    normalizedProvenance = {
+      source: rawProv.source !== undefined ? rawProv.source : null,
+      recordedAt: rawProv.recordedAt !== undefined ? rawProv.recordedAt : null,
+      notes: typeof rawProv.notes === 'string' ? rawProv.notes : '',
+      recordedBy: typeof rawProv.recordedBy === 'string' ? rawProv.recordedBy : null,
+      location: typeof rawProv.location === 'string' ? rawProv.location : null,
+      acquisitionMethod: rawProv.acquisitionMethod !== undefined ? rawProv.acquisitionMethod : null
+    };
+  }
+
+  const rawArchival = m.archival;
+  let normalizedArchival;
+  if (rawArchival && typeof rawArchival === 'object') {
+    normalizedArchival = {
+      ingestedAt: rawArchival.ingestedAt || m.createdAt || null,
+      lastVerifiedAt: rawArchival.lastVerifiedAt || trans.verifiedAt || null,
+      lastTranscribedAt: rawArchival.lastTranscribedAt || null
+    };
+  } else {
+    normalizedArchival = {
+      ingestedAt: m.createdAt || null,
+      lastVerifiedAt: trans.verifiedAt || null,
+      lastTranscribedAt: null
+    };
+  }
+
   return {
     ...m,
+    provenance: normalizedProvenance,
+    archival: normalizedArchival,
     transcription: {
       text: typeof trans.text === 'string' ? trans.text : '',
       status: VALID_TRANSCRIPTION_STATUSES.includes(trans.status) ? trans.status : 'untranscribed',
@@ -330,15 +406,45 @@ export class ManuscriptRepository {
       );
     }
 
-    if (provenance.source !== undefined && typeof provenance.source !== 'string') {
-      throw new StorageError(
-        'उद्गम स्रोत (source) स्ट्रिंग होना चाहिए।',
-        StorageErrorCode.VALIDATION_ERROR
-      );
+    // Source validation
+    if (provenance.source !== undefined && provenance.source !== null) {
+      if (typeof provenance.source !== 'string') {
+        throw new StorageError(
+          'उद्गम स्रोत (source) स्ट्रिंग होना चाहिए।',
+          StorageErrorCode.VALIDATION_ERROR
+        );
+      }
+      if (!VALID_PROVENANCE_SOURCES.includes(provenance.source)) {
+        throw new StorageError(
+          `अमान्य उद्गम स्रोत "${provenance.source}"। मान्य स्रोत: ${VALID_PROVENANCE_SOURCES.join(', ')}`,
+          StorageErrorCode.VALIDATION_ERROR,
+          null,
+          { source: provenance.source, allowed: VALID_PROVENANCE_SOURCES }
+        );
+      }
     }
 
+    // Acquisition method validation
+    if (provenance.acquisitionMethod !== undefined && provenance.acquisitionMethod !== null && provenance.acquisitionMethod !== '') {
+      if (typeof provenance.acquisitionMethod !== 'string') {
+        throw new StorageError(
+          'प्राप्ति का माध्यम (acquisitionMethod) स्ट्रिंग होना चाहिए।',
+          StorageErrorCode.VALIDATION_ERROR
+        );
+      }
+      if (!VALID_ACQUISITION_METHODS.includes(provenance.acquisitionMethod)) {
+        throw new StorageError(
+          `अमान्य प्राप्ति माध्यम "${provenance.acquisitionMethod}"। मान्य माध्यम: ${VALID_ACQUISITION_METHODS.join(', ')}`,
+          StorageErrorCode.VALIDATION_ERROR,
+          null,
+          { acquisitionMethod: provenance.acquisitionMethod, allowed: VALID_ACQUISITION_METHODS }
+        );
+      }
+    }
+
+    // Recorded date validation
     if (provenance.recordedAt !== undefined && provenance.recordedAt !== null) {
-      if (typeof provenance.recordedAt !== 'string' || isNaN(Date.parse(provenance.recordedAt))) {
+      if (typeof provenance.recordedAt !== 'string' || !isValidIsoDate(provenance.recordedAt)) {
         throw new StorageError(
           'उद्गम अभिलेखन तिथि (recordedAt) मान्य ISO प्रारूप में होनी चाहिए।',
           StorageErrorCode.VALIDATION_ERROR
@@ -346,9 +452,26 @@ export class ManuscriptRepository {
       }
     }
 
-    if (provenance.notes !== undefined && typeof provenance.notes !== 'string') {
+    // Notes validation
+    if (provenance.notes !== undefined && provenance.notes !== null && typeof provenance.notes !== 'string') {
       throw new StorageError(
         'उद्गम टिप्पणियाँ (notes) स्ट्रिंग होनी चाहिए।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    // Recorded by validation
+    if (provenance.recordedBy !== undefined && provenance.recordedBy !== null && typeof provenance.recordedBy !== 'string') {
+      throw new StorageError(
+        'अभिलेखक (recordedBy) स्ट्रिंग होना चाहिए।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    // Location validation
+    if (provenance.location !== undefined && provenance.location !== null && typeof provenance.location !== 'string') {
+      throw new StorageError(
+        'स्थान (location) स्ट्रिंग होना चाहिए।',
         StorageErrorCode.VALIDATION_ERROR
       );
     }
@@ -377,6 +500,14 @@ export class ManuscriptRepository {
     if (metadata.derivedManuscript !== undefined || metadata.transformation !== undefined) {
       throw new StorageError(
         'संपादित प्रति या रूपांतरण को सामान्य मेटाडेटा अद्यतन से संशोधित नहीं किया जा सकता। कृपया saveDerivedManuscript() का उपयोग करें।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+
+    // PROTECTION: metadata updates must NOT modify transcription or transcription history directly
+    if (metadata.transcription !== undefined || metadata.transcriptionHistory !== undefined) {
+      throw new StorageError(
+        'प्रतिलिपि डेटा को सामान्य मेटाडेटा अद्यतन से संशोधित नहीं किया जा सकता। कृपया updateTranscription() का उपयोग करें।',
         StorageErrorCode.VALIDATION_ERROR
       );
     }
@@ -606,15 +737,27 @@ export class ManuscriptRepository {
     // Build provenance with safe defaults
     const provenance = data.provenance && typeof data.provenance === 'object'
       ? {
-          source: typeof data.provenance.source === 'string' ? data.provenance.source : 'handwritten_manuscript',
-          recordedAt: data.provenance.recordedAt || now,
-          notes: typeof data.provenance.notes === 'string' ? data.provenance.notes : ''
+          source: data.provenance.source !== undefined ? data.provenance.source : 'handwritten_manuscript',
+          acquisitionMethod: data.provenance.acquisitionMethod || null,
+          recordedAt: data.provenance.recordedAt !== undefined ? data.provenance.recordedAt : now,
+          notes: typeof data.provenance.notes === 'string' ? data.provenance.notes : '',
+          recordedBy: typeof data.provenance.recordedBy === 'string' ? data.provenance.recordedBy : null,
+          location: typeof data.provenance.location === 'string' ? data.provenance.location : null
         }
       : {
           source: 'handwritten_manuscript',
+          acquisitionMethod: null,
           recordedAt: now,
-          notes: ''
+          notes: '',
+          recordedBy: null,
+          location: null
         };
+
+    const archival = {
+      ingestedAt: now,
+      lastVerifiedAt: (data.transcription && data.transcription.status === 'verified' && data.transcription.verifiedAt) || null,
+      lastTranscribedAt: (data.transcription && data.transcription.text) ? now : null
+    };
 
     const newManuscript = {
       id,
@@ -640,6 +783,7 @@ export class ManuscriptRepository {
       transcription,
       transcriptionHistory,
       provenance,
+      archival,
       createdAt: data.createdAt || now,
       updatedAt: data.updatedAt || now
     };
@@ -684,9 +828,12 @@ export class ManuscriptRepository {
     if (metadata.provenance && typeof metadata.provenance === 'object') {
       updatedProvenance = {
         ...current.provenance,
-        source: metadata.provenance.source !== undefined ? metadata.provenance.source : current.provenance.source,
-        recordedAt: metadata.provenance.recordedAt !== undefined ? metadata.provenance.recordedAt : current.provenance.recordedAt,
-        notes: metadata.provenance.notes !== undefined ? metadata.provenance.notes : current.provenance.notes
+        source: metadata.provenance.source !== undefined ? metadata.provenance.source : current.provenance?.source,
+        acquisitionMethod: metadata.provenance.acquisitionMethod !== undefined ? metadata.provenance.acquisitionMethod : (current.provenance?.acquisitionMethod || null),
+        recordedAt: metadata.provenance.recordedAt !== undefined ? metadata.provenance.recordedAt : current.provenance?.recordedAt,
+        notes: metadata.provenance.notes !== undefined ? metadata.provenance.notes : (current.provenance?.notes || ''),
+        recordedBy: metadata.provenance.recordedBy !== undefined ? metadata.provenance.recordedBy : (current.provenance?.recordedBy || null),
+        location: metadata.provenance.location !== undefined ? metadata.provenance.location : (current.provenance?.location || null)
       };
     }
 
@@ -695,6 +842,11 @@ export class ManuscriptRepository {
       title: metadata.title !== undefined ? metadata.title.trim() : current.title,
       poemId: metadata.poemId !== undefined ? metadata.poemId : current.poemId,
       provenance: updatedProvenance,
+      archival: current.archival || {
+        ingestedAt: current.createdAt || now,
+        lastVerifiedAt: current.transcription?.verifiedAt || null,
+        lastTranscribedAt: null
+      },
       // originalManuscript is NEVER touched here
       // transcription is NEVER touched here
       updatedAt: now
@@ -850,10 +1002,24 @@ export class ManuscriptRepository {
       currentVersionId
     };
 
+    let archival = current.archival ? { ...current.archival } : {
+      ingestedAt: current.createdAt || now,
+      lastVerifiedAt: current.transcription?.verifiedAt || null,
+      lastTranscribedAt: null
+    };
+
+    if (newText && newText.trim().length > 0) {
+      archival.lastTranscribedAt = now;
+    }
+    if (newStatus === 'verified' && newVerifiedAt) {
+      archival.lastVerifiedAt = newVerifiedAt;
+    }
+
     const updated = {
       ...current,
       transcription: updatedTranscription,
       transcriptionHistory: history,
+      archival,
       // originalManuscript, derivedManuscript, transformation, poemId remain untouched
       updatedAt: now
     };
@@ -1092,10 +1258,24 @@ export class ManuscriptRepository {
       currentVersionId: newRestoreSnapshot.id
     };
 
+    let archival = ms.archival ? { ...ms.archival } : {
+      ingestedAt: ms.createdAt || now,
+      lastVerifiedAt: ms.transcription?.verifiedAt || null,
+      lastTranscribedAt: null
+    };
+
+    if (targetVersion.text && targetVersion.text.trim().length > 0) {
+      archival.lastTranscribedAt = now;
+    }
+    if (isVerified && targetVerifiedAt) {
+      archival.lastVerifiedAt = targetVerifiedAt;
+    }
+
     const updated = {
       ...ms,
       transcription: updatedTranscription,
       transcriptionHistory: history,
+      archival,
       // originalManuscript, derivedManuscript, transformation, poemId remain untouched
       updatedAt: now
     };

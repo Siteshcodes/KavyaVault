@@ -101,10 +101,23 @@ export class ManuscriptGallery {
    */
   formatSource(source) {
     switch (source) {
-      case 'handwritten_manuscript': return 'हस्तलिखित पांडुलिपि';
-      case 'scanned_document': return 'स्कैन किया गया दस्तावेज़';
-      case 'photo_capture': return 'कैमरा तस्वीर';
-      default: return source || 'अभिलेख';
+      case 'handwritten-manuscript':
+      case 'handwritten_manuscript':
+      case 'handwritten':
+        return 'हस्तलिखित पांडुलिपि';
+      case 'scanned-document':
+      case 'scanned_document':
+        return 'स्कैन किया गया दस्तावेज़';
+      case 'camera-capture':
+      case 'photo_capture':
+        return 'कैमरा तस्वीर';
+      case 'imported-image':
+      case 'imported_image':
+        return 'आयातित छवि';
+      case 'other':
+        return 'अन्य स्रोत';
+      default:
+        return source || 'अभिलेख';
     }
   }
 
