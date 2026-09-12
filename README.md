@@ -348,8 +348,19 @@ Phase 3 expands KavyaVault from a typing-only workflow into a multi-modal creati
   - **Strict Architectural Boundaries:** Zero AI, zero OCR, zero TTS, zero cloud sync, zero vector databases, and zero external APIs.
   - **Comprehensive Verification:** 42 dedicated automated tests covering intent validation, draft creation, editor handoff, immutability, no-premature-persistence guarantees, Unicode Devanagari preservation, and UI accessibility (434/434 total tests passing: 131 Phase 1 baseline + 261 Phase 2 baseline + 42 Task 3.1).
 
+- ✅ **Task 3.2 — Scan → Poem**: Fully implemented the real Scan → Poem creation pipeline utilizing the existing Phase 2 manuscript system without creating duplicate repositories, duplicated image bytes, or external cloud/AI dependencies.
+  - **Pipeline Flow:** `Scan / Select Manuscript → ManuscriptCapture (/input/scan) → Preserved ManuscriptRecord (Immutable Original + Derived) → Transcription Workspace (/manuscripts/:id/transcribe) → "कविता के रूप में उपयोग करें" Action → PoemInputService.createScanDraft → PoetryEditor (/poems/new) → User Reviews/Edits → Save Poem → Bidirectional Manuscript ↔ Poem Link`.
+  - **Scan Entry Point:** Replaced `/input/scan` placeholder with real `ManuscriptCapture` in `scanToPoemMode: true`. Supports device camera capture (`capture="environment"`) and local file upload (JPEG, PNG, WebP) with literary KavyaVault styling, back navigation to `/input`, and direct one-click handoff to transcription.
+  - **Original Byte Immutability:** Original manuscript image data remains 100% byte-for-byte immutable and preserved. Derived crops/rotations remain strictly separated in the Phase 2 derived-artifact mechanism.
+  - **Transcription Review & Validation:** Supports manual Devanagari entry and review across `untranscribed`, `draft`, and `verified` statuses without auto-verifying unverified text. Empty or whitespace-only transcriptions are cleanly blocked with honest Hindi guidance (*"कविता के रूप में उपयोग करने हेतु सार्थक प्रतिलिपि पाठ आवश्यक है"*).
+  - **"कविता के रूप में उपयोग करें" Action:** Directly available in both `ManuscriptTranscription` workspace and `ManuscriptView` detail reader. Obtains manuscript ID, text, and title, generating a non-persistent scan draft via `PoemInputService.createScanDraft()` and navigating to `PoetryEditor`.
+  - **Editor Review & Bidirectional Linking:** `PoetryEditor` hydrates with `source: 'scan'`, displays the manuscript source indicator badge (`📜 स्कैन`), shows the manuscript reference banner, and allows unrestricted editing before explicit persistence. Upon saving, the poem stores `source: 'scan'` and `manuscriptId`, and `manuscriptRepository.linkToPoem` connects both records bidirectionally without duplicating raw image bytes into the poem object.
+  - **Duplicate-Save Protection:** Draft creation is completely non-persistent; repeated clicks on "Use as Poem", page reloads, or editor cancellations never produce ghost poem records.
+  - **Privacy Guarantee:** 100% local, zero OCR APIs, zero cloud transmission, zero analytics.
+  - **Unicode & Devanagari Fidelity:** Complex conjuncts (`क्ष, त्र, ज्ञ, श्र, द्व, द्घ, हृ`), nuktas, chandrabindu, virama, and punctuation survive the complete pipeline roundtrip.
+  - **Comprehensive Verification:** 23 dedicated automated tests added in `test_scan_to_poem.js` (457/457 total tests passing: 131 Phase 1 baseline + 261 Phase 2 baseline + 42 Task 3.1 + 23 Task 3.2).
+
 ### Upcoming:
-- **Task 3.2 — Scan → Poem**: Complete client-side manuscript text extraction and transcription review.
 - **Task 3.3 — Speak → Poem**: Local-first voice input and speech-to-text drafting.
 
 ---

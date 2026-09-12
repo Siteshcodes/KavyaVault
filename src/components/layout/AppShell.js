@@ -187,12 +187,21 @@ export class AppShell {
       return;
     }
 
-    // 3b. Modern Input Modes (/input, /input/scan, /input/speak)
+    // 3b. Scan -> Poem Workflow (/input/scan)
+    if (currentPath === ROUTES.INPUT_SCAN || currentPath === '/input/scan') {
+      this.activeManuscriptCapture = new ManuscriptCapture({
+        container: this.contentContainer,
+        router: this.router,
+        scanToPoemMode: true
+      });
+      this.activeManuscriptCapture.mount();
+      return;
+    }
+
+    // 3c. Modern Input Modes (/input, /input/speak)
     if (currentPath === ROUTES.INPUT_MODES || currentPath.startsWith('/input')) {
       let submode = 'overview';
-      if (currentPath === ROUTES.INPUT_SCAN || currentPath === '/input/scan') {
-        submode = 'scan';
-      } else if (currentPath === ROUTES.INPUT_SPEAK || currentPath === '/input/speak') {
+      if (currentPath === ROUTES.INPUT_SPEAK || currentPath === '/input/speak') {
         submode = 'speak';
       }
       this.activeInputModeSelector = new InputModeSelector({

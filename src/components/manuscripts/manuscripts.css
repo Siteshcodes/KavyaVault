@@ -1687,6 +1687,18 @@
   border-color: rgba(46, 125, 50, 0.4);
 }
 
+.btn-workspace-use-poem {
+  background: var(--color-accent-gold);
+  color: #1a150e;
+  border-color: var(--color-accent-gold);
+  font-weight: 600;
+}
+
+.btn-workspace-use-poem:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 4px 12px rgba(184, 134, 11, 0.25);
+}
+
 .transcription-poem-notice {
   display: flex;
   align-items: center;
@@ -2019,6 +2031,9 @@
 
 .manuscript-transcription-actions {
   display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
   justify-content: flex-start;
 }
 
@@ -2028,8 +2043,9 @@
   gap: var(--space-2);
   min-height: 48px;
   padding: 0 var(--space-5);
-  background: var(--color-accent-gold);
-  color: #1a150e;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
   border-radius: var(--radius-md);
   font-family: var(--font-interface);
   font-size: var(--text-body-small);
@@ -2039,6 +2055,29 @@
 }
 
 .btn-open-transcription:hover {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-accent-gold);
+}
+
+.btn-use-as-poem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: 0 var(--space-5);
+  background: var(--color-accent-gold);
+  color: #1a150e;
+  border: 1px solid var(--color-accent-gold);
+  border-radius: var(--radius-md);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.btn-use-as-poem:hover {
   filter: brightness(1.08);
   box-shadow: 0 4px 12px rgba(184, 134, 11, 0.25);
 }

@@ -198,7 +198,7 @@ export function createScanDraft(data = {}, repo = null, manuscriptRepo = null) {
     );
   }
 
-  let finalTitle = data.title;
+  let finalTitle = data.title !== undefined ? data.title : (data.manuscriptTitle || '');
   let finalText = data.text !== undefined ? data.text : data.transcriptionText;
   let metadata = data.metadata ? { ...data.metadata } : {};
 

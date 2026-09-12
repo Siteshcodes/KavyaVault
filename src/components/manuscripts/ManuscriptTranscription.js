@@ -21,6 +21,7 @@ import { ROUTES } from '../../data/navigation.js';
 import { getIconSvg } from '../navigation/icons.js';
 import { formatPoeticDate } from '../../utils/date.js';
 import { calculateTextMetrics } from '../../utils/counters.js';
+import { createScanDraft } from '../../services/input/PoemInputService.js';
 
 export class ManuscriptTranscription {
   /**
@@ -504,6 +505,61 @@ export class ManuscriptTranscription {
       this.handleRestore(versionId);
       return;
     }
+
+    // 11. Use as Poem draft in PoetryEditor
+    const useAsPoemBtn = target.closest('[data-action="use-as-poem"]');
+    if (useAsPoemBtn) {
+      e.preventDefault();
+      this.handleUseAsPoem();
+      return;
+    }
+  }
+
+  /**
+   * Hands off current transcription into PoetryEditor as a poem draft
+   */
+  handleUseAsPoem() {
+    // 1. Flush/save any pending in-progress edits first
+    if (this.isDirty || this.saveStatus === 'unsaved') {
+      if (this.autosaveTimeout) {
+        clearTimeout(this.autosaveTimeout);
+        this.autosaveTimeout = null;
+      }
+      this.performAutosave({ source: 'manual-save', createVersion: false });
+    }
+
+    // 2. Validate transcription text (empty or whitespace-only not allowed)
+    const trimmed = typeof this.text === 'string' ? this.text.trim() : '';
+    if (!trimmed) {
+      this.saveStatus = 'error';
+      this.saveError = 'कविता के रूप में उपयोग करने हेतु सार्थक प्रतिलिपि पाठ आवश्यक है। कृपया पहले पांडुलिपि की पंक्तियाँ लिखें।';
+      this.updateSaveStatus('error');
+      const textarea = this.container.querySelector('#transcription-textarea');
+      if (textarea) textarea.focus();
+      return;
+    }
+
+    // 3. Create scan draft via PoemInputService
+    try {
+      createScanDraft({
+        manuscriptId: this.manuscriptId,
+        text: trimmed,
+        title: this.manuscript?.title || '',
+        author: this.manuscript?.author || '',
+        metadata: {
+          transcriptionStatus: this.status,
+          verifiedAt: this.verifiedAt,
+          transcribedAt: new Date().toISOString()
+        }
+      }, this.poemRepo, this.repository);
+
+      // 4. Navigate to New Poem editor
+      this.router.navigate(ROUTES.NEW_POEM);
+    } catch (err) {
+      this.saveStatus = 'error';
+      this.saveError = err.message || 'प्रारूप तैयार करने में समस्या उत्पन्न हुई।';
+      this.updateSaveStatus('error');
+    }
   }
 
   /**
@@ -898,6 +954,17 @@ export class ManuscriptTranscription {
             >
               ${getIconSvg('check', 'btn-icon')}
               <span>${this.status === 'verified' ? 'प्रमाणित (सत्यापित)' : 'प्रमाणित करें'}</span>
+            </button>
+
+            <button
+              type="button"
+              class="btn-workspace-action btn-workspace-use-poem"
+              data-action="use-as-poem"
+              aria-label="कविता के रूप में उपयोग करें"
+              title="प्रतिलिपि को कविता प्रारूप के रूप में संपादक में भेजें"
+            >
+              ${getIconSvg('quill', 'btn-icon')}
+              <span>कविता के रूप में उपयोग करें &rarr;</span>
             </button>
           </div>
         </header>

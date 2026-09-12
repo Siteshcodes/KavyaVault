@@ -24,6 +24,7 @@ import {
 import { formatPoeticDate } from '../../utils/date.js';
 import { ROUTES } from '../../data/navigation.js';
 import { getIconSvg } from '../navigation/icons.js';
+import { createScanDraft } from '../../services/input/PoemInputService.js';
 
 export class ManuscriptView {
   /**
@@ -740,6 +741,14 @@ export class ManuscriptView {
       this.handleSaveMetadata();
       return;
     }
+
+    // 25. Use transcription as poem draft
+    const useAsPoemBtn = target.closest('[data-action="use-as-poem"]');
+    if (useAsPoemBtn) {
+      e.preventDefault();
+      await this.handleUseAsPoem();
+      return;
+    }
   }
 
   /**
@@ -897,6 +906,35 @@ export class ManuscriptView {
         this.editingMetadata = null;
         this.update();
       }
+    }
+  }
+
+  /**
+   * Creates a scan draft from the current manuscript transcription and navigates to the poem editor.
+   */
+  async handleUseAsPoem() {
+    const trans = this.manuscript?.transcription;
+    const text = trans?.text ? trans.text.trim() : '';
+
+    if (!text) {
+      if (this.router && typeof this.router.navigate === 'function') {
+        this.router.navigate(`/manuscripts/${encodeURIComponent(this.manuscriptId)}/transcribe`);
+      }
+      return;
+    }
+
+    try {
+      createScanDraft({
+        manuscriptId: this.manuscript.id,
+        transcriptionText: text,
+        manuscriptTitle: this.manuscript.metadata?.title || null
+      });
+
+      if (this.router && typeof this.router.navigate === 'function') {
+        this.router.navigate(ROUTES.NEW_POEM);
+      }
+    } catch (err) {
+      console.error('Failed to create scan draft from manuscript view:', err);
     }
   }
 
@@ -1585,6 +1623,18 @@ export class ManuscriptView {
             ${getIconSvg('quill', 'icon-inline')}
             <span>${hasText ? 'प्रतिलिपि खोलें व संपादित करें' : 'प्रतिलिपि लिखें'}</span>
           </a>
+          ${hasText ? `
+            <button
+              type="button"
+              class="btn-use-as-poem"
+              data-action="use-as-poem"
+              aria-label="प्रतिलिपि को कविता के रूप में उपयोग करें"
+              title="प्रतिलिपि को कविता प्रारूप के रूप में संपादक में भेजें"
+            >
+              ${getIconSvg('quill', 'icon-inline')}
+              <span>कविता के रूप में उपयोग करें &rarr;</span>
+            </button>
+          ` : ''}
         </div>
       </section>
     `;

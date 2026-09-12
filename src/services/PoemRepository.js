@@ -148,6 +148,14 @@ export class PoemRepository {
     if (changes.isArchived !== undefined && typeof changes.isArchived !== 'boolean') {
       throw new StorageError('"isArchived" फ्लैग बूलियन होना चाहिए।', StorageErrorCode.VALIDATION_ERROR);
     }
+
+    if (changes.source !== undefined && typeof changes.source !== 'string') {
+      throw new StorageError('इनपुट माध्यम (source) स्ट्रिंग होना चाहिए।', StorageErrorCode.VALIDATION_ERROR);
+    }
+
+    if (changes.manuscriptId !== undefined && changes.manuscriptId !== null && typeof changes.manuscriptId !== 'string') {
+      throw new StorageError('पांडुलिपि आईडी (manuscriptId) स्ट्रिंग या null होना चाहिए।', StorageErrorCode.VALIDATION_ERROR);
+    }
   }
 
   /**
@@ -271,7 +279,9 @@ export class PoemRepository {
       isArchived: Boolean(poemData.isArchived),
       tags: Array.isArray(poemData.tags) ? poemData.tags.map(t => String(t).trim()) : [],
       mood: poemData.mood || null,
-      rasa: poemData.rasa || null
+      rasa: poemData.rasa || null,
+      source: typeof poemData.source === 'string' ? poemData.source : 'type',
+      manuscriptId: typeof poemData.manuscriptId === 'string' && poemData.manuscriptId.trim() !== '' ? poemData.manuscriptId.trim() : null
     };
 
     this.validatePoem(newPoem);
@@ -315,6 +325,8 @@ export class PoemRepository {
       tags: changes.tags !== undefined ? changes.tags.map(t => String(t).trim()) : current.tags,
       mood: changes.mood !== undefined ? changes.mood : current.mood,
       rasa: changes.rasa !== undefined ? changes.rasa : current.rasa,
+      source: changes.source !== undefined ? changes.source : (current.source || 'type'),
+      manuscriptId: changes.manuscriptId !== undefined ? changes.manuscriptId : (current.manuscriptId || null),
       updatedAt: now
     };
 

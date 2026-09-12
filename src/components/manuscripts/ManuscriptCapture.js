@@ -30,10 +30,12 @@ export class ManuscriptCapture {
    * @param {Object} options
    * @param {HTMLElement} options.container Root mounting container
    * @param {Object} options.router Client router instance
+   * @param {boolean} [options.scanToPoemMode=false] Whether opened as part of Scan -> Poem pipeline
    */
-  constructor({ container, router }) {
+  constructor({ container, router, scanToPoemMode = false }) {
     this.container = container;
     this.router = router;
+    this.scanToPoemMode = Boolean(scanToPoemMode);
 
     // File state
     this.selectedFile = null;
@@ -448,25 +450,28 @@ export class ManuscriptCapture {
    */
   render() {
     const hasFile = Boolean(this.selectedFile);
+    const isScanPoem = this.scanToPoemMode;
 
     return `
-      <div class="manuscript-capture-view" role="region" aria-label="पांडुलिपि संरक्षण कक्ष">
+      <div class="manuscript-capture-view" role="region" aria-label="${isScanPoem ? 'स्कैन से कविता कक्ष' : 'पांडुलिपि संरक्षण कक्ष'}">
         <!-- Top Navigation Bar -->
         <div class="manuscript-top-bar">
-          <a href="${ROUTES.POEMS}" data-link class="manuscript-nav-back" aria-label="काव्य पुस्तकालय पर लौटें">
+          <a href="${isScanPoem ? ROUTES.INPUT_MODES : ROUTES.POEMS}" data-link class="manuscript-nav-back" aria-label="${isScanPoem ? 'काव्य सृजन माध्यम पर लौटें' : 'काव्य पुस्तकालय पर लौटें'}">
             ${getIconSvg('arrow-left', 'nav-icon')}
-            <span>पुस्तकालय</span>
+            <span>${isScanPoem ? 'काव्य सृजन माध्यम' : 'पुस्तकालय'}</span>
           </a>
-          <span class="manuscript-format-hint">मूल पांडुलिपि डिजिटल संरक्षण (Phase 2)</span>
+          <span class="manuscript-format-hint">${isScanPoem ? 'स्कैन → कविता कार्यप्रवाह (Scan → Poem)' : 'मूल पांडुलिपि डिजिटल संरक्षण (Phase 2)'}</span>
         </div>
 
         <!-- Section Header -->
         <header style="margin-bottom: var(--space-6);">
           <h1 style="font-family: var(--font-display); font-size: var(--text-h1); color: var(--color-text-primary); margin: 0 0 var(--space-2) 0;">
-            पांडुलिपि संरक्षण
+            ${isScanPoem ? 'स्कैन से कविता (Scan → Poem)' : 'पांडुलिपि संरक्षण'}
           </h1>
           <p style="font-family: var(--font-interface); font-size: var(--text-body); color: var(--color-text-secondary); margin: 0; max-width: 680px; line-height: var(--leading-normal);">
-            पुरानी डायरियों, हस्तलिखित पन्नों या पांडुलिपि की तस्वीर यहाँ सहेजें। मूल छवि बिना किसी परिवर्तन, संपीड़न या कतरन (crop) के सुरक्षित सहेजी जाती है।
+            ${isScanPoem
+              ? 'हस्तलिखित पांडुलिपि अथवा डायरी की तस्वीर लें या फ़ाइल चुनें। मूल छवि सुरक्षित सहेजने के पश्चात आप सीधे प्रतिलिपि लिखकर कविता में रूपांतरित कर सकते हैं।'
+              : 'पुरानी डायरियों, हस्तलिखित पन्नों या पांडुलिपि की तस्वीर यहाँ सहेजें। मूल छवि बिना किसी परिवर्तन, संपीड़न या कतरन (crop) के सुरक्षित सहेजी जाती है।'}
           </p>
         </header>
 
@@ -662,7 +667,7 @@ export class ManuscriptCapture {
             aria-label="पांडुलिपि सुरक्षित सहेजें"
           >
             ${getIconSvg('archive', 'btn-icon')}
-            <span>${this.isSaving ? 'सहेजा जा रहा है...' : 'पांडुलिपि सहेजें'}</span>
+            <span>${this.isSaving ? 'सहेजा जा रहा है...' : (this.scanToPoemMode ? 'सहेजें व प्रतिलिपि लिखें →' : 'पांडुलिपि सहेजें')}</span>
           </button>
 
           <button
@@ -714,10 +719,21 @@ export class ManuscriptCapture {
           </p>
           <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
             <a
-              href="/manuscripts/${encodeURIComponent(ms.id)}"
+              href="/manuscripts/${encodeURIComponent(ms.id)}/transcribe"
               data-link
               class="btn-preserve-primary"
-              style="text-decoration: none; padding: var(--space-2) var(--space-5); min-height: 44px;"
+              style="text-decoration: none; padding: var(--space-2) var(--space-5); min-height: 44px; display: inline-flex; align-items: center; gap: var(--space-2);"
+              aria-label="पांडुलिपि की प्रतिलिपि लिखें व कविता बनाएं"
+            >
+              ${getIconSvg('quill', 'btn-icon')}
+              <span>प्रतिलिपि लिखें (कविता बनाएं) &rarr;</span>
+            </a>
+
+            <a
+              href="/manuscripts/${encodeURIComponent(ms.id)}"
+              data-link
+              class="btn-preserve-cancel"
+              style="text-decoration: none; padding: var(--space-2) var(--space-4); min-height: 44px; display: inline-flex; align-items: center; gap: var(--space-2);"
               aria-label="संरक्षित पांडुलिपि देखें"
             >
               ${getIconSvg('book', 'btn-icon')}

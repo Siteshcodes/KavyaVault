@@ -22,13 +22,13 @@ export class PoetryEditor {
    * @param {Object|null} [options.manuscriptRepo=null] Manuscript repository instance
    * @param {Object|null} [options.repository=null] Poem repository instance
    */
-  constructor({ container, router, poemId = null, initialPoem = null, initialDraft = null, manuscriptRepo = null, repository = null }) {
+  constructor({ container, router, poemId = null, initialPoem = null, initialDraft = null, manuscriptRepo = null, manuscriptRepository: msRepoAlias = null, repository = null }) {
     this.container = container;
     this.router = router;
     this.poemId = poemId;
     this.initialPoem = initialPoem;
     this.initialDraft = initialDraft;
-    this.manuscriptRepo = manuscriptRepo || manuscriptRepository;
+    this.manuscriptRepo = manuscriptRepo || msRepoAlias || manuscriptRepository;
     this.repository = repository || poemRepository;
 
     // Form fields state
@@ -265,6 +265,13 @@ export class PoetryEditor {
         <div id="editor-validation-container" style="display: ${this.validationError ? 'block' : 'none'};">
           ${this.validationError ? `<div class="editor-validation-message" role="alert">${this.validationError}</div>` : ''}
         </div>
+
+        <!-- Scan Source Manuscript Reference Banner -->
+        ${this.source === 'scan' && this.manuscriptId ? `
+          <div class="editor-manuscript-context" role="note" style="padding: var(--space-2) var(--space-4); background: var(--color-bg-secondary); border-left: 3px solid var(--color-accent-gold); font-size: var(--text-sm); margin-bottom: var(--space-3); border-radius: var(--radius-sm);">
+            <span>📜 <strong>पांडुलिपि संदर्भ:</strong> यह प्रारूप पांडुलिपि (${this.escapeHtml(this.manuscriptId)}) की प्रतिलिपि से सृजित हुआ है। सहेजने पर यह कविता पांडुलिपि से संबद्ध हो जाएगी।</span>
+          </div>
+        ` : ''}
 
         <!-- Editorial Writing Canvas -->
         <main class="editor-canvas">
@@ -511,7 +518,9 @@ export class PoetryEditor {
           title: this.title.trim(),
           body: this.body,
           author: this.author.trim() || 'अज्ञात',
-          tags: parsedTags
+          tags: parsedTags,
+          source: this.source || 'type',
+          manuscriptId: this.manuscriptId || null
         });
 
         // Link manuscript if source was scan and manuscriptId is present

@@ -201,19 +201,22 @@ export class InputModeSelector {
           </div>
 
           <div class="input-contract-actions">
+            <a href="${ROUTES.INPUT_SCAN}" data-link class="btn-input-action btn-input-primary" id="btn-start-scan" style="width: auto; text-decoration: none; display: inline-flex; align-items: center;">
+              <span>नई पांडुलिपि स्कैन करें →</span>
+            </a>
             ${hasManuscripts ? `
               <label for="select-scan-manuscript" class="sr-only">पांडुलिपि चुनें</label>
               <select id="select-scan-manuscript" class="filter-select" aria-label="प्रारूप हेतु पांडुलिपि चुनें">
                 ${manuscripts.map(m => `<option value="${m.id}">${m.title || 'अनाम पांडुलिपि'} (${m.id.slice(0, 8)})</option>`).join('')}
               </select>
-              <button type="button" class="btn-input-action btn-input-primary" id="btn-test-scan-draft" style="width: auto;">
+              <button type="button" class="btn-input-action btn-input-secondary" id="btn-test-scan-draft" style="width: auto;">
                 <span>चयनित पांडुलिपि से प्रारूप बनाएं →</span>
               </button>
             ` : `
-              <button type="button" class="btn-input-action btn-input-primary" id="btn-test-scan-sample" style="width: auto;">
+              <button type="button" class="btn-input-action btn-input-secondary" id="btn-test-scan-sample" style="width: auto;">
                 <span>नमूना पांडुलिपि प्रारूप बनाएं →</span>
               </button>
-              <a href="${ROUTES.MANUSCRIPT_NEW}" data-link class="btn-input-action btn-input-secondary" style="width: auto;">
+              <a href="${ROUTES.INPUT_SCAN}" data-link class="btn-input-action btn-input-secondary" style="width: auto;">
                 <span>नई पांडुलिपि जोड़ें</span>
               </a>
             `}
