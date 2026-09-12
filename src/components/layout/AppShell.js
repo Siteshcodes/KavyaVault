@@ -6,6 +6,8 @@
 import './layout.css';
 import '../manuscripts/manuscripts.css';
 import '../reader/reader.css';
+import '../editor/editor.css';
+import '../input/input.css';
 import { Navigation } from '../navigation/Navigation.js';
 import { renderPageHeader } from './PageHeader.js';
 import { renderEmptyState } from './EmptyState.js';
@@ -27,6 +29,7 @@ import { ManuscriptCapture } from '../manuscripts/ManuscriptCapture.js';
 import { ManuscriptView } from '../manuscripts/ManuscriptView.js';
 import { ManuscriptGallery } from '../manuscripts/ManuscriptGallery.js';
 import { ManuscriptTranscription } from '../manuscripts/ManuscriptTranscription.js';
+import { InputModeSelector } from '../input/InputModeSelector.js';
 import { collectionRepository } from '../../services/CollectionRepository.js';
 import { poemRepository } from '../../services/PoemRepository.js';
 import { manuscriptRepository } from '../../services/ManuscriptRepository.js';
@@ -50,6 +53,7 @@ export class AppShell {
     this.activeManuscriptView = null;
     this.activeManuscriptGallery = null;
     this.activeManuscriptTranscription = null;
+    this.activeInputModeSelector = null;
   }
 
   /**
@@ -154,6 +158,10 @@ export class AppShell {
       this.activeManuscriptTranscription.unmount();
       this.activeManuscriptTranscription = null;
     }
+    if (this.activeInputModeSelector) {
+      this.activeInputModeSelector.unmount();
+      this.activeInputModeSelector = null;
+    }
 
     // 1. Home / Foyer Screen
     if (currentPath === ROUTES.HOME) {
@@ -176,6 +184,23 @@ export class AppShell {
         poemId: null
       });
       this.activeEditor.mount();
+      return;
+    }
+
+    // 3b. Modern Input Modes (/input, /input/scan, /input/speak)
+    if (currentPath === ROUTES.INPUT_MODES || currentPath.startsWith('/input')) {
+      let submode = 'overview';
+      if (currentPath === ROUTES.INPUT_SCAN || currentPath === '/input/scan') {
+        submode = 'scan';
+      } else if (currentPath === ROUTES.INPUT_SPEAK || currentPath === '/input/speak') {
+        submode = 'speak';
+      }
+      this.activeInputModeSelector = new InputModeSelector({
+        container: this.contentContainer,
+        router: this.router,
+        initialMode: submode
+      });
+      this.activeInputModeSelector.mount();
       return;
     }
 

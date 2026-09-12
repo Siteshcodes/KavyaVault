@@ -14,6 +14,9 @@ export const ROUTES = {
   NEW_POEM: '/poems/new',
   MANUSCRIPTS: '/manuscripts',
   MANUSCRIPT_NEW: '/manuscripts/new',
+  INPUT_MODES: '/input',
+  INPUT_SCAN: '/input/scan',
+  INPUT_SPEAK: '/input/speak',
   TYPOGRAPHY_TEST: '/typography-test',
   PERSISTENCE_TEST: '/persistence-test'
 };
@@ -179,6 +182,21 @@ export const ROUTE_METADATA = {
     title: 'पांडुलिपि संरक्षण',
     tagline: 'हस्तलिखित पृष्ठ, डायरी व ऐतिहासिक पन्नों का संचयन',
     placeholder: 'पुरानी हस्तलिखित पांडुलिपियों का मूल रूप में डिजिटल संरक्षण।'
+  },
+  [ROUTES.INPUT_MODES]: {
+    title: 'रचना माध्यम',
+    tagline: 'टाइप करें, स्कैन करें अथवा बोलकर लिखें',
+    placeholder: 'रचना सृजन के आधुनिक माध्यम।'
+  },
+  [ROUTES.INPUT_SCAN]: {
+    title: 'स्कैन माध्यम',
+    tagline: 'पांडुलिपि से काव्य रूपांतरण',
+    placeholder: 'स्कैन इनपुट अनुबंध एवं पांडुलिपि चयन।'
+  },
+  [ROUTES.INPUT_SPEAK]: {
+    title: 'ध्वनि माध्यम',
+    tagline: 'बोलकर कविता सृजन',
+    placeholder: 'ध्वनि इनपुट अनुबंध एवं वाणी अभिलेखन।'
   },
   [ROUTES.TYPOGRAPHY_TEST]: {
     title: 'मुद्रणकला परीक्षण',

@@ -446,6 +446,9 @@ export class PoemRepository {
       body: typeof draftData.body === 'string' ? draftData.body : '',
       author: typeof draftData.author === 'string' ? draftData.author : '',
       tags: Array.isArray(draftData.tags) ? draftData.tags : [],
+      source: typeof draftData.source === 'string' ? draftData.source : 'type',
+      manuscriptId: typeof draftData.manuscriptId === 'string' ? draftData.manuscriptId : null,
+      inputMetadata: (draftData.inputMetadata && typeof draftData.inputMetadata === 'object') ? draftData.inputMetadata : null,
       mood: draftData.mood || null,
       rasa: draftData.rasa || null,
       savedAt: new Date().toISOString()

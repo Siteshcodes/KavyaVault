@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-392%2F392%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-434%2F434%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -327,9 +327,30 @@ Phase 2 focuses on **manuscript preservation** — the ability to capture, store
   - **Preservation Guarantees:** Metadata edits and provenance updates NEVER touch, compress, or alter raw image artifact bytes (`originalManuscript.data` or `derivedManuscript.data`).
   - **Strict Boundaries:** Zero OCR, zero AI, zero EXIF/GPS scraping, zero cloud sync, and 100% strict XSS escaping. 37 dedicated tests passing (392/392 total tests passing: 131 Phase 1 baseline + 34 Task 2.1 + 30 Task 2.2 + 36 Task 2.3 + 26 Task 2.4 + 26 Task 2.5 + 32 Task 2.6 + 40 Task 2.7 + 37 Task 2.8).
 
+---
+
+## 🚀 Phase 3: Modern Input & Creation Workflows
+
+Phase 3 expands KavyaVault from a typing-only workflow into a multi-modal creation sanctuary:
+- **Type → Poem**
+- **Scan → Poem**
+- **Speak → Poem**
+
+### Completed:
+- ✅ **Task 3.1 — Modern Input Foundation**: Clean, unified architecture for multiple poem-input sources that all feed into the existing poem editor and draft workflow without duplicating persistence logic or bypassing user review.
+  - **Single Handoff Architecture:** Enforces `Input Source (Type | Scan | Speak) → Input Intent → Poem Draft → Existing Poem Editor → Save Poem`. Centralized poem persistence remains firmly in `PoemRepository`, `PoetryEditor`, and `LocalStorageAdapter`.
+  - **Controlled Domain Model:** Minimal, extensible representation for poem-input intents (`source`, `title`, `text/body`, `author`, `tags`, `manuscriptId`, `metadata`). Enforces frozen `INPUT_SOURCES` enums and intent validation.
+  - **Type Input Preservation:** Preserves existing direct typing and new poem flows with `source = 'type'`, supporting seamless draft recovery and live Hindi counters.
+  - **Scan Input Foundation Contract:** Establishes the exact contract for future Phase 3.2 Scan → Poem flows using the existing Phase 2 manuscript preservation system. Accepts `manuscriptId`, optional transcription text, and provenance metadata while strictly guaranteeing raw manuscript image bytes are NEVER duplicated into poem storage.
+  - **Speak (Voice) Input Foundation Contract:** Establishes the contract for future Phase 3.3 Voice → Poem flows. Accepts recognized speech text and language metadata, feeding directly into standard editable drafts.
+  - **Input Mode Selector UI (`/input`):** Modern, accessible, responsive card interface featuring the 3 input choices, honest placeholder status for coming-next features (*"स्कैन इनपुट शीघ्र आ रहा है (Phase 3.2)"*, *"वाणी इनपुट शीघ्र आ रहा है (Phase 3.3)"*), contract demonstration and handoff testing buttons, and prominent local-first privacy reassurance (*"100% Local Privacy: No cloud, no external AI, no telemetry"*).
+  - **PoetryEditor Integration:** Dynamic source indicator badge (📜 for Scan, 🎙️ for Speak), quick access link to `/input`, draft autosave source preservation, and automated manuscript linking upon final poem save.
+  - **Strict Architectural Boundaries:** Zero AI, zero OCR, zero TTS, zero cloud sync, zero vector databases, and zero external APIs.
+  - **Comprehensive Verification:** 42 dedicated automated tests covering intent validation, draft creation, editor handoff, immutability, no-premature-persistence guarantees, Unicode Devanagari preservation, and UI accessibility (434/434 total tests passing: 131 Phase 1 baseline + 261 Phase 2 baseline + 42 Task 3.1).
+
 ### Upcoming:
-- **Chhand & Metre Analysis**: Automated Devanagari syllable and matra analysis for classical metres (*Doha, Chaupai, Rola, Soratha*).
-- **Import & Export Engine**: Clean data export and backup in JSON, Markdown, and formatted Plain Text.
+- **Task 3.2 — Scan → Poem**: Complete client-side manuscript text extraction and transcription review.
+- **Task 3.3 — Speak → Poem**: Local-first voice input and speech-to-text drafting.
 
 ---
 

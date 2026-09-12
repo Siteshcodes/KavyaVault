@@ -4,8 +4,9 @@
  * explicit draft recovery, live Unicode-safe metrics, and repository integration.
  */
 
-import './editor.css';
 import { poemRepository } from '../../services/PoemRepository.js';
+import { manuscriptRepository } from '../../services/ManuscriptRepository.js';
+import { formatInputSourceLabel } from '../../services/input/PoemInputService.js';
 import { calculateTextMetrics } from '../../utils/counters.js';
 import { ROUTES } from '../../data/navigation.js';
 import { getIconSvg } from '../navigation/icons.js';
@@ -17,18 +18,29 @@ export class PoetryEditor {
    * @param {Object} options.router Client router instance
    * @param {string|null} [options.poemId=null] Existing poem ID if editing, null for new
    * @param {Object|null} [options.initialPoem=null] Pre-loaded poem object if available
+   * @param {Object|null} [options.initialDraft=null] Pre-loaded draft from input handoff
+   * @param {Object|null} [options.manuscriptRepo=null] Manuscript repository instance
+   * @param {Object|null} [options.repository=null] Poem repository instance
    */
-  constructor({ container, router, poemId = null, initialPoem = null }) {
+  constructor({ container, router, poemId = null, initialPoem = null, initialDraft = null, manuscriptRepo = null, repository = null }) {
     this.container = container;
     this.router = router;
     this.poemId = poemId;
     this.initialPoem = initialPoem;
+    this.initialDraft = initialDraft;
+    this.manuscriptRepo = manuscriptRepo || manuscriptRepository;
+    this.repository = repository || poemRepository;
 
     // Form fields state
     this.title = '';
     this.body = '';
     this.author = '';
     this.tags = '';
+
+    // Modern input source tracking (Phase 3)
+    this.source = 'type';
+    this.manuscriptId = null;
+    this.inputMetadata = null;
 
     // Autosave & status
     this.autosaveTimeout = null;
@@ -61,10 +73,19 @@ export class PoetryEditor {
    * Mounts the editor into DOM and initializes draft recovery checks
    */
   mount() {
-    // 1. EDIT MODE: Load existing poem
-    if (this.poemId) {
+    // 0. Explicit Initial Draft Handoff (e.g. from Scan/Speak/Type services)
+    if (this.initialDraft && !this.poemId) {
+      this.title = this.initialDraft.title || '';
+      this.body = this.initialDraft.body || this.initialDraft.text || '';
+      this.author = this.initialDraft.author || '';
+      this.tags = Array.isArray(this.initialDraft.tags) ? this.initialDraft.tags.join(', ') : '';
+      this.source = this.initialDraft.source || 'type';
+      this.manuscriptId = this.initialDraft.manuscriptId || null;
+      this.inputMetadata = this.initialDraft.inputMetadata || this.initialDraft.metadata || null;
+    } else if (this.poemId) {
+      // 1. EDIT MODE: Load existing poem
       if (!this.initialPoem) {
-        this.initialPoem = poemRepository.getById(this.poemId);
+        this.initialPoem = this.repository.getById(this.poemId);
       }
 
       if (!this.initialPoem) {
@@ -78,7 +99,7 @@ export class PoetryEditor {
       this.tags = Array.isArray(this.initialPoem.tags) ? this.initialPoem.tags.join(', ') : '';
 
       // Check if an existing draft matches this poem and has newer unsaved content
-      const draft = poemRepository.getDraft();
+      const draft = this.repository.getDraft();
       if (draft && draft.poemId === this.poemId) {
         const isDifferent = (draft.title && draft.title !== this.title) ||
                             (draft.body && draft.body !== this.body);
@@ -89,13 +110,17 @@ export class PoetryEditor {
       }
     } else {
       // 2. NEW POEM MODE: Check for unsaved draft
-      const draft = poemRepository.getDraft();
+      const draft = this.repository.getDraft();
       if (draft && draft.poemId === null) {
         const hasContent = (draft.title && draft.title.trim().length > 0) ||
                            (draft.body && draft.body.trim().length > 0);
         if (hasContent) {
           this.showRecoveryPrompt = true;
           this.recoveredDraft = draft;
+        } else {
+          this.source = draft.source || 'type';
+          this.manuscriptId = draft.manuscriptId || null;
+          this.inputMetadata = draft.inputMetadata || null;
         }
       }
     }
@@ -210,6 +235,19 @@ export class PoetryEditor {
               <span class="status-dot ${this.saveStatus === 'saving' ? 'pulse' : ''}" aria-hidden="true"></span>
               <span class="status-text">${this.getStatusText(this.saveStatus)}</span>
             </div>
+
+            <!-- Input Source Badge (Phase 3) -->
+            ${this.source && this.source !== 'type' ? `
+              <div class="editor-source-indicator source-${this.source}" role="note" aria-label="इनपुट माध्यम: ${formatInputSourceLabel(this.source)}">
+                <span class="source-indicator-icon" aria-hidden="true">${this.source === 'scan' ? '📜' : '🎙️'}</span>
+                <span class="source-indicator-label">${formatInputSourceLabel(this.source)}</span>
+              </div>
+            ` : ''}
+
+            <!-- Quick Access to Input Modes -->
+            <a href="/input" data-link class="btn-input-modes-nav" aria-label="अन्य इनपुट माध्यम चुनें" title="टाइप, स्कैन व बोलकर लिखें">
+              <span>माध्यम</span>
+            </a>
           </div>
 
           <div class="editor-top-right">
@@ -414,12 +452,15 @@ export class PoetryEditor {
       const hasContent = Boolean(this.title.trim() || this.body.trim() || this.poemId);
 
       if (hasContent) {
-        poemRepository.saveDraft({
+        this.repository.saveDraft({
           poemId: this.poemId || null,
           title: this.title,
           body: this.body,
           author: this.author,
-          tags: this.parseTags(this.tags)
+          tags: this.parseTags(this.tags),
+          source: this.source || 'type',
+          manuscriptId: this.manuscriptId || null,
+          inputMetadata: this.inputMetadata || null
         });
       }
 
@@ -455,24 +496,34 @@ export class PoetryEditor {
       const parsedTags = this.parseTags(this.tags);
 
       if (this.poemId) {
-        // Edit existing poem
-        poemRepository.update(this.poemId, {
+        // Update existing poem
+        this.repository.update(this.poemId, {
           title: this.title.trim(),
           body: this.body,
           author: this.author.trim() || 'अज्ञात',
           tags: parsedTags
         });
-        poemRepository.clearDraft();
+        this.repository.clearDraft();
         this.router.navigate(`/poems/${this.poemId}`);
       } else {
         // Create new poem
-        const newPoem = poemRepository.create({
+        const newPoem = this.repository.create({
           title: this.title.trim(),
           body: this.body,
           author: this.author.trim() || 'अज्ञात',
           tags: parsedTags
         });
-        poemRepository.clearDraft();
+
+        // Link manuscript if source was scan and manuscriptId is present
+        if (this.manuscriptId && this.manuscriptRepo && typeof this.manuscriptRepo.linkToPoem === 'function') {
+          try {
+            this.manuscriptRepo.linkToPoem(this.manuscriptId, newPoem.id);
+          } catch (mErr) {
+            console.warn('[PoetryEditor] Could not link manuscript to poem:', mErr);
+          }
+        }
+
+        this.repository.clearDraft();
         this.router.navigate(ROUTES.POEMS);
       }
     } catch (err) {
@@ -517,6 +568,9 @@ export class PoetryEditor {
     this.body = this.recoveredDraft.body || '';
     this.author = this.recoveredDraft.author || '';
     this.tags = Array.isArray(this.recoveredDraft.tags) ? this.recoveredDraft.tags.join(', ') : '';
+    this.source = this.recoveredDraft.source || 'type';
+    this.manuscriptId = this.recoveredDraft.manuscriptId || null;
+    this.inputMetadata = this.recoveredDraft.inputMetadata || null;
 
     const titleEl = this.container.querySelector('#editor-title');
     const bodyEl = this.container.querySelector('#editor-body');
@@ -540,9 +594,12 @@ export class PoetryEditor {
    * Discards discovered draft and clears it from storage
    */
   discardDraft() {
-    poemRepository.clearDraft();
+    this.repository.clearDraft();
     this.showRecoveryPrompt = false;
     this.recoveredDraft = null;
+    this.source = 'type';
+    this.manuscriptId = null;
+    this.inputMetadata = null;
 
     const banner = this.container.querySelector('#editor-recovery-banner');
     if (banner) banner.remove();
