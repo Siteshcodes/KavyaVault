@@ -149,16 +149,16 @@ export class InputModeSelector {
           <article class="input-mode-card ${this.currentMode === 'speak' ? 'active-mode' : ''}" role="listitem">
             <div class="input-mode-card-header">
               <div class="input-mode-icon" aria-hidden="true">🎙️</div>
-              <span class="input-mode-badge badge-contract">अनुबंध तैयार (Next)</span>
+              <span class="input-mode-badge badge-ready">सक्रिय (Active)</span>
             </div>
             <h2 class="input-mode-title">बोलकर लिखें (Speak)</h2>
             <p class="input-mode-desc">
-              अपनी वाणी में कविता का पाठ करें। स्थानीय वाक्-पहचान द्वारा शब्द सीधे प्रारूप में दर्ज होंगे।
+              अपनी वाणी में कविता का पाठ करें। ब्राउज़र की स्थानीय वाक्-पहचान द्वारा शब्द सीधे प्रारूप में दर्ज होंगे।
             </p>
             <div class="input-mode-action">
-              <button type="button" class="btn-input-action btn-input-secondary" id="btn-mode-speak" aria-label="ध्वनि माध्यम विवरण एवं अनुबंध देखें">
-                <span>अनुबंध एवं विवरण →</span>
-              </button>
+              <a href="${ROUTES.INPUT_SPEAK}" data-link class="btn-input-action btn-input-primary" id="btn-mode-speak" aria-label="बोलकर लिखें कक्ष में प्रवेश करें" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+                <span>बोलना प्रारंभ करें →</span>
+              </a>
             </div>
           </article>
 

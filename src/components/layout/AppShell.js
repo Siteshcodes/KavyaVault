@@ -30,6 +30,7 @@ import { ManuscriptView } from '../manuscripts/ManuscriptView.js';
 import { ManuscriptGallery } from '../manuscripts/ManuscriptGallery.js';
 import { ManuscriptTranscription } from '../manuscripts/ManuscriptTranscription.js';
 import { InputModeSelector } from '../input/InputModeSelector.js';
+import { SpeakInputView } from '../input/SpeakInputView.js';
 import { collectionRepository } from '../../services/CollectionRepository.js';
 import { poemRepository } from '../../services/PoemRepository.js';
 import { manuscriptRepository } from '../../services/ManuscriptRepository.js';
@@ -54,6 +55,7 @@ export class AppShell {
     this.activeManuscriptGallery = null;
     this.activeManuscriptTranscription = null;
     this.activeInputModeSelector = null;
+    this.activeSpeakInput = null;
   }
 
   /**
@@ -162,6 +164,10 @@ export class AppShell {
       this.activeInputModeSelector.unmount();
       this.activeInputModeSelector = null;
     }
+    if (this.activeSpeakInput) {
+      this.activeSpeakInput.unmount();
+      this.activeSpeakInput = null;
+    }
 
     // 1. Home / Foyer Screen
     if (currentPath === ROUTES.HOME) {
@@ -198,16 +204,22 @@ export class AppShell {
       return;
     }
 
-    // 3c. Modern Input Modes (/input, /input/speak)
+    // 3c. Speak -> Poem Workflow (/input/speak)
+    if (currentPath === ROUTES.INPUT_SPEAK || currentPath === '/input/speak') {
+      this.activeSpeakInput = new SpeakInputView({
+        container: this.contentContainer,
+        router: this.router
+      });
+      this.activeSpeakInput.mount();
+      return;
+    }
+
+    // 3d. Modern Input Modes Overview (/input)
     if (currentPath === ROUTES.INPUT_MODES || currentPath.startsWith('/input')) {
-      let submode = 'overview';
-      if (currentPath === ROUTES.INPUT_SPEAK || currentPath === '/input/speak') {
-        submode = 'speak';
-      }
       this.activeInputModeSelector = new InputModeSelector({
         container: this.contentContainer,
         router: this.router,
-        initialMode: submode
+        initialMode: 'overview'
       });
       this.activeInputModeSelector.mount();
       return;

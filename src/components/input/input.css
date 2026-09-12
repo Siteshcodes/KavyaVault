@@ -279,3 +279,438 @@
     gap: var(--space-2);
   }
 }
+
+/* ==========================================================================
+   Speak → Poem Workspace Styles (Phase 3 / Task 3.3)
+   ========================================================================== */
+
+.speak-workspace-view {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 var(--space-3) var(--space-8);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.speak-view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.speak-header-left {
+  flex: 1;
+  min-width: 260px;
+}
+
+.speak-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-primary);
+  text-decoration: none;
+  margin-bottom: var(--space-2);
+  transition: opacity var(--duration-fast);
+}
+
+.speak-back-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.speak-view-title {
+  font-family: var(--font-heading, var(--font-primary));
+  font-size: clamp(1.5rem, 3.2vw, 2rem);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 var(--space-2) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.speak-view-subtitle {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.speak-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+}
+
+.speak-lang-label {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+
+.speak-lang-select {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  min-width: 150px;
+  cursor: pointer;
+}
+
+.speak-lang-select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Privacy Banner */
+.speak-privacy-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid #10b981;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-5);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.speak-privacy-banner .privacy-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* Unsupported & Error Banners */
+.speak-unsupported-banner {
+  background-color: var(--color-surface);
+  border: 1px solid #f59e0b;
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-bottom: var(--space-5);
+  text-align: center;
+}
+
+.speak-unsupported-banner .unsupported-title {
+  font-family: var(--font-interface);
+  font-weight: 600;
+  font-size: var(--text-body);
+  color: #d97706;
+  margin-bottom: var(--space-2);
+}
+
+.speak-unsupported-banner .unsupported-desc {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-4) 0;
+}
+
+.speak-error-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background-color: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-5);
+  color: #dc2626;
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+}
+
+.speak-error-banner .error-text {
+  flex: 1;
+}
+
+.btn-dismiss-error {
+  background: transparent;
+  border: none;
+  color: #dc2626;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: var(--space-1);
+}
+
+/* Central Mic Bar */
+.speak-mic-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+
+/* Big accessible microphone button (minimum 56px height, thumb friendly) */
+.btn-mic-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-height: 56px;
+  min-width: 220px;
+  padding: var(--space-3) var(--space-6);
+  border-radius: 9999px;
+  border: 2px solid var(--color-primary);
+  background-color: var(--color-primary);
+  color: #ffffff;
+  font-family: var(--font-interface);
+  font-size: var(--text-body);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-standard);
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-mic-toggle:hover:not(:disabled) {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-mic-toggle:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-mic-toggle:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+.btn-mic-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: var(--color-border);
+  background-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+/* Listening pulsating effect */
+.btn-mic-toggle.is-listening {
+  background-color: #dc2626;
+  border-color: #dc2626;
+  animation: mic-pulse 2s infinite;
+}
+
+@keyframes mic-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(220, 38, 38, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+  }
+}
+
+.mic-icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Status Indicator Group */
+.speak-status-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text-muted);
+}
+
+.speak-status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.speak-status-indicator.status-idle {
+  background-color: #9ca3af;
+}
+
+.speak-status-indicator.status-starting {
+  background-color: #f59e0b;
+  animation: blink 1s infinite;
+}
+
+.speak-status-indicator.status-listening {
+  background-color: #dc2626;
+  animation: blink 1.2s infinite;
+}
+
+.speak-status-indicator.status-stopping {
+  background-color: #f59e0b;
+}
+
+.speak-status-indicator.status-completed {
+  background-color: #10b981;
+}
+
+.speak-status-indicator.status-error {
+  background-color: #ef4444;
+}
+
+.speak-status-indicator.status-unsupported {
+  background-color: #6b7280;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Transcript Card Workspace */
+.speak-transcript-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.transcript-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: var(--space-3);
+}
+
+.transcript-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.transcript-heading {
+  font-family: var(--font-heading, var(--font-primary));
+  font-size: var(--text-h3);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.transcript-hint {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+
+.transcript-metrics {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+
+/* Interim live preview text */
+.speak-interim-box {
+  background-color: var(--color-bg);
+  border: 1px dashed var(--color-primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-primary);
+  font-style: italic;
+  font-size: var(--text-body);
+  color: var(--color-primary);
+  line-height: 1.6;
+}
+
+/* Editable Transcript Textarea */
+.speak-transcript-textarea {
+  width: 100%;
+  min-height: 200px;
+  box-sizing: border-box;
+  font-family: var(--font-primary);
+  font-size: clamp(1.05rem, 2vw, 1.25rem);
+  line-height: 1.8;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  resize: vertical;
+  transition: border-color var(--duration-fast);
+}
+
+.speak-transcript-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb, 180, 83, 9), 0.15);
+}
+
+/* Actions Bar */
+.transcript-actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.btn-use-poem {
+  min-height: 48px;
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--text-body);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+@media (max-width: 640px) {
+  .speak-view-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .speak-header-right {
+    align-items: flex-start;
+  }
+
+  .btn-mic-toggle {
+    width: 100%;
+  }
+
+  .transcript-actions-bar {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .transcript-actions-bar button {
+    width: 100%;
+  }
+}
+

@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-434%2F434%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-524%2F524%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -360,8 +360,16 @@ Phase 3 expands KavyaVault from a typing-only workflow into a multi-modal creati
   - **Unicode & Devanagari Fidelity:** Complex conjuncts (`क्ष, त्र, ज्ञ, श्र, द्व, द्घ, हृ`), nuktas, chandrabindu, virama, and punctuation survive the complete pipeline roundtrip.
   - **Comprehensive Verification:** 23 dedicated automated tests added in `test_scan_to_poem.js` (457/457 total tests passing: 131 Phase 1 baseline + 261 Phase 2 baseline + 42 Task 3.1 + 23 Task 3.2).
 
-### Upcoming:
-- **Task 3.3 — Speak → Poem**: Local-first voice input and speech-to-text drafting.
+- ✅ **Task 3.3 — Speak → Poem**: Local-first voice input and speech-to-text drafting using native browser capabilities.
+  - **Pipeline Flow:** `Speak → Browser SpeechRecognition / webkitSpeechRecognition → Live Transcription → Review/Edit Transcript → "कविता के रूप में उपयोग करें" Action → PoemInputService.createSpeakDraft → PoetryEditor (/poems/new) → User Reviews/Edits → Explicit Save`.
+  - **Browser-Native Isolation (`SpeechRecognitionAdapter`):** Small isolated capability/adapter layer safely detecting standard `window.SpeechRecognition` and vendor-prefixed `window.webkitSpeechRecognition`. Handles complete lifecycle states: `idle`, `starting`, `listening`, `stopping`, `completed`, `error`, `unsupported`.
+  - **Bounded Language Support:** Default Hindi (`hi-IN`) and English (`en-IN`) with runtime switching passed directly to the speech engine.
+  - **Interim & Final Transcript Merging:** Accurately separates transient interim speech results from final committed chunks, joining poetic phrases by newline and deduplicating identical repeated result events.
+  - **Speak Workspace (`/input/speak`):** Accessible, thumb-friendly voice workspace featuring a >=56px microphone button with pulsing listening animation, status indicators, Devanagari character/word/line counters, and manual textarea editing.
+  - **Local Privacy Guarantee:** Zero external AI, zero cloud speech services (OpenAI, Google, Azure, AWS), zero telemetry. Audio and transcriptions remain exclusively on the user's browser device.
+  - **Validation & Non-Persistent Draft Handoff:** Empty or whitespace transcriptions are blocked with clear Hindi guidance. "कविता के रूप में उपयोग करें" constructs a non-persistent draft (`source: 'speak'`, `metadata: { language }`) and navigates to `PoetryEditor` without premature persistence.
+  - **Full Unicode Devanagari Integrity:** Complex conjuncts (`क्ष, त्र, ज्ञ, श्र, द्व, द्घ, हृ`), nuktas, matras, chandrabindu, virama, and punctuation survive faithfully.
+  - **Comprehensive Verification:** 67 dedicated automated tests added in `test_speak_to_poem.js` (524/524 total tests passing: 131 Phase 1 baseline + 261 Phase 2 baseline + 42 Task 3.1 + 23 Task 3.2 + 67 Task 3.3).
 
 ---
 
