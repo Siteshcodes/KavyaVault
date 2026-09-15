@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-541%2F541%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-559%2F559%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -379,6 +379,23 @@ Phase 3 expands KavyaVault from a typing-only workflow into a multi-modal creati
   - **Mobile & Desktop Responsive Design:** Thumb-friendly touch targets ($\ge 48\text{px}$) for all action buttons; single-column stacked layout on 390px mobile, 2-column on 768px tablet, and elegant, spacious 3-column literary grid on 1024px and 1440px desktop displays.
   - **Draft Continuity & Zero Premature Persistence:** Navigating between modes, toggling details, or exiting never writes premature poem records to `PoemRepository`. Final poems are created strictly through the user's explicit "सहेजें" action inside `PoetryEditor`.
   - **Comprehensive Verification:** 17 dedicated automated tests added in `test_modern_input_ux.js` (541/541 total tests passing: 131 Phase 1 baseline + 261 Phase 2 baseline + 42 Task 3.1 + 23 Task 3.2 + 67 Task 3.3 + 17 Task 3.4).
+
+---
+
+## 🤖 Phase 4: AI Poetry Assistant
+
+Phase 4 introduces an AI assistant strictly focused on **organization, classification, and analysis**. The AI assists poets by suggesting categories, moods, themes, keywords, and summaries without rewriting poems, generating replacement verses, altering the author's original words, or establishing historical provenance.
+
+### Completed:
+- ✅ **Task 4.1 — AI Analysis Foundation**: Robust, provider-agnostic architecture establishing domain contracts, provider interfaces, consent boundaries, and deterministic mock adapters.
+  - **Single Analytical Flow:** `Saved Poem → Analysis Request (with analysisConsent: true) → PoemAnalysisService → Provider Adapter (IAIAnalysisProvider) → Validated Analysis Result → Human Review → Approved Metadata → PoemRepository`.
+  - **Controlled Domain Model:** Analysis results encapsulate `poemId`, `requestedAt`, `provider`, `model`, `status` (`idle`, `pending`, `completed`, `failed`), and suggestions: `category`, `mood`, `themes`, `keywords`, `summary`.
+  - **Provider Abstraction (`IAIAnalysisProvider`):** Completely decoupled provider interface allowing future pluggable providers without coupling UI components to specific vendor SDKs.
+  - **Local Deterministic Mock (`MockAIAnalysisProvider`):** In-memory mock analyzer generating deterministic suggestions from Hindi literary keywords (`प्रकृति एवं सौन्दर्य`, `राष्ट्रभक्ति एवं चेतना`, `प्रेम एवं विरह`, `जीवन संघर्ष`, `आध्यात्म एवं दर्शन`) with ZERO external network calls, zero API keys, and zero external dependencies.
+  - **Strict Output Schema Validation:** Validates types, enforces maximum character lengths (summary <= 500, category <= 100, mood <= 50), bounds array counts (themes <= 10, keywords <= 15), and automatically deduplicates keywords and themes.
+  - **Human Review Boundary & Immutability:** Running AI analysis does NOT modify poem title, content, author, date, provenance, or storage. Analysis suggestions remain isolated in memory until explicitly approved by the user in future tasks.
+  - **Explicit Consent Contract:** Requests require explicit user consent (`analysisConsent: true`). Without explicit consent, the service safely rejects execution, laying a secure privacy foundation before real external providers are introduced.
+  - **Comprehensive Verification:** 18 dedicated automated tests in `test_ai_analysis_foundation.js` covering domain models, mock providers, error handling, original-poem immutability, zero storage writes, Unicode Devanagari fidelity, security injection resilience, and static zero-network audits (559/559 total tests passing across 21 test suites).
 
 ---
 
