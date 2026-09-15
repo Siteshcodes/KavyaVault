@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-559%2F559%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-574%2F574%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -396,6 +396,18 @@ Phase 4 introduces an AI assistant strictly focused on **organization, classific
   - **Human Review Boundary & Immutability:** Running AI analysis does NOT modify poem title, content, author, date, provenance, or storage. Analysis suggestions remain isolated in memory until explicitly approved by the user in future tasks.
   - **Explicit Consent Contract:** Requests require explicit user consent (`analysisConsent: true`). Without explicit consent, the service safely rejects execution, laying a secure privacy foundation before real external providers are introduced.
   - **Comprehensive Verification:** 18 dedicated automated tests in `test_ai_analysis_foundation.js` covering domain models, mock providers, error handling, original-poem immutability, zero storage writes, Unicode Devanagari fidelity, security injection resilience, and static zero-network audits (559/559 total tests passing across 21 test suites).
+
+- ✅ **Task 4.2 — AI Analysis UI**: User-facing AI analysis experience directly inside the poem reader (`PoemReader`).
+  - **Single User-Facing Workflow:** `Saved Poem → "AI से विश्लेषण करें" → Explicit Consent Dialog ("क्या आप इस कविता का AI विश्लेषण करना चाहते हैं?") → PoemAnalysisService → MockAIAnalysisProvider → Validated Analysis Result → Literary "AI सुझाव" Panel → Human Review (Task 4.3)`.
+  - **Dedicated Entry Point:** Hindi-first action button in the reader top toolbar (`.btn-reader-ai`) labeled *"AI से विश्लेषण करें"*, with clear sparkles icon and busy state handling (`disabled` during analysis).
+  - **Accessible Explicit Consent Modal:** A modal dialog requiring informed consent before invoking the service (*"काव्यकलश इस रचना के पाठ के आधार पर उपयुक्त श्रेणी, रस/भाव, विषय, मुख्य शब्द एवं साहित्यिक सारांश का सुझाव देगा। ... परिणाम केवल AI सुझाव हैं — आपकी मूल कविता अथवा मेटाडेटा में कोई स्वतः बदलाव नहीं होगा।"*). Supports Escape key dismissal and cancelation.
+  - **Full Lifecycle Management:** Clear representation of `idle`, `consent-required`, `pending` (with accessible spinner and literary status announcement), `completed`, and `failed`. Protects against duplicate concurrent clicks.
+  - **Suggestions Visual Language & Distinction:** Suggestions render in a dedicated card below poem verses with an unmistakable `✨ AI सुझाव` badge, clear disclaimer (*"ये सुझाव केवल अवलोकन हेतु हैं। इन्हें कविता में सहेजा नहीं गया है।"*), and field tags on Category (श्रेणी), Mood (मूड / रस), Themes (विषय), Keywords (मुख्य शब्द), and Summary (सारांश).
+  - **Poem Immutability & Zero Premature Persistence:** The original poem title, body, author, tags, date, archive state, favorites, and manuscripts remain 100% byte-for-byte immutable in `PoemRepository`. No metadata is written to storage.
+  - **Error Resilience & Honest Empty States:** Handled provider failure, malformed output, or empty suggestion results gracefully with clean Hindi messages and retry/re-analyze options without revealing stack traces.
+  - **Security & XSS Prevention:** All AI suggestions and user texts are safely escaped, neutralizing script tags and HTML injection vectors.
+  - **Full Unicode & Devanagari Integrity:** Devanagari conjuncts (`क्ष, त्र, ज्ञ, श्र, द्व, द्घ, हृ, ॐ`), matras, nuktas, punctuation (`।, ॥`), and emojis render faithfully.
+  - **Comprehensive Verification:** 15 dedicated automated tests in `test_ai_analysis_ui.js` (574/574 total tests passing across 22 test suites).
 
 ---
 

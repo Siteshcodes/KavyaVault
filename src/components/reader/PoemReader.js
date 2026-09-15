@@ -6,6 +6,8 @@
 
 import { poemRepository } from '../../services/PoemRepository.js';
 import { manuscriptRepository } from '../../services/ManuscriptRepository.js';
+import { poemAnalysisService } from '../../services/ai/PoemAnalysisService.js';
+import { ANALYSIS_STATUS } from '../../services/ai/analysisTypes.js';
 import { formatPoeticDate } from '../../utils/date.js';
 import { ROUTES } from '../../data/navigation.js';
 import { getIconSvg } from '../navigation/icons.js';
@@ -16,15 +18,26 @@ export class PoemReader {
    * @param {HTMLElement} options.container Root mounting container
    * @param {Object} options.router Client router instance
    * @param {string} options.poemId Unique poem ID
+   * @param {Object} [options.poemRepo=poemRepository] Poem repository instance
    * @param {Object} [options.manuscriptRepo=manuscriptRepository] Manuscript repository instance
+   * @param {Object} [options.analysisService=poemAnalysisService] AI analysis service instance
    */
-  constructor({ container, router, poemId, manuscriptRepo = manuscriptRepository }) {
+  constructor({ container, router, poemId, poemRepo = poemRepository, manuscriptRepo = manuscriptRepository, analysisService = poemAnalysisService }) {
     this.container = container;
     this.router = router;
     this.poemId = poemId;
+    this.poemRepo = poemRepo;
     this.manuscriptRepo = manuscriptRepo;
+    this.analysisService = analysisService;
     this.poem = null;
     this.showDeleteModal = false;
+
+    // AI Analysis State
+    this.showAiConsentModal = false;
+    this.aiAnalysisState = 'idle'; // 'idle' | 'consent-required' | 'pending' | 'completed' | 'failed'
+    this.aiAnalysisResult = null;
+    this.aiAnalysisError = null;
+    this.isAnalyzing = false;
 
     this.boundClickHandler = this.handleClick.bind(this);
     this.boundKeyDownHandler = this.handleKeyDown.bind(this);
@@ -34,7 +47,8 @@ export class PoemReader {
    * Mounts the reader into DOM and fetches poem data
    */
   mount() {
-    this.poem = poemRepository.getById(this.poemId);
+    const repo = this.poemRepo || poemRepository;
+    this.poem = repo.getById(this.poemId);
 
     if (!this.poem) {
       this.renderMissingPoem();
@@ -211,6 +225,9 @@ export class PoemReader {
       </div>
     ` : '';
 
+    // AI Consent Confirmation Modal
+    const aiConsentModalHtml = this.renderAiConsentModal();
+
     return `
       <div class="poem-reader-view standard-page-view" role="region" aria-label="काव्य पठन कक्ष">
         <!-- Top Action Toolbar -->
@@ -221,6 +238,19 @@ export class PoemReader {
           </a>
 
           <div class="reader-lifecycle-actions" role="group" aria-label="रचना क्रियाएँ">
+            <!-- AI Analysis Entry Point -->
+            <button
+              type="button"
+              class="btn-reader-action btn-reader-ai ${this.aiAnalysisState === 'pending' ? 'is-loading' : ''}"
+              data-action="open-ai-consent"
+              aria-label="AI से विश्लेषण करें"
+              title="AI से विश्लेषण करें"
+              ${this.isAnalyzing ? 'disabled' : ''}
+            >
+              ${getIconSvg('sparkles', 'nav-icon')}
+              <span>${this.aiAnalysisState === 'pending' ? 'विश्लेषण जारी...' : 'AI से विश्लेषण करें'}</span>
+            </button>
+
             <!-- Favorite Action -->
             <button
               type="button"
@@ -299,6 +329,9 @@ export class PoemReader {
           <!-- Linked Archival Manuscripts -->
           ${this.renderLinkedManuscriptsSection()}
 
+          <!-- AI Suggestions / Analysis Section -->
+          ${this.renderAiSuggestionsSection()}
+
           <!-- Reader Footer: Dingbat & Timestamps -->
           <footer class="reader-footer">
             <div class="reader-ornament" aria-hidden="true">❦</div>
@@ -311,8 +344,234 @@ export class PoemReader {
 
         <!-- Accessible Delete Confirmation Modal -->
         ${deleteModalHtml}
+
+        <!-- Accessible AI Consent Modal -->
+        ${aiConsentModalHtml}
       </div>
     `;
+  }
+
+  /**
+   * Renders accessible AI analysis consent modal
+   * @returns {string} HTML string
+   */
+  renderAiConsentModal() {
+    if (!this.showAiConsentModal) return '';
+
+    return `
+      <div class="ai-consent-modal-backdrop" id="ai-consent-modal-backdrop" role="presentation">
+        <div
+          class="ai-consent-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ai-consent-dialog-title"
+          aria-describedby="ai-consent-dialog-desc"
+        >
+          <div class="ai-consent-modal-header">
+            <div class="ai-badge-icon" aria-hidden="true">✨</div>
+            <h3 id="ai-consent-dialog-title" class="ai-consent-modal-title">
+              क्या आप इस कविता का AI विश्लेषण करना चाहते हैं?
+            </h3>
+          </div>
+          <div class="ai-consent-modal-body">
+            <p id="ai-consent-dialog-desc">
+              काव्यकलश इस रचना के पाठ के आधार पर उपयुक्त श्रेणी, रस/भाव, विषय, मुख्य शब्द एवं साहित्यिक सारांश का सुझाव देगा।
+            </p>
+            <div class="ai-consent-notice" role="note">
+              <span class="ai-notice-bullet">ℹ️</span>
+              <span>
+                यह विश्लेषण वर्तमान में कॉन्फ़िगर किए गए प्रदाता द्वारा निष्पादित होगा। परिणाम केवल <strong>AI सुझाव</strong> हैं — आपकी मूल कविता अथवा मेटाडेटा में कोई स्वतः बदलाव नहीं होगा।
+              </span>
+            </div>
+          </div>
+          <div class="ai-consent-modal-actions">
+            <button
+              type="button"
+              class="btn-modal-cancel"
+              data-action="close-ai-consent"
+              aria-label="विश्लेषण प्रक्रिया रद्द करें"
+            >
+              रद्द करें
+            </button>
+            <button
+              type="button"
+              class="btn-modal-confirm btn-ai-confirm"
+              data-action="confirm-ai-analysis"
+              aria-label="सहमति देकर विश्लेषण करें"
+            >
+              सहमति देकर विश्लेषण करें
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Renders the AI analysis suggestions panel or status lifecycle in the reader view
+   * @returns {string} HTML string
+   */
+  renderAiSuggestionsSection() {
+    if (this.aiAnalysisState === 'idle') {
+      return '';
+    }
+
+    if (this.aiAnalysisState === 'pending') {
+      return `
+        <section class="reader-ai-section reader-ai-pending" aria-label="AI विश्लेषण प्रगति" role="status" aria-live="polite">
+          <div class="ai-status-card">
+            <div class="ai-spinner" aria-hidden="true"></div>
+            <div class="ai-status-content">
+              <h3 class="ai-status-title">कविता का विश्लेषण किया जा रहा है...</h3>
+              <p class="ai-status-desc">साहित्यिक भाव, श्रेणी, विषय और मुख्य शब्दों का अध्ययन जारी है।</p>
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    if (this.aiAnalysisState === 'failed') {
+      return `
+        <section class="reader-ai-section reader-ai-error" aria-label="AI विश्लेषण त्रुटि" role="alert">
+          <div class="ai-status-card is-error">
+            <span class="ai-error-icon" aria-hidden="true">⚠️</span>
+            <div class="ai-status-content">
+              <h3 class="ai-status-title">AI विश्लेषण संपन्न नहीं हो सका</h3>
+              <p class="ai-status-desc">${this.escapeHtml(this.aiAnalysisError || 'प्रदाता अनुपलब्ध है अथवा त्रुटि उत्पन्न हुई।')}</p>
+            </div>
+            <button
+              type="button"
+              class="btn-reader-action btn-ai-retry"
+              data-action="open-ai-consent"
+              aria-label="पुनः प्रयास करें"
+            >
+              ${getIconSvg('sparkles', 'nav-icon')}
+              <span>पुनः प्रयास करें</span>
+            </button>
+          </div>
+        </section>
+      `;
+    }
+
+    if (this.aiAnalysisState === 'completed' && this.aiAnalysisResult) {
+      const result = this.aiAnalysisResult;
+      const category = result.category ? this.escapeHtml(result.category) : '';
+      const mood = result.mood ? this.escapeHtml(result.mood) : '';
+      const themes = Array.isArray(result.themes) ? result.themes : [];
+      const keywords = Array.isArray(result.keywords) ? result.keywords : [];
+      const summary = result.summary ? this.escapeHtml(result.summary) : '';
+
+      const hasContent = Boolean(category || mood || themes.length > 0 || keywords.length > 0 || summary);
+
+      if (!hasContent) {
+        return `
+          <section class="reader-ai-section reader-ai-empty" aria-label="AI सुझाव रिक्त">
+            <div class="ai-status-card is-empty">
+              <span class="ai-empty-icon" aria-hidden="true">🍃</span>
+              <div class="ai-status-content">
+                <h3 class="ai-status-title">कोई AI सुझाव उपलब्ध नहीं हैं</h3>
+                <p class="ai-status-desc">इस कविता के लिए कोई सार्थक सुझाव प्राप्त नहीं हुए।</p>
+              </div>
+              <button
+                type="button"
+                class="btn-reader-action btn-ai-retry"
+                data-action="open-ai-consent"
+                aria-label="पुनः विश्लेषण करें"
+              >
+                ${getIconSvg('sparkles', 'nav-icon')}
+                <span>पुनः विश्लेषण करें</span>
+              </button>
+            </div>
+          </section>
+        `;
+      }
+
+      return `
+        <section class="reader-ai-section reader-ai-completed" aria-label="AI विश्लेषण सुझाव">
+          <div class="ai-suggestions-container">
+            <header class="ai-suggestions-header">
+              <div class="ai-suggestions-title-group">
+                <span class="ai-badge" aria-label="AI सुझाव">✨ AI सुझाव</span>
+                <h2 class="ai-suggestions-heading">कविता विश्लेषण एवं संगठन</h2>
+              </div>
+              <button
+                type="button"
+                class="btn-reader-action btn-ai-reanalyze"
+                data-action="open-ai-consent"
+                aria-label="पुनः विश्लेषण करें"
+                title="पुनः विश्लेषण करें"
+                ${this.isAnalyzing ? 'disabled' : ''}
+              >
+                ${getIconSvg('sparkles', 'nav-icon')}
+                <span>पुनः विश्लेषण करें</span>
+              </button>
+            </header>
+
+            <p class="ai-suggestions-disclaimer">
+              ये सुझाव केवल अवलोकन हेतु हैं। इन्हें कविता में सहेजा नहीं गया है।
+            </p>
+
+            <div class="ai-suggestions-grid">
+              ${category ? `
+                <div class="ai-field-card">
+                  <div class="ai-field-header">
+                    <span class="ai-field-tag">AI सुझाव</span>
+                    <h3 class="ai-field-label">श्रेणी</h3>
+                  </div>
+                  <div class="ai-field-value ai-field-highlight">${category}</div>
+                </div>
+              ` : ''}
+
+              ${mood ? `
+                <div class="ai-field-card">
+                  <div class="ai-field-header">
+                    <span class="ai-field-tag">AI सुझाव</span>
+                    <h3 class="ai-field-label">मूड / रस</h3>
+                  </div>
+                  <div class="ai-field-value ai-field-highlight">${mood}</div>
+                </div>
+              ` : ''}
+
+              ${themes.length > 0 ? `
+                <div class="ai-field-card ai-field-full">
+                  <div class="ai-field-header">
+                    <span class="ai-field-tag">AI सुझाव</span>
+                    <h3 class="ai-field-label">विषय</h3>
+                  </div>
+                  <div class="ai-chips-list">
+                    ${themes.map(t => `<span class="ai-chip">#${this.escapeHtml(t)}</span>`).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              ${keywords.length > 0 ? `
+                <div class="ai-field-card ai-field-full">
+                  <div class="ai-field-header">
+                    <span class="ai-field-tag">AI सुझाव</span>
+                    <h3 class="ai-field-label">मुख्य शब्द</h3>
+                  </div>
+                  <div class="ai-chips-list">
+                    ${keywords.map(k => `<span class="ai-chip ai-chip-keyword">${this.escapeHtml(k)}</span>`).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              ${summary ? `
+                <div class="ai-field-card ai-field-full">
+                  <div class="ai-field-header">
+                    <span class="ai-field-tag">AI सुझाव</span>
+                    <h3 class="ai-field-label">सारांश</h3>
+                  </div>
+                  <blockquote class="ai-summary-text">${summary}</blockquote>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    return '';
   }
 
   /**
@@ -334,6 +593,75 @@ export class PoemReader {
       this.closeDeleteModal();
     } else if (action === 'confirm-delete') {
       this.confirmDelete();
+    } else if (action === 'open-ai-consent') {
+      this.openAiConsentModal();
+    } else if (action === 'close-ai-consent') {
+      this.closeAiConsentModal();
+    } else if (action === 'confirm-ai-analysis') {
+      this.confirmAiAnalysis();
+    }
+  }
+
+  /**
+   * Opens AI analysis explicit consent modal
+   */
+  openAiConsentModal() {
+    if (this.isAnalyzing) return;
+    this.showAiConsentModal = true;
+    this.update();
+
+    // Safe keyboard focus on confirm action
+    const confirmBtn = this.container.querySelector('.btn-ai-confirm');
+    if (confirmBtn) confirmBtn.focus();
+  }
+
+  /**
+   * Closes AI analysis consent modal without performing analysis
+   */
+  closeAiConsentModal() {
+    this.showAiConsentModal = false;
+    this.update();
+  }
+
+  /**
+   * Executes AI analysis request through PoemAnalysisService following explicit consent
+   */
+  async confirmAiAnalysis() {
+    if (this.isAnalyzing || !this.poem) return;
+
+    this.showAiConsentModal = false;
+    this.isAnalyzing = true;
+    this.aiAnalysisState = 'pending';
+    this.aiAnalysisError = null;
+    this.update();
+
+    try {
+      const service = this.analysisService || poemAnalysisService;
+      const res = await service.analyzePoem({
+        poemId: this.poem.id,
+        title: this.poem.title,
+        body: this.poem.body,
+        author: this.poem.author,
+        tags: this.poem.tags,
+        analysisConsent: true
+      });
+
+      if (res && res.status === ANALYSIS_STATUS.COMPLETED && res.result) {
+        this.aiAnalysisState = 'completed';
+        this.aiAnalysisResult = res.result;
+        this.aiAnalysisError = null;
+      } else {
+        this.aiAnalysisState = 'failed';
+        this.aiAnalysisError = (res && res.error) ? res.error : 'विश्लेषण परिणाम प्राप्त नहीं हो सका।';
+        this.aiAnalysisResult = null;
+      }
+    } catch (err) {
+      this.aiAnalysisState = 'failed';
+      this.aiAnalysisError = err.message || 'अप्रत्याशित त्रुटि उत्पन्न हुई।';
+      this.aiAnalysisResult = null;
+    } finally {
+      this.isAnalyzing = false;
+      this.update();
     }
   }
 
@@ -343,7 +671,8 @@ export class PoemReader {
   toggleFavorite() {
     if (!this.poem) return;
     try {
-      const updated = poemRepository.setFavorite(this.poem.id, !this.poem.isFavorite);
+      const repo = this.poemRepo || poemRepository;
+      const updated = repo.setFavorite(this.poem.id, !this.poem.isFavorite);
       this.poem = updated;
       this.update();
     } catch (err) {
@@ -357,11 +686,12 @@ export class PoemReader {
   toggleArchive() {
     if (!this.poem) return;
     try {
+      const repo = this.poemRepo || poemRepository;
       let updated;
       if (this.poem.isArchived) {
-        updated = poemRepository.restore(this.poem.id);
+        updated = repo.restore(this.poem.id);
       } else {
-        updated = poemRepository.archive(this.poem.id);
+        updated = repo.archive(this.poem.id);
       }
       this.poem = updated;
       this.update();
@@ -423,13 +753,14 @@ export class PoemReader {
   confirmDelete() {
     if (!this.poem) return;
     try {
+      const repo = this.poemRepo || poemRepository;
       const id = this.poem.id;
-      poemRepository.delete(id);
+      repo.delete(id);
 
       // Clean any lingering draft tied to this poem ID
-      const draft = poemRepository.getDraft();
-      if (draft && draft.poemId === id) {
-        poemRepository.clearDraft();
+      const draft = repo.getDraft ? repo.getDraft() : null;
+      if (draft && draft.poemId === id && repo.clearDraft) {
+        repo.clearDraft();
       }
 
       this.showDeleteModal = false;
@@ -440,12 +771,17 @@ export class PoemReader {
   }
 
   /**
-   * Keyboard shortcuts (Escape key dismisses delete modal)
+   * Keyboard shortcuts (Escape key dismisses delete modal or AI consent modal)
    */
   handleKeyDown(event) {
-    if (event.key === 'Escape' && this.showDeleteModal) {
-      event.preventDefault();
-      this.closeDeleteModal();
+    if (event.key === 'Escape') {
+      if (this.showAiConsentModal) {
+        event.preventDefault();
+        this.closeAiConsentModal();
+      } else if (this.showDeleteModal) {
+        event.preventDefault();
+        this.closeDeleteModal();
+      }
     }
   }
 
