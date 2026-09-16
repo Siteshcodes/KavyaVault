@@ -1,18 +1,23 @@
 /**
  * काव्यकलश (KavyaVault) — AI Analysis Provider Registry (providerRegistry.js)
- * Phase 4 / Task 4.1: AI Analysis Foundation
+ * Phase 4 / Task 4.4: AI Provider Integration + Privacy / Failure Hardening
  *
  * Minimal registry for resolving AI providers without coupling UI components
  * to specific vendor implementations.
  */
 
 import { MockAIAnalysisProvider } from './MockAIAnalysisProvider.js';
+import { ExternalAIAnalysisProvider } from './ExternalAIAnalysisProvider.js';
+import { DEFAULT_EXTERNAL_CONFIG } from './aiConfig.js';
 import { StorageError, StorageErrorCode } from '../storage/StorageError.js';
 
 const registry = new Map();
 
 // Register default mock provider
 registry.set('mock', new MockAIAnalysisProvider());
+
+// Register unconfigured external provider (disabled by default)
+registry.set('external', new ExternalAIAnalysisProvider(DEFAULT_EXTERNAL_CONFIG));
 
 /**
  * Registers an AI analysis provider implementation
@@ -53,9 +58,39 @@ export function getAIAnalysisProvider(id = 'mock') {
 }
 
 /**
+ * Returns safe public metadata for privacy disclosures
+ * @param {string} [id='mock']
+ * @returns {{ id: string, name: string, model: string, isLocal: boolean, isExternal: boolean, enabled: boolean }}
+ */
+export function getProviderMetadata(id = 'mock') {
+  const provider = getAIAnalysisProvider(id);
+  const providerId = provider.getId();
+  const isMock = providerId === 'mock';
+  const isEnabled = typeof provider.isEnabled === 'function' ? provider.isEnabled() : true;
+
+  return {
+    id: providerId,
+    name: provider.getName(),
+    model: provider.getModel(),
+    isLocal: isMock,
+    isExternal: !isMock,
+    enabled: isEnabled
+  };
+}
+
+/**
  * Lists all registered provider IDs
  * @returns {Array<string>}
  */
 export function listAIAnalysisProviders() {
   return Array.from(registry.keys());
+}
+
+/**
+ * Resets registry to default state (for testing)
+ */
+export function resetProviderRegistry() {
+  registry.clear();
+  registry.set('mock', new MockAIAnalysisProvider());
+  registry.set('external', new ExternalAIAnalysisProvider(DEFAULT_EXTERNAL_CONFIG));
 }

@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-589%2F589%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-620%2F620%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -214,7 +214,7 @@ KavyaVault features a 100% reproducible, standalone automated test suite execute
 npm test
 ```
 
-### Test Suite Summary (392 / 392 Tests Passing — 100% Pass Rate):
+### Test Suite Summary (620 / 620 Tests Passing — 100% Pass Rate):
 | Test Suite | Test File | Test Count | Key Verification Areas |
 |---|---|:---:|---|
 | **Local Persistence** | `test_persistence.js` | **10** | Storage adapter, serialization, error classification |
@@ -227,13 +227,21 @@ npm test
 | **Final Hardening** | `test_hardening.js` | **26** | Quota limits, extreme payloads, Unicode rigor, XSS, downgrade protection |
 | **Manuscript Preservation** | `test_manuscripts.js` | **34** | Manuscript creation, immutability, validation, migration, Unicode |
 | **Manuscript Capture & Import** | `test_manuscripts_capture.js` | **30** | Intake validation, lossless bytes, quota handling, preview safety |
-| **Non-Destructive Transformation** | `test_manuscript_transform.js` | **36** | Rotation (0/90/180/270), user-selectable mouse/touch crop, coordinate mapping, byte immutability, versioning, tabs, reset |
-| **Manuscript Gallery & Reader** | `test_manuscript_gallery.js` | **26** | Dedicated gallery route (`/manuscripts`), thumbnail resolution (derived prioritized over original), deterministic title/status/source filtering, XSS escaping, prev/next sequential navigation, image dimensions |
-| **Manuscript ↔ Poem Linking** | `test_manuscript_poem_linking.js` | **26** | Explicit linking (`manuscript.poemId`), safe unlinking, poem existence validation, one-to-many relationship, cascade cleanup on poem delete, archival byte immutability, reader UI integration |
-| **Manuscript Transcription Workspace** | `test_manuscript_transcription.js` | **32** | Manual transcription canvas (`/manuscripts/:id/transcribe`), status lifecycle (`untranscribed` → `draft` → `verified`), text edit downgrade, verifiedAt clearing, quota resilience, Unicode/Devanagari rigor, reader preview, linked poem independence |
-| **Manuscript & Transcription Version History** | `test_manuscript_versioning.js` | **40** | Lightweight version snapshots, restore flow creating new versions, status lifecycle preservation, duplicate save protection, 25-version cap, immutability, quota resilience |
-| **Archival Metadata & Provenance** | `test_manuscript_metadata.js` | **37** | Provenance normalization, non-destructive legacy migration, canonical kebab-case source & acquisition method enums with legacy aliases, distinct semantic date separation, metadata editing modal, archival record UI, reassurance blocks, byte immutability, XSS escaping |
-| **TOTAL** | | **392 / 392** | **0 Failures (100% Success)** |
+| **Non-Destructive Transformation** | `test_manuscript_transform.js` | **36** | Rotation (0/90/180/270), crop, coordinate mapping, versioning, tabs |
+| **Manuscript Gallery & Reader** | `test_manuscript_gallery.js` | **26** | Dedicated gallery route, thumbnail resolution, filtering, XSS escaping |
+| **Manuscript ↔ Poem Linking** | `test_manuscript_poem_linking.js` | **26** | Explicit linking, safe unlinking, validation, cascade cleanup |
+| **Manuscript Transcription** | `test_manuscript_transcription.js` | **32** | Manual transcription canvas, status lifecycle, Unicode rigor |
+| **Manuscript & Transcription Versioning** | `test_manuscript_versioning.js` | **40** | Version snapshots, restore flow, status preservation, 25-cap |
+| **Archival Metadata & Provenance** | `test_manuscript_metadata.js` | **37** | Provenance normalization, canonical source enums, date separation |
+| **Modern Input Foundation** | `test_modern_input.js` | **42** | Input selector canvas, draft model, routes, Devanagari fidelity |
+| **Scan → Poem Creation** | `test_scan_to_poem.js` | **23** | Scan draft, transcription handoff, bidirectional link, zero OCR leak |
+| **Speak → Poem Creation** | `test_speak_to_poem.js` | **67** | Browser speech recognition adapter, Hindi/English, interim merge |
+| **Unified Modern Input UX** | `test_modern_input_ux.js` | **17** | Unified `/input` hub, return navigation, lifecycle cleanup, privacy copy |
+| **AI Analysis Foundation** | `test_ai_analysis_foundation.js` | **18** | Domain contracts, mock provider, schema validator, zero network |
+| **AI Analysis UI** | `test_ai_analysis_ui.js` | **15** | Consent modal, pending spinner, AI suggestions card, error retry |
+| **AI Suggestion Review** | `test_ai_analysis_review.js` | **15** | Accept/edit/reject decisions, chip controls, explicit apply, tags merge |
+| **AI Provider Hardening** | `test_ai_provider_hardening.js` | **31** | Provider config, external adapter, timeouts, bounded retries, deduplication, injection resistance, secrets & logging audit |
+| **TOTAL** | | **620 / 620** | **0 Failures (100% Success)** |
 
 ---
 
@@ -422,6 +430,20 @@ Phase 4 introduces an AI assistant strictly focused on **organization, classific
   - **Author Content Immutability:** Poem body, title, author, dates, and manuscripts are strictly immutable.
   - **Discard / Cancel:** Clicking **"समीक्षा रद्द करें"** exits review state immediately, leaving the poem in storage 100% unaltered.
   - **Comprehensive Verification:** 15 dedicated automated tests in `test_ai_analysis_review.js` (589/589 total tests passing across 23 test suites).
+
+- ✅ **Task 4.4 — AI Provider Integration + Privacy / Failure Hardening**: Production-ready architectural boundary for safe external AI provider integration while preserving the local deterministic mock provider.
+  - **Provider Configuration Abstraction (`aiConfig.js`):** Minimal, validated configuration schema (`id`, `name`, `model`, `endpoint`, `timeoutMs`, `enabled`). Bounded timeout bounds (1,000ms to 60,000ms; default 10,000ms).
+  - **Zero Client-Side Secret Storage:** Strictly forbids storing API keys, passwords, or tokens in source code, client config, or client-side bundles. Any real production external provider requiring private credentials must operate through a secure server-side boundary or proxy.
+  - **External Provider Adapter (`ExternalAIAnalysisProvider.js`):** Implements `IAIAnalysisProvider` with strict request minimization, AbortController timeouts, and normalized error mapping.
+  - **Request Minimization:** Only sends strictly necessary poem metadata (`poemId`, `title`, `body`, `author`, `tags`). NEVER transmits manuscript image bytes, library contents, favorites, reading history, or local storage.
+  - **Mandatory Explicit Consent:** Zero provider requests without `analysisConsent: true`.
+  - **Truthful Privacy Disclosures:** UI discloses active provider name, model, and whether analysis executes locally or transmits text to a configured gateway, without making unverified third-party privacy claims.
+  - **Normalized Error Taxonomy:** Maps HTTP 401/403 (unauthorized/forbidden), 429 (rate limit), 500 (server error), network failures, malformed JSON, and timeouts into controlled, dignified Hindi error messages without leaking stack traces or credentials.
+  - **Bounded Retries:** Strictly at most 1 automatic retry for transient 5xx or network errors. NEVER retries 401, 403, 400, or consent failures.
+  - **In-Flight Request Deduplication:** Coalesces concurrent analysis requests for the same poem in `PoemAnalysisService` to prevent duplicate network calls.
+  - **Prompt-Injection Resistance:** Strict role separation. System prompt enforces organizational metadata tasks only (category, mood, themes, keywords, summary) and explicitly forbids poem rewriting, continuations, or altering wording. Poem content is treated strictly as untrusted data.
+  - **Complete Immutability & Storage Isolation:** Original poems in memory and storage remain 100% byte-for-byte immutable. Adapter has zero access to `localStorage`, `sessionStorage`, `indexedDB`, or repositories.
+  - **Comprehensive Verification:** 31 dedicated automated tests in `test_ai_provider_hardening.js` covering provider contracts, configuration, consent, minimization, timeouts, HTTP errors, schema validation, retries, deduplication, injection resistance, secrets audit, logging audit, and Unicode fidelity (620/620 total tests passing across 24 test suites).
 
 ---
 

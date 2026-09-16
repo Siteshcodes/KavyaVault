@@ -7,6 +7,7 @@
 import { poemRepository } from '../../services/PoemRepository.js';
 import { manuscriptRepository } from '../../services/ManuscriptRepository.js';
 import { poemAnalysisService } from '../../services/ai/PoemAnalysisService.js';
+import { getProviderMetadata } from '../../services/ai/providerRegistry.js';
 import { ANALYSIS_STATUS, SUGGESTION_REVIEW_STATE } from '../../services/ai/analysisTypes.js';
 import {
   createReviewSession,
@@ -29,14 +30,16 @@ export class PoemReader {
    * @param {Object} [options.poemRepo=poemRepository] Poem repository instance
    * @param {Object} [options.manuscriptRepo=manuscriptRepository] Manuscript repository instance
    * @param {Object} [options.analysisService=poemAnalysisService] AI analysis service instance
+   * @param {string} [options.providerId='mock'] Selected AI provider ID
    */
-  constructor({ container, router, poemId, poemRepo = poemRepository, manuscriptRepo = manuscriptRepository, analysisService = poemAnalysisService }) {
+  constructor({ container, router, poemId, poemRepo = poemRepository, manuscriptRepo = manuscriptRepository, analysisService = poemAnalysisService, providerId = 'mock' }) {
     this.container = container;
     this.router = router;
     this.poemId = poemId;
     this.poemRepo = poemRepo;
     this.manuscriptRepo = manuscriptRepo;
     this.analysisService = analysisService;
+    this.providerId = providerId;
     this.poem = null;
     this.showDeleteModal = false;
 
@@ -389,6 +392,13 @@ export class PoemReader {
   renderAiConsentModal() {
     if (!this.showAiConsentModal) return '';
 
+    let activeProvider = null;
+    try {
+      activeProvider = getProviderMetadata(this.providerId || 'mock');
+    } catch {
+      activeProvider = { name: 'एआई प्रदाता', model: 'मानक', isExternal: false };
+    }
+
     return `
       <div class="ai-consent-modal-backdrop" id="ai-consent-modal-backdrop" role="presentation">
         <div
@@ -411,7 +421,9 @@ export class PoemReader {
             <div class="ai-consent-notice" role="note">
               <span class="ai-notice-bullet">ℹ️</span>
               <span>
-                यह विश्लेषण वर्तमान में कॉन्फ़िगर किए गए प्रदाता द्वारा निष्पादित होगा। परिणाम केवल <strong>AI सुझाव</strong> हैं — आपकी मूल कविता अथवा मेटाडेटा में कोई स्वतः बदलाव नहीं होगा।
+                प्रदाता: <strong>${this.escapeHtml(activeProvider.name)}</strong> (${this.escapeHtml(activeProvider.model)})।
+                ${activeProvider.isExternal ? 'इस विश्लेषण हेतु कविता का पाठ कॉन्फ़िगर किए गए बाह्य गेटवे पर प्रेषित किया जाएगा।' : 'यह विश्लेषण स्थानीय वातावरण में निष्पादित होता है।'}
+                परिणाम केवल <strong>AI सुझाव</strong> हैं — आपकी मूल कविता अथवा मेटाडेटा में कोई स्वतः बदलाव नहीं होगा।
               </span>
             </div>
           </div>
@@ -1148,7 +1160,8 @@ export class PoemReader {
         body: this.poem.body,
         author: this.poem.author,
         tags: this.poem.tags,
-        analysisConsent: true
+        analysisConsent: true,
+        providerId: this.providerId || 'mock'
       });
 
       if (res && res.status === ANALYSIS_STATUS.COMPLETED && res.result) {
