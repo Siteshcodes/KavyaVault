@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-710%2F710%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-747%2F747%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -536,7 +536,36 @@ Phase 5 unifies deterministic exact text matching with future semantic retrieval
     - Consistent metadata filtering across category, mood, tags, favorites, and archive status.
     - Mobile-responsive layout (390px, 768px, 1024px, 1440px) with touch targets $\ge 44$px.
   - **Security & Privacy:** XSS-safe text escaping, zero telemetry, zero cloud vector databases, and zero storage writes.
-  - **Comprehensive Verification:** 20 dedicated automated tests in `test_hybrid_search.js` (710/710 total tests passing across 28 test suites).
+---
+
+## 🏛️ Phase 6: Personal Digital Library
+
+Phase 6 enriches KavyaVault with a serene, personal digital library organization layer, elevating the poet's experience through collections, categories, normalized tags, favorites, recent history, and chronological timeline provenance.
+
+### In Progress / Completed:
+- ✅ **Task 6.1 — Library Organization Foundation**: Core domain models, service layer, Unicode tag normalization, category slugs, recent poem history, chronological timeline, multi-criteria filtering, and deterministic sorting.
+  - **Decoupled Architecture:**
+    ```text
+    UI (Future Views) → LibraryService (Facade) / Domain Services → Repositories → Storage Adapter → Storage Driver
+    ```
+  - **Domain Models & Contracts (`src/services/library/libraryTypes.js`):**
+    - `Collection`: ID, name, description, `poemIds` list, timestamps. Duplicate poem IDs are strictly prevented; deleting collections strictly preserves poem records.
+    - `Category`: ID, name, slug, timestamps. Slugs safely preserve Devanagari vowel marks and combining characters (`\p{L}\p{M}\p{N}`).
+    - `Tag`: ID, name, `normalizedName`, timestamps. Preserves author's exact display form while enabling case-, whitespace-, and hash-insensitive matching.
+    - `RecentActivity`: Bounded local history (default max 50 items) deduplicated by `poemId`. Viewing poems never mutates `poem.updatedAt` or repository state.
+    - `TimelineEntry`: Normalized chronological events (`createdAt`, `updatedAt`, `authoredDate`, manuscript `digitizedDate`). Never fabricates synthetic dates.
+    - `LibraryFilter`: Multi-criteria filter query covering collection, category, tags, favorite, archive, and date ranges (`createdDateRange`, `updatedDateRange`, `authoredDateRange`).
+  - **Domain Services:**
+    - `CollectionService`: CRUD operations, membership management, and poem resolution with safe handling of missing references.
+    - `TagService`: NFC Unicode normalization (`normalizeTagName`), multi-tag matching, tag extraction with usage counts.
+    - `CategoryService`: Grouping, count aggregation, and Unicode slug matching.
+    - `FavoritesService`: High-level operations directly updating `poem.isFavorite` on `PoemRepository` without parallel duplicate storage.
+    - `RecentPoemService`: Lightweight local viewing history stored under `kavyavault:recent_poems`.
+    - `TimelineService`: Provenance timeline aggregation with deterministic ordering and tie-breaking.
+    - `LibraryFilterService`: Organizational query engine with deterministic multi-tier tie-breaking (`primaryField → updatedAt DESC → poemId ASC`).
+    - `LibraryService`: Unified facade exposing high-level library operations and aggregated statistics.
+  - **Privacy & Security:** 100% local-first, zero remote APIs, zero cloud storage, zero telemetry, zero AI/embeddings, and zero poem body duplication.
+  - **Comprehensive Verification:** 37 dedicated automated tests in `test_library_organization.js` (747/747 total tests passing across 29 test suites).
 
 ---
 

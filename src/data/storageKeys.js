@@ -11,5 +11,8 @@ export const STORAGE_KEYS = {
   METADATA: `${STORAGE_PREFIX}metadata`,
   THEME: `${STORAGE_PREFIX}theme`,
   COLLECTIONS: `${STORAGE_PREFIX}collections`,
-  MANUSCRIPTS: `${STORAGE_PREFIX}manuscripts`
+  MANUSCRIPTS: `${STORAGE_PREFIX}manuscripts`,
+  RECENT_POEMS: `${STORAGE_PREFIX}recent_poems`,
+  CATEGORIES: `${STORAGE_PREFIX}categories`,
+  TAGS: `${STORAGE_PREFIX}tags`
 };
