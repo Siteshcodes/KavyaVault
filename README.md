@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-645%2F645%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-669%2F669%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -468,6 +468,28 @@ Phase 5 unifies deterministic exact text matching with future semantic retrieval
   - **Metadata Filtering Support:** Supports filtering on actual poem attributes (`category`, `tags`, `mood`, `isFavorite`, `isArchived`). Excludes archived poems by default unless explicitly requested.
   - **Privacy & Security Guarantees:** 100% local, read-only operation with zero network calls, zero external embedding APIs, zero telemetry, zero storage writes, and strict XSS query sanitization.
   - **Comprehensive Verification:** 25 dedicated automated tests in `test_intelligent_search_foundation.js` (645/645 total tests passing across 25 test suites).
+
+- ✅ **Task 5.2 — Local Semantic Representation**: Local semantic representation layer, domain models, provider abstraction, text preparation, vector validation, cosine similarity math, and truthful capability boundaries.
+  - **Single Representation Pipeline:** `Poem → preparePoemSemanticText → IEmbeddingProvider (LocalEmbeddingProvider) → Normalized Vector → Future Vector Index (Task 5.3)`.
+  - **Embedding Domain Model (`src/services/search/semantic/semanticTypes.js`):**
+    - `PoemEmbedding`: Encapsulates `poemId`, `model` (e.g. `"kavya-local-v1"`), `dimensions`, `vector` (frozen numerical array), `sourceTextHash`, and `createdAt`.
+    - `validateEmbeddingVector`: Enforces numeric, finite, non-empty vectors; rejects NaN, $\pm\infty$, non-number types, and dimension mismatches.
+  - **Embedding Provider Abstraction (`src/services/search/semantic/IEmbeddingProvider.js`):**
+    - Framework-independent contract defining `getId()`, `getName()`, `getModelVersion()`, `getDimensions()`, `isAvailable()`, `embed(text)`, `embedPoem(poem)`, and `embedQuery(queryText)`. Symmetrically handles both poems and queries.
+  - **Truthful Local Provider (`src/services/search/semantic/LocalEmbeddingProvider.js`):**
+    - Implements `IEmbeddingProvider`. Truthfully declares `isAvailable() = false` and throws dignified Hindi error if invoked directly.
+    - Strictly avoids bundling heavy ML dependencies (>50MB ONNX/Transformers runtimes) or downloading model weights from remote CDNs during build/runtime.
+  - **Test Embedding Provider (`src/services/search/semantic/TestEmbeddingProvider.js`):**
+    - In-memory deterministic mock provider generating valid unit vectors for test suites to verify math and pipeline contracts without claiming semantic artificial intelligence.
+  - **Semantic Text Preparation & Invalidation (`src/services/search/semantic/semanticPreparation.js`):**
+    - `preparePoemSemanticText`: Canonical assembly of `title`, `body`, `author`, and `tags`. Excludes manuscript image bytes, storage keys, favorites, reading state, and internal flags.
+    - `normalizeSemanticText`: NFC Unicode normalization, collapsing excessive whitespace while preserving line structure and Hindi Devanagari.
+    - `computeSourceTextHash`: Deterministic FNV-1a 32-bit hex hash for change detection and cache invalidation without leaking poem content.
+  - **Vector Mathematics Foundation (`src/services/search/semantic/vectorMath.js`):**
+    - `cosineSimilarity`: Deterministic calculation safely handling zero vectors (returns 0), dimension mismatches (returns 0), and bounding results strictly to $[-1.0, 1.0]$.
+    - `normalizeVector`, `dotProduct`, `vectorMagnitude`: Pure vector utility helpers.
+  - **Security, Privacy & Read-Only Guarantees:** Zero external network calls, zero embedding API endpoints, zero storage writes, and untrusted poem content treated purely as raw data.
+  - **Comprehensive Verification:** 24 dedicated automated tests in `test_local_semantic_representation.js` (669/669 total tests passing across 26 test suites).
 
 ---
 

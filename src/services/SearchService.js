@@ -25,6 +25,25 @@ import { ISearchProvider } from './search/ISearchProvider.js';
 import { TextSearchProvider } from './search/TextSearchProvider.js';
 import { SemanticSearchProvider } from './search/SemanticSearchProvider.js';
 import { HybridSearchProvider } from './search/HybridSearchProvider.js';
+import {
+  createPoemEmbedding,
+  validateEmbeddingVector
+} from './search/semantic/semanticTypes.js';
+import { IEmbeddingProvider } from './search/semantic/IEmbeddingProvider.js';
+import { LocalEmbeddingProvider } from './search/semantic/LocalEmbeddingProvider.js';
+import { TestEmbeddingProvider } from './search/semantic/TestEmbeddingProvider.js';
+import {
+  normalizeSemanticText,
+  preparePoemSemanticText,
+  prepareQuerySemanticText,
+  computeSourceTextHash
+} from './search/semantic/semanticPreparation.js';
+import {
+  vectorMagnitude,
+  normalizeVector,
+  dotProduct,
+  cosineSimilarity
+} from './search/semantic/vectorMath.js';
 import { poemRepository } from './PoemRepository.js';
 import { StorageError, StorageErrorCode } from './storage/StorageError.js';
 
@@ -431,5 +450,18 @@ export {
   ISearchProvider,
   TextSearchProvider,
   SemanticSearchProvider,
-  HybridSearchProvider
+  HybridSearchProvider,
+  createPoemEmbedding,
+  validateEmbeddingVector,
+  IEmbeddingProvider,
+  LocalEmbeddingProvider,
+  TestEmbeddingProvider,
+  normalizeSemanticText,
+  preparePoemSemanticText,
+  prepareQuerySemanticText,
+  computeSourceTextHash,
+  vectorMagnitude,
+  normalizeVector,
+  dotProduct,
+  cosineSimilarity
 };
