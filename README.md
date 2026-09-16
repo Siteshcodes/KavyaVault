@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-802%2F802%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-833%2F833%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -586,6 +586,27 @@ Phase 6 enriches KavyaVault with a serene, personal digital library organization
     - $\ge 48$px touch targets (`--touch-target-min: 48px`) across tabs, buttons, and view toggles.
     - Responsive across 390px (mobile feed), 768px (tablet), 1024px (laptop), and 1440px (desktop 3-column grid).
   - **Comprehensive Verification:** 55 dedicated automated tests in `test_library_ui.js` (802/802 total tests passing across 30 test suites).
+- ✅ **Task 6.3 — Library Discovery, Navigation & UX Polish**: Coherent daily-use literary discovery experience refining navigation, section transitions, query persistence, mobile ergonomics, and empty states.
+  - **Home ↔ Library Discovery Hierarchy:**
+    - Elegant editorial entrance foyer adhering to the literary hierarchy:
+      1. **आपकी कविताएँ (Your Compositions):** Latest poems with rich metadata and direct link to all poems.
+      2. **हाल में पढ़ी गई (Recently Read):** Bounded history cards displaying literary memories, relative reading dates, and direct routing into `/poems?section=recent`.
+      3. **पसंदीदा (Curated Favorites):** Dedicated favorite verses with heart glyphs linking to `/poems?section=favorites`.
+      4. **संग्रह (Anthologies):** Curated anthologies displaying composition counts and direct navigation into `/poems?section=collections`.
+  - **Deeply Contextual Empty States:**
+    - Authentic, non-repetitive literary empty states for every context ("अभी आपकी काव्य-डायरी खाली है।", "अभी कोई कविता पसंदीदा नहीं है।", "आपने अभी कोई कविता नहीं पढ़ी है।", "यह संग्रह अभी खाली है।", "इन मानदंडों से कोई कविता नहीं मिली।").
+  - **Filter State & URL Synchronization:**
+    - Browser address bar reflects section changes and active filters seamlessly via `syncUrlState()` without full page reloads (`replaceState`).
+    - Filter chips remain visible when drawer expands; one-click removal and "सभी साफ़ करें" actions cleanly update both URL and view.
+  - **Accessible Focus & Modal Handling:**
+    - Escape key closes open collection modals and collapses the filter drawer, automatically restoring focus to the initiating button.
+    - Backdrop click safely closes modals without unexpected side-effects.
+  - **Resilience & Storage Safety:**
+    - Gracefully ignores and cleans up stale/deleted poem references in recent history and collections without crashing or corrupting state.
+    - Viewing poems never alters `poem.updatedAt` timestamps.
+  - **Mobile Ergonomics (390px):**
+    - Stacked full-width toolbar controls, smooth horizontal tab scrolling with auto-scroll on section change, 48px minimum touch targets, and zero horizontal page overflow.
+  - **Comprehensive Verification:** 31 dedicated automated tests in `test_library_ux.js` (833/833 total tests passing across 31 test suites).
 
 ---
 

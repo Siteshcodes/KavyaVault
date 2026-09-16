@@ -53,31 +53,80 @@ export class LibraryView {
     this.collectionRepo = options.collectionRepo || collectionRepository;
     this.manuscriptRepo = options.manuscriptRepo || manuscriptRepository;
 
-    this.activeSection = initialFilter || 'all';
-    this.viewMode = 'grid';
-    this.currentSort = 'updatedAt:desc';
+    // Check URL query parameters if present in browser
+    const queryParams = typeof window !== 'undefined' && window.location && window.location.search
+      ? new URLSearchParams(window.location.search)
+      : null;
+
+    const sectionFromQuery = queryParams ? (queryParams.get('section') || queryParams.get('filter')) : null;
+    this.activeSection = sectionFromQuery || initialFilter || 'all';
+
+    this.viewMode = (queryParams && queryParams.get('view')) || options.initialView || 'grid';
+    this.currentSort = (queryParams && queryParams.get('sort')) || options.initialSort || 'updatedAt:desc';
     this.isFilterOpen = false;
 
     // Filter criteria
     this.activeFilter = {
-      category: null,
-      tag: null,
-      collectionId: null,
-      isFavorite: null,
-      isArchived: null
+      category: (queryParams && queryParams.get('category')) || options.initialCategory || null,
+      tag: (queryParams && queryParams.get('tag')) || options.initialTag || null,
+      collectionId: (queryParams && queryParams.get('collectionId')) || options.initialCollectionId || null,
+      isFavorite: (queryParams && queryParams.get('favorites') === 'true') || options.initialIsFavorite || null,
+      isArchived: (queryParams && queryParams.get('archived') === 'true') || options.initialIsArchived || null
     };
 
     // Sub-view state
-    this.activeCollectionId = null;
+    this.activeCollectionId = (queryParams && queryParams.get('collectionId') && this.activeSection === 'collections')
+      ? queryParams.get('collectionId')
+      : null;
     this.isCreateCollectionModalOpen = false;
     this.editingCollection = null;
     this.isAddPoemsModalOpen = false;
+    this.lastFocusedElement = null;
 
     // Bound event handlers
     this.boundClickHandler = this.handleClick.bind(this);
     this.boundChangeHandler = this.handleChange.bind(this);
     this.boundSubmitHandler = this.handleSubmit.bind(this);
     this.boundKeydownHandler = this.handleKeydown.bind(this);
+  }
+
+  /**
+   * Synchronizes current active section, sort, and filters to browser URL query state
+   */
+  syncUrlState() {
+    if (typeof window === 'undefined' || !window.history || !window.location) return;
+    try {
+      const params = new URLSearchParams();
+      if (this.activeSection && this.activeSection !== 'all') {
+        params.set('section', this.activeSection);
+      }
+      if (this.activeFilter.category) {
+        params.set('category', this.activeFilter.category);
+      }
+      if (this.activeFilter.tag) {
+        params.set('tag', this.activeFilter.tag);
+      }
+      if (this.activeFilter.collectionId) {
+        params.set('collectionId', this.activeFilter.collectionId);
+      }
+      if (this.activeFilter.isFavorite) {
+        params.set('favorites', 'true');
+      }
+      if (this.currentSort && this.currentSort !== 'updatedAt:desc') {
+        params.set('sort', this.currentSort);
+      }
+      if (this.viewMode && this.viewMode !== 'grid') {
+        params.set('view', this.viewMode);
+      }
+
+      const queryString = params.toString() ? '?' + params.toString() : '';
+      const newPath = window.location.pathname + queryString;
+      if (window.location.search !== queryString && typeof window.history.replaceState === 'function') {
+        window.history.replaceState(null, '', newPath);
+      }
+    } catch {
+      // Ignore URL sync errors in test/restricted environments
+    }
   }
 
   /**
@@ -374,8 +423,8 @@ export class LibraryView {
         if (this.activeSection === 'favorites') {
           sectionContentHtml = renderEmptyState({
             icon: 'heart',
-            heading: 'कोई पसंदीदा रचना नहीं मिली',
-            text: 'अपनी प्रिय कविताओं को दिल के चिह्न (♥) से पसंदीदा में जोड़ें।',
+            heading: 'अभी कोई कविता पसंदीदा नहीं है।',
+            text: 'कोई पसंदीदा रचना नहीं मिली। अपनी प्रिय कविताओं को दिल के चिह्न (♥) से पसंदीदा में जोड़ें।',
             primaryAction: `
               <button type="button" class="btn-primary-action" data-action="navigate-section" data-section="all" aria-label="सभी कविताएँ देखें">
                 ${getIconSvg('book', 'nav-icon')}
@@ -398,8 +447,8 @@ export class LibraryView {
         } else if (this.getActiveFilterCount() > 0) {
           sectionContentHtml = renderEmptyState({
             icon: 'filter',
-            heading: 'फ़िल्टर के अनुसार कोई कविता नहीं मिली',
-            text: 'चयनित श्रेणी, टैग अथवा संग्रह के अनुसार कोई रचना उपस्थित नहीं है।',
+            heading: 'इन मानदंडों से कोई कविता नहीं मिली।',
+            text: 'फ़िल्टर के अनुसार कोई कविता नहीं मिली। चयनित श्रेणी, टैग अथवा संग्रह के मानदंड बदलें या साफ़ करें।',
             primaryAction: `
               <button type="button" class="btn-primary-action" data-action="clear-all-filters" aria-label="सभी फ़िल्टर हटाएं">
                 <span>फ़िल्टर साफ़ करें</span>
@@ -409,8 +458,8 @@ export class LibraryView {
         } else {
           sectionContentHtml = renderEmptyState({
             icon: 'book',
-            heading: 'आपका काव्य-संग्रह अभी खाली है',
-            text: 'अपनी पहली रचना लिखें और उसे इस व्यक्तिगत डिजिटल पुस्तकालय में संजोएं।',
+            heading: 'अभी आपकी काव्य-डायरी खाली है।',
+            text: 'काव्य-संग्रह अभी खाली है। अपनी पहली रचना लिखें और उसे इस व्यक्तिगत डिजिटल पुस्तकालय में संजोएं।',
             primaryAction: `
               <a href="${ROUTES.NEW_POEM}" data-link class="btn-primary-action" aria-label="नई कविता लिखें">
                 ${getIconSvg('quill', 'nav-icon')}
@@ -454,6 +503,7 @@ export class LibraryView {
   update() {
     if (!this.container) return;
     this.container.innerHTML = this.render();
+    this.syncUrlState();
   }
 
   /**
@@ -485,9 +535,33 @@ export class LibraryView {
   }
 
   /**
-   * Handles keyboard navigation on section tabs
+   * Handles keyboard navigation on section tabs and modal Escape closing
    */
   handleKeydown(e) {
+    // 1. Accessible Escape key handling to close modals & filter drawer
+    if (e.key === 'Escape') {
+      if (this.isCreateCollectionModalOpen || this.editingCollection || this.isAddPoemsModalOpen) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        this.isCreateCollectionModalOpen = false;
+        this.editingCollection = null;
+        this.isAddPoemsModalOpen = false;
+        this.update();
+        if (this.lastFocusedElement && typeof this.lastFocusedElement.focus === 'function') {
+          this.lastFocusedElement.focus();
+        }
+        return;
+      }
+      if (this.isFilterOpen) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        this.isFilterOpen = false;
+        this.update();
+        if (this.lastFocusedElement && typeof this.lastFocusedElement.focus === 'function') {
+          this.lastFocusedElement.focus();
+        }
+        return;
+      }
+    }
+
     const activeTab = e.target.closest('.library-section-tab');
     if (!activeTab) return;
 
@@ -566,6 +640,18 @@ export class LibraryView {
    * Centralized click delegation
    */
   handleClick(event) {
+    // 0. Close modal on backdrop click
+    if (event.target && event.target.classList && event.target.classList.contains('modal-backdrop')) {
+      this.isCreateCollectionModalOpen = false;
+      this.editingCollection = null;
+      this.isAddPoemsModalOpen = false;
+      this.update();
+      if (this.lastFocusedElement && typeof this.lastFocusedElement.focus === 'function') {
+        this.lastFocusedElement.focus();
+      }
+      return;
+    }
+
     // 1. Tab / Section navigation
     const sectionBtn = event.target.closest('[data-section]');
     if (sectionBtn) {
@@ -574,6 +660,12 @@ export class LibraryView {
         this.activeSection = section;
         this.activeCollectionId = null;
         this.update();
+        if (this.container.querySelector) {
+          const updatedTab = this.container.querySelector(`#library-tab-${section}`);
+          if (updatedTab && typeof updatedTab.scrollIntoView === 'function') {
+            updatedTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }
+        }
       }
       return;
     }
@@ -584,7 +676,14 @@ export class LibraryView {
       const section = navBtn.getAttribute('data-section');
       if (section) {
         this.activeSection = section;
+        this.activeCollectionId = null;
         this.update();
+        if (this.container.querySelector) {
+          const updatedTab = this.container.querySelector(`#library-tab-${section}`);
+          if (updatedTab && typeof updatedTab.scrollIntoView === 'function') {
+            updatedTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }
+        }
       }
       return;
     }
@@ -603,8 +702,19 @@ export class LibraryView {
     // 3. Filter Drawer Toggle
     const filterToggleBtn = event.target.closest('[data-action="toggle-filter-drawer"]');
     if (filterToggleBtn) {
+      if (!this.isFilterOpen && typeof document !== 'undefined' && document.activeElement) {
+        this.lastFocusedElement = document.activeElement;
+      }
       this.isFilterOpen = !this.isFilterOpen;
       this.update();
+      if (this.isFilterOpen && this.container.querySelector) {
+        const catSelect = this.container.querySelector('#filter-category-select');
+        if (catSelect && typeof catSelect.focus === 'function') {
+          catSelect.focus();
+        }
+      } else if (!this.isFilterOpen && this.lastFocusedElement && typeof this.lastFocusedElement.focus === 'function') {
+        this.lastFocusedElement.focus();
+      }
       return;
     }
 
@@ -646,6 +756,9 @@ export class LibraryView {
 
       this.isFilterOpen = false;
       this.update();
+      if (this.lastFocusedElement && typeof this.lastFocusedElement.focus === 'function') {
+        this.lastFocusedElement.focus();
+      }
       return;
     }
 
@@ -697,10 +810,13 @@ export class LibraryView {
     // Open Create Collection Modal
     const openCreateBtn = event.target.closest('[data-action="open-create-collection-modal"]');
     if (openCreateBtn) {
+      if (typeof document !== 'undefined' && document.activeElement) {
+        this.lastFocusedElement = document.activeElement;
+      }
       this.isCreateCollectionModalOpen = true;
       this.update();
       const input = this.container.querySelector('#col-name-input');
-      if (input) input.focus();
+      if (input && typeof input.focus === 'function') input.focus();
       return;
     }
 
@@ -709,10 +825,13 @@ export class LibraryView {
     if (openEditBtn) {
       const colId = openEditBtn.getAttribute('data-collection-id');
       if (colId) {
+        if (typeof document !== 'undefined' && document.activeElement) {
+          this.lastFocusedElement = document.activeElement;
+        }
         this.editingCollection = this.service.collections.getCollection(colId);
         this.update();
         const input = this.container.querySelector('#edit-col-name-input');
-        if (input) input.focus();
+        if (input && typeof input.focus === 'function') input.focus();
       }
       return;
     }
@@ -740,8 +859,13 @@ export class LibraryView {
     // Open Add Poems Modal
     const openAddPoemsBtn = event.target.closest('[data-action="open-add-poems-modal"]');
     if (openAddPoemsBtn) {
+      if (typeof document !== 'undefined' && document.activeElement) {
+        this.lastFocusedElement = document.activeElement;
+      }
       this.isAddPoemsModalOpen = true;
       this.update();
+      const firstInput = this.container.querySelector('input[name="selectedPoems"]') || this.container.querySelector('.btn-modal-close');
+      if (firstInput && typeof firstInput.focus === 'function') firstInput.focus();
       return;
     }
 
@@ -764,6 +888,9 @@ export class LibraryView {
       this.editingCollection = null;
       this.isAddPoemsModalOpen = false;
       this.update();
+      if (this.lastFocusedElement && typeof this.lastFocusedElement.focus === 'function') {
+        this.lastFocusedElement.focus();
+      }
       return;
     }
 

@@ -119,6 +119,7 @@ export function renderLibraryFilterDrawer({
   `).join('');
 
   return `
+    ${chipsHtml}
     <div class="library-filter-drawer is-open" id="library-filter-drawer" role="region" aria-label="उन्नत फ़िल्टर">
       <div class="drawer-header">
         <h3 class="drawer-title">

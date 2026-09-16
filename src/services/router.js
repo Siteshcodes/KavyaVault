@@ -26,7 +26,9 @@ class Router {
    * Validates if a route is recognized
    */
   isValidRoute(path) {
-    return this.routes.includes(path);
+    if (!path) return false;
+    const [cleanPath] = path.split('?');
+    return this.routes.includes(cleanPath);
   }
 
   /**

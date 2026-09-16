@@ -37,8 +37,8 @@ export function renderRecentSection({
   if (!recentItems || recentItems.length === 0) {
     contentHtml = renderEmptyState({
       icon: 'book',
-      heading: 'हाल में कोई कविता नहीं पढ़ी गई है',
-      text: 'जैसे-जैसे आप पुस्तकालय में कविताएँ खोलकर पढ़ते जाएँगे, वे यहाँ कालक्रमानुसार दिखाई देंगी।',
+      heading: 'आपने अभी कोई कविता नहीं पढ़ी है।',
+      text: 'हाल में कोई कविता नहीं पढ़ी गई है। जैसे-जैसे आप पुस्तकालय में कविताएँ खोलकर पढ़ते जाएँगे, वे यहाँ कालक्रमानुसार दिखाई देंगी।',
       primaryAction: `
         <button
           type="button"
@@ -54,19 +54,40 @@ export function renderRecentSection({
     });
   } else {
     const listClass = viewMode === 'list' ? 'library-collection-list' : 'library-collection-grid';
-    const cardsHtml = recentItems.map(item => {
-      const formattedViewDate = formatPoeticDate(item.viewedAt);
-      const cardHtml = renderPoemCard(item.poem, viewMode, {
-        matchBadge: `पठन: ${formattedViewDate}`
+    const validItems = recentItems.filter(item => item && item.poem);
+    if (validItems.length === 0) {
+      contentHtml = renderEmptyState({
+        icon: 'book',
+        heading: 'आपने अभी कोई कविता नहीं पढ़ी है।',
+        text: 'हाल में कोई कविता नहीं पढ़ी गई है। जैसे-जैसे आप पुस्तकालय में कविताएँ खोलकर पढ़ते जाएँगे, वे यहाँ कालक्रमानुसार दिखाई देंगी।',
+        primaryAction: `
+          <button
+            type="button"
+            class="btn-primary-action"
+            data-action="navigate-section"
+            data-section="all"
+            aria-label="पुस्तकालय में कविताएँ पढ़ें"
+          >
+            ${getIconSvg('book', 'nav-icon')}
+            <span>पुस्तकालय में कविताएँ पढ़ें</span>
+          </button>
+        `
       });
-      return cardHtml;
-    }).join('');
+    } else {
+      const cardsHtml = validItems.map(item => {
+        const formattedViewDate = formatPoeticDate(item.viewedAt);
+        const cardHtml = renderPoemCard(item.poem, viewMode, {
+          matchBadge: `पठन: ${formattedViewDate}`
+        });
+        return cardHtml;
+      }).join('');
 
-    contentHtml = `
-      <div class="${listClass}" role="feed" aria-label="हाल में पढ़ी गई कविताएँ">
-        ${cardsHtml}
-      </div>
-    `;
+      contentHtml = `
+        <div class="${listClass}" role="feed" aria-label="हाल में पढ़ी गई कविताएँ">
+          ${cardsHtml}
+        </div>
+      `;
+    }
   }
 
   return `

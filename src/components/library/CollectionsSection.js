@@ -274,8 +274,8 @@ function renderActiveCollectionDetail({
   if (poems.length === 0) {
     poemsHtml = renderEmptyState({
       icon: 'book',
-      heading: 'इस संग्रह में अभी कोई कविता नहीं है',
-      text: 'अपनी लिखी हुई रचनाओं में से इस संग्रह के अनुकूल कविताएँ चुनें और जोड़ें।',
+      heading: 'यह संग्रह अभी खाली है।',
+      text: 'इस संग्रह में अभी कोई कविता नहीं है। अपनी लिखी हुई रचनाओं में से इस संग्रह के अनुकूल कविताएँ चुनें और जोड़ें।',
       primaryAction: `
         <button
           type="button"

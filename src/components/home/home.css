@@ -113,3 +113,179 @@
     justify-content: space-between;
   }
 }
+
+/* ==========================================================================
+   3. HOME DISCOVERY MODULES & CARDS (Task 6.3)
+   ========================================================================== */
+.home-discovery-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+@media (min-width: 680px) {
+  .home-discovery-grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+}
+
+.home-discovery-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard),
+              box-shadow var(--duration-fast) var(--ease-standard);
+  position: relative;
+}
+
+.home-discovery-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-md);
+}
+
+.home-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.home-card-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  font-weight: 600;
+  line-height: var(--leading-tight);
+}
+
+.home-card-title-link {
+  color: var(--color-text);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.home-card-title-link:hover {
+  color: var(--color-accent);
+}
+
+.home-card-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text-subtle);
+  margin-bottom: var(--space-3);
+}
+
+.home-meta-dot {
+  color: var(--color-border);
+}
+
+.home-card-snippet {
+  margin: 0;
+  font-family: var(--font-reading);
+  font-size: var(--text-body);
+  line-height: var(--leading-normal);
+  color: var(--color-text-muted);
+  font-style: italic;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.home-fav-icon {
+  color: #e0245e;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.home-recent-badge {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface-raised);
+  color: var(--color-accent);
+  border: 1px solid var(--color-border-subtle);
+  flex-shrink: 0;
+}
+
+.home-collection-count-badge {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface-raised);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.home-empty-card {
+  padding: var(--space-6) var(--space-4);
+  background-color: var(--color-surface-raised);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.home-empty-text {
+  font-family: var(--font-reading);
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-2) 0;
+}
+
+.home-empty-action {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-3);
+}
+
+.home-empty-action:hover {
+  text-decoration: underline;
+}
+
+.home-section-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-2);
+}
+
+.home-discovery-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-3);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  font-weight: 600;
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: all var(--duration-fast) var(--ease-standard);
+  border-radius: var(--radius-md);
+}
+
+.home-discovery-link:hover {
+  background-color: var(--color-surface-raised);
+  text-decoration: none;
+  transform: translateX(2px);
+}

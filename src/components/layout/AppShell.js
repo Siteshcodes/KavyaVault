@@ -10,6 +10,7 @@ import '../editor/editor.css';
 import '../input/input.css';
 import '../search/search.css';
 import '../library/library.css';
+import '../home/home.css';
 import { Navigation } from '../navigation/Navigation.js';
 import { renderPageHeader } from './PageHeader.js';
 import { renderEmptyState } from './EmptyState.js';
@@ -171,21 +172,32 @@ export class AppShell {
       this.activeSpeakInput = null;
     }
 
+    const [pathOnly, searchPart] = (currentPath || '').split('?');
+    const cleanPath = pathOnly || '/';
+
     // 1. Home / Foyer Screen
-    if (currentPath === ROUTES.HOME) {
+    if (cleanPath === ROUTES.HOME) {
       this.contentContainer.innerHTML = renderHomeView();
       return;
     }
 
     // 2. Library Screen (/poems)
-    if (currentPath === ROUTES.POEMS) {
-      this.activeLibraryView = new LibraryView(this.contentContainer, this.router, 'all');
+    if (cleanPath === ROUTES.POEMS) {
+      const queryParams = new URLSearchParams(searchPart || (typeof window !== 'undefined' ? window.location.search : ''));
+      const initialSection = queryParams.get('section') || queryParams.get('filter') || 'all';
+      this.activeLibraryView = new LibraryView(this.contentContainer, this.router, initialSection, {
+        initialCategory: queryParams.get('category'),
+        initialTag: queryParams.get('tag'),
+        initialSort: queryParams.get('sort'),
+        initialCollectionId: queryParams.get('collectionId'),
+        initialView: queryParams.get('view')
+      });
       this.activeLibraryView.mount();
       return;
     }
 
     // 3. New Poem Editor (/poems/new)
-    if (currentPath === ROUTES.NEW_POEM) {
+    if (cleanPath === ROUTES.NEW_POEM) {
       this.activeEditor = new PoetryEditor({
         container: this.contentContainer,
         router: this.router,
@@ -196,7 +208,7 @@ export class AppShell {
     }
 
     // 3b. Scan -> Poem Workflow (/input/scan)
-    if (currentPath === ROUTES.INPUT_SCAN || currentPath === '/input/scan') {
+    if (currentPath === ROUTES.INPUT_SCAN || currentPath === '/input/scan' || cleanPath === ROUTES.INPUT_SCAN || cleanPath === '/input/scan') {
       this.activeManuscriptCapture = new ManuscriptCapture({
         container: this.contentContainer,
         router: this.router,
@@ -207,7 +219,7 @@ export class AppShell {
     }
 
     // 3c. Speak -> Poem Workflow (/input/speak)
-    if (currentPath === ROUTES.INPUT_SPEAK || currentPath === '/input/speak') {
+    if (cleanPath === ROUTES.INPUT_SPEAK || cleanPath === '/input/speak') {
       this.activeSpeakInput = new SpeakInputView({
         container: this.contentContainer,
         router: this.router
@@ -217,7 +229,7 @@ export class AppShell {
     }
 
     // 3d. Modern Input Modes Overview (/input)
-    if (currentPath === ROUTES.INPUT_MODES || currentPath.startsWith('/input')) {
+    if (cleanPath === ROUTES.INPUT_MODES || cleanPath.startsWith('/input')) {
       this.activeInputModeSelector = new InputModeSelector({
         container: this.contentContainer,
         router: this.router,
@@ -228,8 +240,8 @@ export class AppShell {
     }
 
     // 4. Edit Existing Poem (/poems/:id/edit)
-    if (currentPath.startsWith('/poems/') && currentPath.endsWith('/edit')) {
-      const poemId = currentPath.slice('/poems/'.length, -'/edit'.length);
+    if (cleanPath.startsWith('/poems/') && cleanPath.endsWith('/edit')) {
+      const poemId = cleanPath.slice('/poems/'.length, -'/edit'.length);
       if (poemId && poemId !== 'new') {
         this.activeEditor = new PoetryEditor({
           container: this.contentContainer,
@@ -242,8 +254,8 @@ export class AppShell {
     }
 
     // 5. Real Poem Reader Screen (/poems/:id)
-    if (currentPath.startsWith('/poems/') && currentPath !== ROUTES.NEW_POEM && !currentPath.endsWith('/edit')) {
-      const poemId = currentPath.slice('/poems/'.length);
+    if (cleanPath.startsWith('/poems/') && cleanPath !== ROUTES.NEW_POEM && !cleanPath.endsWith('/edit')) {
+      const poemId = cleanPath.slice('/poems/'.length);
       this.activeReader = new PoemReader({
         container: this.contentContainer,
         router: this.router,
@@ -254,7 +266,7 @@ export class AppShell {
     }
 
     // 6. Search Screen (/search)
-    if (currentPath === ROUTES.SEARCH) {
+    if (cleanPath === ROUTES.SEARCH) {
       this.activeSearchView = new SearchView({
         container: this.contentContainer,
         router: this.router
@@ -264,29 +276,29 @@ export class AppShell {
     }
 
     // 7. Favorites Screen (/favorites)
-    if (currentPath === ROUTES.FAVORITES) {
+    if (cleanPath === ROUTES.FAVORITES) {
       this.activeFavoritesView = new FavoritesView(this.contentContainer, this.router);
       this.activeFavoritesView.mount();
       return;
     }
 
     // 8. Archive Screen (/archive)
-    if (currentPath === ROUTES.ARCHIVE) {
+    if (cleanPath === ROUTES.ARCHIVE) {
       this.activeArchiveView = new ArchiveView(this.contentContainer, this.router);
       this.activeArchiveView.mount();
       return;
     }
 
     // 9. Collections List Screen (/collections)
-    if (currentPath === ROUTES.COLLECTIONS) {
+    if (cleanPath === ROUTES.COLLECTIONS) {
       this.activeCollectionsView = new CollectionsView(this.contentContainer, this.router);
       this.activeCollectionsView.mount();
       return;
     }
 
     // 10. Collection Detail Screen (/collections/:id)
-    if (currentPath.startsWith('/collections/') && currentPath !== ROUTES.COLLECTIONS) {
-      const collectionId = currentPath.slice('/collections/'.length);
+    if (cleanPath.startsWith('/collections/') && cleanPath !== ROUTES.COLLECTIONS) {
+      const collectionId = cleanPath.slice('/collections/'.length);
       this.activeCollectionDetailView = new CollectionDetailView({
         container: this.contentContainer,
         router: this.router,
@@ -297,7 +309,7 @@ export class AppShell {
     }
 
     // 11. Manuscript Capture Screen (/manuscripts/new & /manuscripts/import)
-    if (currentPath === ROUTES.MANUSCRIPT_NEW || currentPath === '/manuscripts/import') {
+    if (cleanPath === ROUTES.MANUSCRIPT_NEW || cleanPath === '/manuscripts/import') {
       this.activeManuscriptCapture = new ManuscriptCapture({
         container: this.contentContainer,
         router: this.router
@@ -307,7 +319,7 @@ export class AppShell {
     }
 
     // 12. Manuscript Gallery Screen (/manuscripts)
-    if (currentPath === ROUTES.MANUSCRIPTS || currentPath === '/manuscripts') {
+    if (cleanPath === ROUTES.MANUSCRIPTS || cleanPath === '/manuscripts') {
       this.activeManuscriptGallery = new ManuscriptGallery({
         container: this.contentContainer,
         router: this.router
@@ -317,8 +329,8 @@ export class AppShell {
     }
 
     // 13. Manuscript Transcription Workspace Screen (/manuscripts/:id/transcribe)
-    if (currentPath.startsWith('/manuscripts/') && currentPath.endsWith('/transcribe')) {
-      const manuscriptId = currentPath.slice('/manuscripts/'.length, -'/transcribe'.length);
+    if (cleanPath.startsWith('/manuscripts/') && cleanPath.endsWith('/transcribe')) {
+      const manuscriptId = cleanPath.slice('/manuscripts/'.length, -'/transcribe'.length);
       if (manuscriptId && manuscriptId !== 'new') {
         this.activeManuscriptTranscription = new ManuscriptTranscription({
           container: this.contentContainer,
