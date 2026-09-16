@@ -20,6 +20,7 @@ import {
 import { formatPoeticDate } from '../../utils/date.js';
 import { ROUTES } from '../../data/navigation.js';
 import { getIconSvg } from '../navigation/icons.js';
+import { recentPoemService } from '../../services/library/RecentPoemService.js';
 
 export class PoemReader {
   /**
@@ -31,8 +32,9 @@ export class PoemReader {
    * @param {Object} [options.manuscriptRepo=manuscriptRepository] Manuscript repository instance
    * @param {Object} [options.analysisService=poemAnalysisService] AI analysis service instance
    * @param {string} [options.providerId='mock'] Selected AI provider ID
+   * @param {Object} [options.recentService=recentPoemService] Recent poem service instance
    */
-  constructor({ container, router, poemId, poemRepo = poemRepository, manuscriptRepo = manuscriptRepository, analysisService = poemAnalysisService, providerId = 'mock' }) {
+  constructor({ container, router, poemId, poemRepo = poemRepository, manuscriptRepo = manuscriptRepository, analysisService = poemAnalysisService, providerId = 'mock', recentService = recentPoemService }) {
     this.container = container;
     this.router = router;
     this.poemId = poemId;
@@ -40,6 +42,7 @@ export class PoemReader {
     this.manuscriptRepo = manuscriptRepo;
     this.analysisService = analysisService;
     this.providerId = providerId;
+    this.recentService = recentService;
     this.poem = null;
     this.showDeleteModal = false;
 
@@ -67,6 +70,15 @@ export class PoemReader {
     if (!this.poem) {
       this.renderMissingPoem();
       return;
+    }
+
+    // Record poem view in local recent history (without altering poem.updatedAt)
+    try {
+      if (this.recentService && typeof this.recentService.recordView === 'function') {
+        this.recentService.recordView(this.poem.id);
+      }
+    } catch (err) {
+      console.warn('[PoemReader] Could not record recent view:', err);
     }
 
     if (this.aiAnalysisResult && !this.aiReviewSession) {

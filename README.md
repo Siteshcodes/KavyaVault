@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-747%2F747%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-802%2F802%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -566,6 +566,26 @@ Phase 6 enriches KavyaVault with a serene, personal digital library organization
     - `LibraryService`: Unified facade exposing high-level library operations and aggregated statistics.
   - **Privacy & Security:** 100% local-first, zero remote APIs, zero cloud storage, zero telemetry, zero AI/embeddings, and zero poem body duplication.
   - **Comprehensive Verification:** 37 dedicated automated tests in `test_library_organization.js` (747/747 total tests passing across 29 test suites).
+- ✅ **Task 6.2 — Library Organization UI**: User-facing Personal Digital Library experience built on top of Task 6.1 domain services, presenting a warm, calm, quiet, archival digital sanctuary.
+  - **Literary Archive Interface (`LibraryView.js` & `LibraryToolbar.js`):**
+    - Seamless switching across 8 literary sections:
+      1. **सभी कविताएँ (All Poems):** Complete grid/list browsing with sorting and multi-filter criteria.
+      2. **पसंदीदा (Favorites):** Instant favorite toggle on poem cards, dedicated curated favorites view.
+      3. **हाल में पढ़ी गई (Recently Read):** Dedicated reading history powered by `RecentPoemService`, recorded on `PoemReader` mount while strictly preserving `poem.updatedAt` immutability.
+      4. **संग्रह (Collections):** Curated anthologies with modal creation, title/description editing, adding/removing poems, and safe collection deletion that strictly preserves underlying poem records.
+      5. **श्रेणियाँ (Categories):** Literary genre browsing cards with Devanagari counts, one-click library filtering.
+      6. **टैग (Tags):** Tag cloud displaying author-exact display forms and counts, mixed Hindi/Latin support.
+      7. **अभिलेख (Archived):** Peaceful preservation vault for archived compositions with restore capability.
+      8. **समयरेखा (Timeline):** Chronological provenance journey (`CREATED`, `UPDATED`, `AUTHORED`, `DIGITIZED`) highlighting authentic literary milestones with zero date invention.
+  - **Filter Drawer & Sorting:**
+    - Slide-out/expandable filter drawer with collection, category, and tag selectors, active filter chips with one-click removal, and "सभी साफ़ करें" reset button.
+    - 5 deterministic sorting options (recently modified, oldest modified, newest created, title alphabetically, authored date).
+  - **Accessibility & Design Tokens:**
+    - Strict WAI-ARIA tab semantics (`role="tablist"`, `role="tab"`, `role="tabpanel"`, `aria-selected`, `tabindex`).
+    - Full keyboard navigation (`ArrowRight`, `ArrowLeft`, `ArrowUp`, `ArrowDown`, `Home`, `End`).
+    - $\ge 48$px touch targets (`--touch-target-min: 48px`) across tabs, buttons, and view toggles.
+    - Responsive across 390px (mobile feed), 768px (tablet), 1024px (laptop), and 1440px (desktop 3-column grid).
+  - **Comprehensive Verification:** 55 dedicated automated tests in `test_library_ui.js` (802/802 total tests passing across 30 test suites).
 
 ---
 

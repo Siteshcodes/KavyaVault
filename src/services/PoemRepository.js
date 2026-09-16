@@ -165,6 +165,10 @@ export class PoemRepository {
     if (changes.manuscriptId !== undefined && changes.manuscriptId !== null && typeof changes.manuscriptId !== 'string') {
       throw new StorageError('पांडुलिपि आईडी (manuscriptId) स्ट्रिंग या null होना चाहिए।', StorageErrorCode.VALIDATION_ERROR);
     }
+
+    if (changes.authoredDate !== undefined && changes.authoredDate !== null && typeof changes.authoredDate !== 'string') {
+      throw new StorageError('रचना काल (authoredDate) स्ट्रिंग या null होना चाहिए।', StorageErrorCode.VALIDATION_ERROR);
+    }
   }
 
   /**
@@ -291,7 +295,10 @@ export class PoemRepository {
       mood: poemData.mood || null,
       rasa: poemData.rasa || null,
       source: typeof poemData.source === 'string' ? poemData.source : 'type',
-      manuscriptId: typeof poemData.manuscriptId === 'string' && poemData.manuscriptId.trim() !== '' ? poemData.manuscriptId.trim() : null
+      manuscriptId: typeof poemData.manuscriptId === 'string' && poemData.manuscriptId.trim() !== '' ? poemData.manuscriptId.trim() : null,
+      authoredDate: typeof poemData.authoredDate === 'string' && poemData.authoredDate.trim() !== ''
+        ? poemData.authoredDate.trim()
+        : (typeof poemData.writtenDate === 'string' && poemData.writtenDate.trim() !== '' ? poemData.writtenDate.trim() : null)
     };
 
     this.validatePoem(newPoem);
@@ -338,6 +345,9 @@ export class PoemRepository {
       rasa: changes.rasa !== undefined ? changes.rasa : current.rasa,
       source: changes.source !== undefined ? changes.source : (current.source || 'type'),
       manuscriptId: changes.manuscriptId !== undefined ? changes.manuscriptId : (current.manuscriptId || null),
+      authoredDate: changes.authoredDate !== undefined
+        ? (typeof changes.authoredDate === 'string' && changes.authoredDate.trim() !== '' ? changes.authoredDate.trim() : null)
+        : (current.authoredDate || null),
       updatedAt: now
     };
 

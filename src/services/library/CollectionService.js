@@ -147,6 +147,20 @@ export class CollectionService {
   }
 
   /**
+   * Convenient alias for addPoemToCollection
+   */
+  addPoem(collectionId, poemId) {
+    return this.addPoemToCollection(collectionId, poemId);
+  }
+
+  /**
+   * Convenient alias for removePoemFromCollection
+   */
+  removePoem(collectionId, poemId) {
+    return this.removePoemFromCollection(collectionId, poemId);
+  }
+
+  /**
    * Retrieves collection by ID
    * @param {string} collectionId
    * @returns {Object|null}

@@ -26,6 +26,13 @@ export class TimelineService {
   }
 
   /**
+   * Alias for extractPoemEvents
+   */
+  getPoemEvents(poem) {
+    return this.extractPoemEvents(poem);
+  }
+
+  /**
    * Extracts chronological timeline events for a single poem
    *
    * @param {Object} poem
@@ -63,19 +70,30 @@ export class TimelineService {
       }));
     }
 
-    // 3. Digitized date (if linked to a manuscript)
-    if (poem.manuscriptId && this.manuscriptRepo && typeof this.manuscriptRepo.getById === 'function') {
+    // 3. Digitized date (if linked to a manuscript via poem.manuscriptId or manuscript.poemId)
+    if (this.manuscriptRepo) {
       try {
-        const manuscript = this.manuscriptRepo.getById(poem.manuscriptId);
+        let manuscript = null;
+        if (poem.manuscriptId && typeof this.manuscriptRepo.getById === 'function') {
+          manuscript = this.manuscriptRepo.getById(poem.manuscriptId);
+        }
+        if (!manuscript && typeof this.manuscriptRepo.findByPoemId === 'function') {
+          manuscript = this.manuscriptRepo.findByPoemId(poemId);
+        }
+        if (!manuscript && typeof this.manuscriptRepo.getAll === 'function') {
+          const allManuscripts = this.manuscriptRepo.getAll();
+          manuscript = allManuscripts.find(m => m.poemId === poemId);
+        }
         if (manuscript) {
-          const rawDigitized = manuscript.capturedDate || manuscript.createdAt;
+          const rawDigitized = manuscript.capturedDate || manuscript.createdAt || (manuscript.originalManuscript && manuscript.originalManuscript.capturedAt);
           if (rawDigitized && !isNaN(Date.parse(rawDigitized))) {
             events.push(createTimelineEntry({
               poemId,
               poemTitle,
               eventType: TIMELINE_EVENT_TYPE.DIGITIZED,
               date: rawDigitized,
-              label: 'पांडुलिपि डिजिटलीकरण'
+              label: 'पांडुलिपि डिजिटलीकरण',
+              metadata: { title: manuscript.title }
             }));
           }
         }
@@ -84,9 +102,9 @@ export class TimelineService {
       }
     }
 
-    // 4. Updated at (only if meaningfully distinct from createdAt by > 1000ms)
-    if (poem.updatedAt && !isNaN(Date.parse(poem.updatedAt))) {
-      const createdTime = poem.createdAt ? new Date(poem.createdAt).getTime() : 0;
+    // 4. Updated at (if distinct from created)
+    if (poem.updatedAt && !isNaN(Date.parse(poem.updatedAt)) && poem.createdAt) {
+      const createdTime = new Date(poem.createdAt).getTime();
       const updatedTime = new Date(poem.updatedAt).getTime();
 
       if (Math.abs(updatedTime - createdTime) > 1000) {
@@ -106,14 +124,24 @@ export class TimelineService {
   /**
    * Generates a unified, chronologically sorted timeline across multiple poems
    *
-   * @param {Array<Object>} poems
+   * @param {Array<Object>|Object} poemsOrOptions
    * @param {Object} [options={}]
    * @param {'desc'|'asc'} [options.order='desc'] Sort direction
    * @param {string} [options.eventType] Optional event type filter
    * @param {Object} [options.dateRange] Optional { from, to } date bounds
    * @returns {Array<Object>}
    */
-  getTimeline(poems = [], { order = 'desc', eventType = null, dateRange = null } = {}) {
+  getTimeline(poemsOrOptions = [], options = {}) {
+    let poems = [];
+    let opts = options;
+    if (Array.isArray(poemsOrOptions)) {
+      poems = poemsOrOptions;
+    } else if (poemsOrOptions && typeof poemsOrOptions === 'object') {
+      poems = Array.isArray(poemsOrOptions.poems) ? poemsOrOptions.poems : [];
+      opts = poemsOrOptions;
+    }
+
+    const { order = 'desc', eventType = null, dateRange = null } = opts;
     if (!Array.isArray(poems)) return [];
 
     let allEvents = [];

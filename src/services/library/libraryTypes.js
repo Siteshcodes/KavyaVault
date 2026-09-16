@@ -402,6 +402,10 @@ export function validateLibraryFilter(filter) {
     throw new StorageError('category स्ट्रिंग या null होना चाहिए।', StorageErrorCode.VALIDATION_ERROR);
   }
 
+  if (filter.tag !== undefined && filter.tag !== null && typeof filter.tag !== 'string') {
+    throw new StorageError('tag स्ट्रिंग या null होना चाहिए।', StorageErrorCode.VALIDATION_ERROR);
+  }
+
   if (filter.tags !== undefined && !Array.isArray(filter.tags)) {
     throw new StorageError('tags एक ऐरे होना चाहिए।', StorageErrorCode.VALIDATION_ERROR);
   }
@@ -414,12 +418,14 @@ export function validateLibraryFilter(filter) {
     throw new StorageError('isArchived बूलियन या null होना चाहिए।', StorageErrorCode.VALIDATION_ERROR);
   }
 
-  if (filter.sort !== undefined && !VALID_SORT_FIELDS.includes(filter.sort)) {
-    throw new StorageError(`अमान्य सॉर्ट फ़ील्ड: "${filter.sort}"। मान्य फ़ील्ड: ${VALID_SORT_FIELDS.join(', ')}`, StorageErrorCode.VALIDATION_ERROR);
+  const sortValue = filter.sort || filter.sortField;
+  if (sortValue !== undefined && !VALID_SORT_FIELDS.includes(sortValue)) {
+    throw new StorageError(`अमान्य सॉर्ट फ़ील्ड: "${sortValue}"। मान्य फ़ील्ड: ${VALID_SORT_FIELDS.join(', ')}`, StorageErrorCode.VALIDATION_ERROR);
   }
 
-  if (filter.order !== undefined && !VALID_SORT_ORDERS.includes(filter.order)) {
-    throw new StorageError(`अमान्य सॉर्ट दिशा: "${filter.order}"। मान्य दिशा: ${VALID_SORT_ORDERS.join(', ')}`, StorageErrorCode.VALIDATION_ERROR);
+  const orderValue = filter.order || filter.sortOrder;
+  if (orderValue !== undefined && !VALID_SORT_ORDERS.includes(orderValue)) {
+    throw new StorageError(`अमान्य सॉर्ट दिशा: "${orderValue}"। मान्य दिशा: ${VALID_SORT_ORDERS.join(', ')}`, StorageErrorCode.VALIDATION_ERROR);
   }
 
   // Date range validations
@@ -458,18 +464,22 @@ export function createLibraryFilter(filterInput = {}) {
   const input = filterInput || {};
   validateLibraryFilter(input);
 
+  const rawTags = Array.isArray(input.tags)
+    ? input.tags
+    : (input.tag && typeof input.tag === 'string' ? [input.tag] : []);
+
   const filter = {
     collectionId: input.collectionId && typeof input.collectionId === 'string' ? input.collectionId.trim() : null,
     category: input.category && typeof input.category === 'string' ? input.category.trim() : null,
-    tags: Array.isArray(input.tags) ? input.tags.map(t => normalizeTagName(String(t))).filter(Boolean) : [],
+    tags: rawTags.map(t => normalizeTagName(String(t))).filter(Boolean),
     isFavorite: typeof input.isFavorite === 'boolean' ? input.isFavorite : null,
     isArchived: typeof input.isArchived === 'boolean' ? input.isArchived : false, // Default: exclude archived
     includeArchived: Boolean(input.includeArchived),
     createdDateRange: input.createdDateRange ? { ...input.createdDateRange } : null,
     updatedDateRange: input.updatedDateRange ? { ...input.updatedDateRange } : null,
     authoredDateRange: input.authoredDateRange ? { ...input.authoredDateRange } : null,
-    sort: input.sort || SORT_FIELD.UPDATED_AT,
-    order: input.order || SORT_ORDER.DESC,
+    sort: input.sort || input.sortField || SORT_FIELD.UPDATED_AT,
+    order: input.order || input.sortOrder || SORT_ORDER.DESC,
     offset: typeof input.offset === 'number' ? Math.max(0, input.offset) : 0,
     limit: typeof input.limit === 'number' ? Math.max(1, input.limit) : null
   };

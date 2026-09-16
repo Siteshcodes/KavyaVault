@@ -9,6 +9,7 @@ import '../reader/reader.css';
 import '../editor/editor.css';
 import '../input/input.css';
 import '../search/search.css';
+import '../library/library.css';
 import { Navigation } from '../navigation/Navigation.js';
 import { renderPageHeader } from './PageHeader.js';
 import { renderEmptyState } from './EmptyState.js';

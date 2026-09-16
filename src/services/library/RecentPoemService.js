@@ -37,7 +37,7 @@ export class RecentPoemService {
    * @param {number} [options.maxLimit=50]
    */
   constructor(options = {}) {
-    this.adapter = options.adapter || new LocalStorageAdapter();
+    this.adapter = options.adapter || options.storageAdapter || new LocalStorageAdapter();
     this.poemRepo = options.poemRepo || poemRepository;
     this.maxLimit = typeof options.maxLimit === 'number' && options.maxLimit > 0
       ? options.maxLimit
