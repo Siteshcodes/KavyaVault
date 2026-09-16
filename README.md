@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-669%2F669%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-690%2F690%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -490,6 +490,28 @@ Phase 5 unifies deterministic exact text matching with future semantic retrieval
     - `normalizeVector`, `dotProduct`, `vectorMagnitude`: Pure vector utility helpers.
   - **Security, Privacy & Read-Only Guarantees:** Zero external network calls, zero embedding API endpoints, zero storage writes, and untrusted poem content treated purely as raw data.
   - **Comprehensive Verification:** 24 dedicated automated tests in `test_local_semantic_representation.js` (669/669 total tests passing across 26 test suites).
+
+- ✅ **Task 5.3 — Local Vector Index + Semantic Retrieval Foundation**: Local vector index, vector persistence abstraction, and semantic retrieval foundation.
+  - **Single Retrieval Pipeline:** `Query Text → prepareQuerySemanticText → IEmbeddingProvider → Query Vector → IVectorStore (IndexedDBVectorStore) → Exact Cosine Similarity Scan → Ranked Search Results (SearchResult)`.
+  - **Vector Storage Contract (`src/services/search/vector/IVectorStore.js`):**
+    - Formal storage abstraction defining `get(id)`, `put(embedding)`, `delete(id)`, `clear()`, `getAll(filter)`, `count(filter)`, `findByPoemId(poemId, model)`, `findByModel(model)`, `findBySourceTextHash(hash)`, and `isAvailable()`.
+    - Canonical compound key: `${poemId}::${model}` preventing incompatible model vectors from being conflated.
+  - **IndexedDB Vector Store (`src/services/search/vector/IndexedDBVectorStore.js`):**
+    - Concrete local store backed by a dedicated IndexedDB database (`kavyavault_vectors_db`) and object store `poem_vectors`.
+    - Strictly isolated from `PoemRepository`, `LocalStorageAdapter`, and poem JSON records. Vector records contain only vector metadata without duplicating poem text or manuscript bytes.
+    - Deep-cloning and freezing on read to ensure complete domain immutability.
+    - Seamless in-memory driver fallback for headless Node.js testing environments.
+  - **Semantic Indexing Service (`src/services/search/vector/SemanticIndexService.js`):**
+    - Orchestrates indexing lifecycle without polluting `PoemRepository`.
+    - Automatic change detection via deterministic source text hash: skips regeneration when text is unchanged, replaces stale vectors when text is edited.
+    - Model version isolation: vectors belonging to different model versions are stored independently without cross-corruption.
+    - In-flight concurrency deduplication locking per `${poemId}::${model}` to prevent race conditions.
+  - **Exact Cosine Retrieval in `SemanticSearchProvider` (`src/services/search/SemanticSearchProvider.js`):**
+    - Brute-force exact cosine similarity scan over stored vectors for the active model version.
+    - Deterministic tie-breaking: `score DESC` $\rightarrow$ poem `updatedAt DESC` $\rightarrow$ `poemId ASC`.
+    - Bounded `topK` (default 20, max 100) and optional `minScore` threshold filtering.
+    - Honest capability boundary: returns `SEARCH_STATUS.UNSUPPORTED` in production where `LocalEmbeddingProvider` is not active; fully functional with test-only providers in test environments.
+  - **Comprehensive Verification:** 21 dedicated automated tests in `test_vector_index.js` (690/690 total tests passing across 27 test suites).
 
 ---
 

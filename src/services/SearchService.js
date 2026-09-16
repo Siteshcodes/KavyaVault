@@ -44,6 +44,9 @@ import {
   dotProduct,
   cosineSimilarity
 } from './search/semantic/vectorMath.js';
+import { IVectorStore } from './search/vector/IVectorStore.js';
+import { IndexedDBVectorStore } from './search/vector/IndexedDBVectorStore.js';
+import { SemanticIndexService } from './search/vector/SemanticIndexService.js';
 import { poemRepository } from './PoemRepository.js';
 import { StorageError, StorageErrorCode } from './storage/StorageError.js';
 
@@ -327,11 +330,15 @@ export class SearchService {
    */
   constructor(options = {}) {
     this.poemRepo = options.poemRepo || poemRepository;
+    this.vectorStore = options.vectorStore || new IndexedDBVectorStore();
     this.providers = new Map();
 
     // Register standard provider strategies
     this.registerProvider(new TextSearchProvider({ poemRepo: this.poemRepo }));
-    this.registerProvider(new SemanticSearchProvider());
+    this.registerProvider(new SemanticSearchProvider({
+      poemRepo: this.poemRepo,
+      vectorStore: this.vectorStore
+    }));
     this.registerProvider(new HybridSearchProvider());
   }
 
@@ -463,5 +470,8 @@ export {
   vectorMagnitude,
   normalizeVector,
   dotProduct,
-  cosineSimilarity
+  cosineSimilarity,
+  IVectorStore,
+  IndexedDBVectorStore,
+  SemanticIndexService
 };
