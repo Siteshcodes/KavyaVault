@@ -7,7 +7,15 @@
 import { poemRepository } from '../../services/PoemRepository.js';
 import { manuscriptRepository } from '../../services/ManuscriptRepository.js';
 import { poemAnalysisService } from '../../services/ai/PoemAnalysisService.js';
-import { ANALYSIS_STATUS } from '../../services/ai/analysisTypes.js';
+import { ANALYSIS_STATUS, SUGGESTION_REVIEW_STATE } from '../../services/ai/analysisTypes.js';
+import {
+  createReviewSession,
+  acceptSuggestion,
+  editSuggestion,
+  rejectSuggestion,
+  resetSuggestion,
+  computeApprovedChanges
+} from '../../services/ai/suggestionReview.js';
 import { formatPoeticDate } from '../../utils/date.js';
 import { ROUTES } from '../../data/navigation.js';
 import { getIconSvg } from '../navigation/icons.js';
@@ -32,12 +40,15 @@ export class PoemReader {
     this.poem = null;
     this.showDeleteModal = false;
 
-    // AI Analysis State
+    // AI Analysis & Human Review State
     this.showAiConsentModal = false;
     this.aiAnalysisState = 'idle'; // 'idle' | 'consent-required' | 'pending' | 'completed' | 'failed'
     this.aiAnalysisResult = null;
     this.aiAnalysisError = null;
     this.isAnalyzing = false;
+    this.aiReviewSession = null;
+    this.editingTarget = null; // null | { field: string, itemId?: string }
+    this.aiNotificationMessage = null;
 
     this.boundClickHandler = this.handleClick.bind(this);
     this.boundKeyDownHandler = this.handleKeyDown.bind(this);
@@ -55,10 +66,20 @@ export class PoemReader {
       return;
     }
 
+    if (this.aiAnalysisResult && !this.aiReviewSession) {
+      this.aiReviewSession = createReviewSession({
+        poemId: this.poem.id,
+        result: this.aiAnalysisResult,
+        currentPoem: this.poem
+      });
+    }
+
     this.update();
 
     this.container.addEventListener('click', this.boundClickHandler);
-    document.addEventListener('keydown', this.boundKeyDownHandler);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('keydown', this.boundKeyDownHandler);
+    }
   }
 
   /**
@@ -68,7 +89,9 @@ export class PoemReader {
     if (this.container) {
       this.container.removeEventListener('click', this.boundClickHandler);
     }
-    document.removeEventListener('keydown', this.boundKeyDownHandler);
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('keydown', this.boundKeyDownHandler);
+    }
   }
 
   /**
@@ -314,6 +337,14 @@ export class PoemReader {
 
             <div class="reader-meta">
               <span class="reader-author">${this.escapeHtml(poem.author || 'अज्ञात')}</span>
+              ${poem.category ? `
+                <span class="reader-meta-dot" aria-hidden="true">•</span>
+                <span class="reader-category" title="श्रेणी">${this.escapeHtml(poem.category)}</span>
+              ` : ''}
+              ${poem.mood ? `
+                <span class="reader-meta-dot" aria-hidden="true">•</span>
+                <span class="reader-mood" title="रस / भाव">${this.escapeHtml(poem.mood)}</span>
+              ` : ''}
               <span class="reader-meta-dot" aria-hidden="true">•</span>
               <time datetime="${poem.updatedAt || poem.createdAt}">${formattedDate}</time>
             </div>
@@ -455,13 +486,13 @@ export class PoemReader {
 
     if (this.aiAnalysisState === 'completed' && this.aiAnalysisResult) {
       const result = this.aiAnalysisResult;
-      const category = result.category ? this.escapeHtml(result.category) : '';
-      const mood = result.mood ? this.escapeHtml(result.mood) : '';
-      const themes = Array.isArray(result.themes) ? result.themes : [];
-      const keywords = Array.isArray(result.keywords) ? result.keywords : [];
-      const summary = result.summary ? this.escapeHtml(result.summary) : '';
+      const categoryStr = result.category ? result.category.trim() : '';
+      const moodStr = result.mood ? result.mood.trim() : '';
+      const themesArr = Array.isArray(result.themes) ? result.themes : [];
+      const keywordsArr = Array.isArray(result.keywords) ? result.keywords : [];
+      const summaryStr = result.summary ? result.summary.trim() : '';
 
-      const hasContent = Boolean(category || mood || themes.length > 0 || keywords.length > 0 || summary);
+      const hasContent = Boolean(categoryStr || moodStr || themesArr.length > 0 || keywordsArr.length > 0 || summaryStr);
 
       if (!hasContent) {
         return `
@@ -485,6 +516,17 @@ export class PoemReader {
           </section>
         `;
       }
+
+      if (!this.aiReviewSession) {
+        this.aiReviewSession = createReviewSession({
+          poemId: this.poem.id,
+          result: this.aiAnalysisResult,
+          currentPoem: this.poem
+        });
+      }
+
+      const session = this.aiReviewSession;
+      const { changes, hasChanges, approvedCount } = computeApprovedChanges(session, this.poem);
 
       return `
         <section class="reader-ai-section reader-ai-completed" aria-label="AI विश्लेषण सुझाव">
@@ -512,60 +554,379 @@ export class PoemReader {
             </p>
 
             <div class="ai-suggestions-grid">
-              ${category ? `
-                <div class="ai-field-card">
+              ${session.category && session.category.suggestedValue ? `
+                <div class="ai-field-card" data-review-field="category">
                   <div class="ai-field-header">
                     <span class="ai-field-tag">AI सुझाव</span>
                     <h3 class="ai-field-label">श्रेणी</h3>
+                    <span class="ai-status-badge badge-${session.category.reviewStatus}">
+                      ${session.category.reviewStatus === 'accepted' ? '✓ स्वीकृत' : (session.category.reviewStatus === 'edited' ? '✎ संपादित' : (session.category.reviewStatus === 'rejected' ? '✗ अस्वीकृत' : 'सुझाव'))}
+                    </span>
                   </div>
-                  <div class="ai-field-value ai-field-highlight">${category}</div>
+                  <div class="ai-field-comparison">
+                    <div class="ai-comp-item">
+                      <span class="ai-comp-meta">वर्तमान:</span>
+                      <span class="ai-comp-val">${this.escapeHtml(this.poem.category || 'कोई नहीं')}</span>
+                    </div>
+                    <div class="ai-comp-item">
+                      <span class="ai-comp-meta">AI सुझाव:</span>
+                      <span class="ai-field-value ai-field-highlight ${session.category.reviewStatus === 'rejected' ? 'is-rejected' : ''}">${this.escapeHtml(session.category.suggestedValue)}</span>
+                    </div>
+                    ${session.category.isEdited ? `
+                      <div class="ai-comp-item">
+                        <span class="ai-comp-meta">संपादित:</span>
+                        <span class="ai-comp-val ai-field-edited">${this.escapeHtml(session.category.approvedValue)}</span>
+                      </div>
+                    ` : ''}
+                  </div>
+
+                  ${(this.editingTarget && this.editingTarget.field === 'category') ? `
+                    <div class="ai-inline-editor">
+                      <input
+                        type="text"
+                        id="edit-category-input"
+                        class="ai-editor-input"
+                        value="${this.escapeHtml(session.category.isEdited ? session.category.approvedValue : session.category.suggestedValue)}"
+                        aria-label="श्रेणी संपादित करें"
+                        maxlength="100"
+                      />
+                      <div class="ai-editor-actions">
+                        <button type="button" class="btn-review-sm btn-save" data-action="save-edit-suggestion" data-field="category" aria-label="संपादित श्रेणी सहेजें">सहेजें</button>
+                        <button type="button" class="btn-review-sm btn-cancel" data-action="cancel-edit-suggestion" aria-label="संपादन रद्द करें">रद्द करें</button>
+                      </div>
+                    </div>
+                  ` : `
+                    <div class="ai-review-btn-row">
+                      <button
+                        type="button"
+                        class="btn-review-opt btn-accept ${session.category.reviewStatus === 'accepted' ? 'is-selected' : ''}"
+                        data-action="accept-ai-suggestion"
+                        data-field="category"
+                        aria-label="श्रेणी स्वीकार करें"
+                        aria-pressed="${session.category.reviewStatus === 'accepted'}"
+                      >
+                        ✓ स्वीकार
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-review-opt btn-edit ${session.category.reviewStatus === 'edited' ? 'is-selected' : ''}"
+                        data-action="edit-ai-suggestion"
+                        data-field="category"
+                        aria-label="श्रेणी संपादित करें"
+                      >
+                        ✎ संपादन
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-review-opt btn-reject ${session.category.reviewStatus === 'rejected' ? 'is-selected' : ''}"
+                        data-action="reject-ai-suggestion"
+                        data-field="category"
+                        aria-label="श्रेणी अस्वीकार करें"
+                        aria-pressed="${session.category.reviewStatus === 'rejected'}"
+                      >
+                        ✗ अस्वीकार
+                      </button>
+                      ${session.category.reviewStatus !== 'suggested' ? `
+                        <button
+                          type="button"
+                          class="btn-review-opt btn-reset"
+                          data-action="reset-ai-suggestion"
+                          data-field="category"
+                          aria-label="श्रेणी रीसेट करें"
+                        >
+                          ↺ रीसेट
+                        </button>
+                      ` : ''}
+                    </div>
+                  `}
                 </div>
               ` : ''}
 
-              ${mood ? `
-                <div class="ai-field-card">
+              ${session.mood && session.mood.suggestedValue ? `
+                <div class="ai-field-card" data-review-field="mood">
                   <div class="ai-field-header">
                     <span class="ai-field-tag">AI सुझाव</span>
                     <h3 class="ai-field-label">मूड / रस</h3>
+                    <span class="ai-status-badge badge-${session.mood.reviewStatus}">
+                      ${session.mood.reviewStatus === 'accepted' ? '✓ स्वीकृत' : (session.mood.reviewStatus === 'edited' ? '✎ संपादित' : (session.mood.reviewStatus === 'rejected' ? '✗ अस्वीकृत' : 'सुझाव'))}
+                    </span>
                   </div>
-                  <div class="ai-field-value ai-field-highlight">${mood}</div>
+                  <div class="ai-field-comparison">
+                    <div class="ai-comp-item">
+                      <span class="ai-comp-meta">वर्तमान:</span>
+                      <span class="ai-comp-val">${this.escapeHtml(this.poem.mood || 'कोई नहीं')}</span>
+                    </div>
+                    <div class="ai-comp-item">
+                      <span class="ai-comp-meta">AI सुझाव:</span>
+                      <span class="ai-field-value ai-field-highlight ${session.mood.reviewStatus === 'rejected' ? 'is-rejected' : ''}">${this.escapeHtml(session.mood.suggestedValue)}</span>
+                    </div>
+                    ${session.mood.isEdited ? `
+                      <div class="ai-comp-item">
+                        <span class="ai-comp-meta">संपादित:</span>
+                        <span class="ai-comp-val ai-field-edited">${this.escapeHtml(session.mood.approvedValue)}</span>
+                      </div>
+                    ` : ''}
+                  </div>
+
+                  ${(this.editingTarget && this.editingTarget.field === 'mood') ? `
+                    <div class="ai-inline-editor">
+                      <input
+                        type="text"
+                        id="edit-mood-input"
+                        class="ai-editor-input"
+                        value="${this.escapeHtml(session.mood.isEdited ? session.mood.approvedValue : session.mood.suggestedValue)}"
+                        aria-label="मूड संपादित करें"
+                        maxlength="50"
+                      />
+                      <div class="ai-editor-actions">
+                        <button type="button" class="btn-review-sm btn-save" data-action="save-edit-suggestion" data-field="mood" aria-label="संपादित मूड सहेजें">सहेजें</button>
+                        <button type="button" class="btn-review-sm btn-cancel" data-action="cancel-edit-suggestion" aria-label="संपादन रद्द करें">रद्द करें</button>
+                      </div>
+                    </div>
+                  ` : `
+                    <div class="ai-review-btn-row">
+                      <button
+                        type="button"
+                        class="btn-review-opt btn-accept ${session.mood.reviewStatus === 'accepted' ? 'is-selected' : ''}"
+                        data-action="accept-ai-suggestion"
+                        data-field="mood"
+                        aria-label="मूड स्वीकार करें"
+                        aria-pressed="${session.mood.reviewStatus === 'accepted'}"
+                      >
+                        ✓ स्वीकार
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-review-opt btn-edit ${session.mood.reviewStatus === 'edited' ? 'is-selected' : ''}"
+                        data-action="edit-ai-suggestion"
+                        data-field="mood"
+                        aria-label="मूड संपादित करें"
+                      >
+                        ✎ संपादन
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-review-opt btn-reject ${session.mood.reviewStatus === 'rejected' ? 'is-selected' : ''}"
+                        data-action="reject-ai-suggestion"
+                        data-field="mood"
+                        aria-label="मूड अस्वीकार करें"
+                        aria-pressed="${session.mood.reviewStatus === 'rejected'}"
+                      >
+                        ✗ अस्वीकार
+                      </button>
+                      ${session.mood.reviewStatus !== 'suggested' ? `
+                        <button
+                          type="button"
+                          class="btn-review-opt btn-reset"
+                          data-action="reset-ai-suggestion"
+                          data-field="mood"
+                          aria-label="मूड रीसेट करें"
+                        >
+                          ↺ रीसेट
+                        </button>
+                      ` : ''}
+                    </div>
+                  `}
                 </div>
               ` : ''}
 
-              ${themes.length > 0 ? `
-                <div class="ai-field-card ai-field-full">
+              ${session.themes && session.themes.length > 0 ? `
+                <div class="ai-field-card ai-field-full" data-review-field="themes">
                   <div class="ai-field-header">
                     <span class="ai-field-tag">AI सुझाव</span>
                     <h3 class="ai-field-label">विषय</h3>
                   </div>
                   <div class="ai-chips-list">
-                    ${themes.map(t => `<span class="ai-chip">#${this.escapeHtml(t)}</span>`).join('')}
+                    ${session.themes.map(t => {
+                      const isEditingThis = (this.editingTarget && this.editingTarget.field === 'themes' && this.editingTarget.itemId === t.id);
+                      if (isEditingThis) {
+                        return `
+                          <div class="ai-chip-editor">
+                            <input
+                              type="text"
+                              id="edit-themes-${t.id}-input"
+                              class="ai-editor-input ai-chip-input"
+                              value="${this.escapeHtml(t.isEdited ? t.approvedValue : t.suggestedValue)}"
+                              aria-label="विषय संपादित करें"
+                              maxlength="60"
+                            />
+                            <button type="button" class="btn-review-sm btn-save" data-action="save-edit-suggestion" data-field="themes" data-item-id="${t.id}" aria-label="सहेजें">सहेजें</button>
+                            <button type="button" class="btn-review-sm btn-cancel" data-action="cancel-edit-suggestion" aria-label="रद्द करें">रद्द करें</button>
+                          </div>
+                        `;
+                      }
+
+                      return `
+                        <div class="ai-review-chip ${t.reviewStatus}" data-chip-id="${t.id}">
+                          <span class="ai-chip-text ${t.reviewStatus === 'rejected' ? 'is-rejected' : ''}">#${this.escapeHtml(t.isEdited ? t.approvedValue : t.suggestedValue)}</span>
+                          <span class="ai-chip-status-icon badge-${t.reviewStatus}" aria-hidden="true">${t.reviewStatus === 'accepted' ? '✓' : (t.reviewStatus === 'edited' ? '✎' : (t.reviewStatus === 'rejected' ? '✗' : ''))}</span>
+                          <div class="ai-chip-actions">
+                            <button type="button" class="btn-chip-opt btn-opt-accept ${t.reviewStatus === 'accepted' ? 'is-active' : ''}" data-action="accept-ai-suggestion" data-field="themes" data-item-id="${t.id}" aria-label="विषय '${this.escapeHtml(t.suggestedValue)}' स्वीकार करें" title="स्वीकार करें">✓</button>
+                            <button type="button" class="btn-chip-opt btn-opt-edit ${t.reviewStatus === 'edited' ? 'is-active' : ''}" data-action="edit-ai-suggestion" data-field="themes" data-item-id="${t.id}" aria-label="विषय '${this.escapeHtml(t.suggestedValue)}' संपादित करें" title="संपादित करें">✎</button>
+                            <button type="button" class="btn-chip-opt btn-opt-reject ${t.reviewStatus === 'rejected' ? 'is-active' : ''}" data-action="reject-ai-suggestion" data-field="themes" data-item-id="${t.id}" aria-label="विषय '${this.escapeHtml(t.suggestedValue)}' अस्वीकार करें" title="अस्वीकार करें">✗</button>
+                            ${t.reviewStatus !== 'suggested' ? `
+                              <button type="button" class="btn-chip-opt btn-opt-reset" data-action="reset-ai-suggestion" data-field="themes" data-item-id="${t.id}" aria-label="विषय '${this.escapeHtml(t.suggestedValue)}' रीसेट करें" title="रीसेट">↺</button>
+                            ` : ''}
+                          </div>
+                        </div>
+                      `;
+                    }).join('')}
                   </div>
                 </div>
               ` : ''}
 
-              ${keywords.length > 0 ? `
-                <div class="ai-field-card ai-field-full">
+              ${session.keywords && session.keywords.length > 0 ? `
+                <div class="ai-field-card ai-field-full" data-review-field="keywords">
                   <div class="ai-field-header">
                     <span class="ai-field-tag">AI सुझाव</span>
                     <h3 class="ai-field-label">मुख्य शब्द</h3>
                   </div>
                   <div class="ai-chips-list">
-                    ${keywords.map(k => `<span class="ai-chip ai-chip-keyword">${this.escapeHtml(k)}</span>`).join('')}
+                    ${session.keywords.map(k => {
+                      const isEditingThis = (this.editingTarget && this.editingTarget.field === 'keywords' && this.editingTarget.itemId === k.id);
+                      if (isEditingThis) {
+                        return `
+                          <div class="ai-chip-editor">
+                            <input
+                              type="text"
+                              id="edit-keywords-${k.id}-input"
+                              class="ai-editor-input ai-chip-input"
+                              value="${this.escapeHtml(k.isEdited ? k.approvedValue : k.suggestedValue)}"
+                              aria-label="मुख्य शब्द संपादित करें"
+                              maxlength="40"
+                            />
+                            <button type="button" class="btn-review-sm btn-save" data-action="save-edit-suggestion" data-field="keywords" data-item-id="${k.id}" aria-label="सहेजें">सहेजें</button>
+                            <button type="button" class="btn-review-sm btn-cancel" data-action="cancel-edit-suggestion" aria-label="रद्द करें">रद्द करें</button>
+                          </div>
+                        `;
+                      }
+
+                      return `
+                        <div class="ai-review-chip ${k.reviewStatus}" data-chip-id="${k.id}">
+                          <span class="ai-chip-text ${k.reviewStatus === 'rejected' ? 'is-rejected' : ''}">${this.escapeHtml(k.isEdited ? k.approvedValue : k.suggestedValue)}</span>
+                          <span class="ai-chip-status-icon badge-${k.reviewStatus}" aria-hidden="true">${k.reviewStatus === 'accepted' ? '✓' : (k.reviewStatus === 'edited' ? '✎' : (k.reviewStatus === 'rejected' ? '✗' : ''))}</span>
+                          <div class="ai-chip-actions">
+                            <button type="button" class="btn-chip-opt btn-opt-accept ${k.reviewStatus === 'accepted' ? 'is-active' : ''}" data-action="accept-ai-suggestion" data-field="keywords" data-item-id="${k.id}" aria-label="मुख्य शब्द '${this.escapeHtml(k.suggestedValue)}' स्वीकार करें" title="स्वीकार करें">✓</button>
+                            <button type="button" class="btn-chip-opt btn-opt-edit ${k.reviewStatus === 'edited' ? 'is-active' : ''}" data-action="edit-ai-suggestion" data-field="keywords" data-item-id="${k.id}" aria-label="मुख्य शब्द '${this.escapeHtml(k.suggestedValue)}' संपादित करें" title="संपादित करें">✎</button>
+                            <button type="button" class="btn-chip-opt btn-opt-reject ${k.reviewStatus === 'rejected' ? 'is-active' : ''}" data-action="reject-ai-suggestion" data-field="keywords" data-item-id="${k.id}" aria-label="मुख्य शब्द '${this.escapeHtml(k.suggestedValue)}' अस्वीकार करें" title="अस्वीकार करें">✗</button>
+                            ${k.reviewStatus !== 'suggested' ? `
+                              <button type="button" class="btn-chip-opt btn-opt-reset" data-action="reset-ai-suggestion" data-field="keywords" data-item-id="${k.id}" aria-label="मुख्य शब्द '${this.escapeHtml(k.suggestedValue)}' रीसेट करें" title="रीसेट">↺</button>
+                            ` : ''}
+                          </div>
+                        </div>
+                      `;
+                    }).join('')}
                   </div>
                 </div>
               ` : ''}
 
-              ${summary ? `
-                <div class="ai-field-card ai-field-full">
+              ${session.summary && session.summary.suggestedValue ? `
+                <div class="ai-field-card ai-field-full" data-review-field="summary">
                   <div class="ai-field-header">
                     <span class="ai-field-tag">AI सुझाव</span>
                     <h3 class="ai-field-label">सारांश</h3>
+                    <span class="ai-status-badge badge-${session.summary.reviewStatus}">
+                      ${session.summary.reviewStatus === 'accepted' ? '✓ स्वीकृत' : (session.summary.reviewStatus === 'edited' ? '✎ संपादित' : (session.summary.reviewStatus === 'rejected' ? '✗ अस्वीकृत' : 'सुझाव'))}
+                    </span>
                   </div>
-                  <blockquote class="ai-summary-text">${summary}</blockquote>
+
+                  ${(this.editingTarget && this.editingTarget.field === 'summary') ? `
+                    <div class="ai-inline-editor">
+                      <textarea
+                        id="edit-summary-input"
+                        class="ai-editor-input ai-editor-textarea"
+                        aria-label="सारांश संपादित करें"
+                        rows="3"
+                        maxlength="500"
+                      >${this.escapeHtml(session.summary.isEdited ? session.summary.approvedValue : session.summary.suggestedValue)}</textarea>
+                      <div class="ai-editor-actions">
+                        <button type="button" class="btn-review-sm btn-save" data-action="save-edit-suggestion" data-field="summary" aria-label="संपादित सारांश सहेजें">सहेजें</button>
+                        <button type="button" class="btn-review-sm btn-cancel" data-action="cancel-edit-suggestion" aria-label="संपादन रद्द करें">रद्द करें</button>
+                      </div>
+                    </div>
+                  ` : `
+                    <blockquote class="ai-summary-text ${session.summary.reviewStatus === 'rejected' ? 'is-rejected' : ''}">${this.escapeHtml(session.summary.isEdited ? session.summary.approvedValue : session.summary.suggestedValue)}</blockquote>
+                    <div class="ai-review-btn-row" style="margin-top: var(--space-3);">
+                      <button
+                        type="button"
+                        class="btn-review-opt btn-accept ${session.summary.reviewStatus === 'accepted' ? 'is-selected' : ''}"
+                        data-action="accept-ai-suggestion"
+                        data-field="summary"
+                        aria-label="सारांश स्वीकार करें"
+                        aria-pressed="${session.summary.reviewStatus === 'accepted'}"
+                      >
+                        ✓ स्वीकार
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-review-opt btn-edit ${session.summary.reviewStatus === 'edited' ? 'is-selected' : ''}"
+                        data-action="edit-ai-suggestion"
+                        data-field="summary"
+                        aria-label="सारांश संपादित करें"
+                      >
+                        ✎ संपादन
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-review-opt btn-reject ${session.summary.reviewStatus === 'rejected' ? 'is-selected' : ''}"
+                        data-action="reject-ai-suggestion"
+                        data-field="summary"
+                        aria-label="सारांश अस्वीकार करें"
+                        aria-pressed="${session.summary.reviewStatus === 'rejected'}"
+                      >
+                        ✗ अस्वीकार
+                      </button>
+                      ${session.summary.reviewStatus !== 'suggested' ? `
+                        <button
+                          type="button"
+                          class="btn-review-opt btn-reset"
+                          data-action="reset-ai-suggestion"
+                          data-field="summary"
+                          aria-label="सारांश रीसेट करें"
+                        >
+                          ↺ रीसेट
+                        </button>
+                      ` : ''}
+                    </div>
+                  `}
                 </div>
               ` : ''}
             </div>
+
+            <!-- Review Action Toolbar -->
+            <div class="ai-review-toolbar" role="group" aria-label="समीक्षा नियंत्रण पट्टी">
+              <div class="ai-review-stats">
+                <span class="ai-review-approved-count">स्वीकृत सुझाव: <strong>${approvedCount}</strong></span>
+                ${hasChanges ? '<span class="ai-review-changes-notice">• सहेजने हेतु तैयार</span>' : ''}
+              </div>
+              <div class="ai-review-actions-group">
+                <button
+                  type="button"
+                  class="btn-reader-action btn-review-discard"
+                  data-action="discard-ai-review"
+                  aria-label="समीक्षा रद्द करें"
+                >
+                  समीक्षा रद्द करें
+                </button>
+                <button
+                  type="button"
+                  class="btn-reader-action btn-review-apply ${hasChanges ? 'is-ready' : ''}"
+                  data-action="apply-ai-suggestions"
+                  aria-label="स्वीकृत सुझाव सहेजें"
+                  ${hasChanges ? '' : 'disabled'}
+                >
+                  ${getIconSvg('sparkles', 'nav-icon')}
+                  <span>स्वीकृत सुझाव सहेजें</span>
+                </button>
+              </div>
+            </div>
+
+            ${this.aiNotificationMessage ? `
+              <div class="ai-review-notification" role="status" aria-live="polite">
+                <span class="ai-notification-icon">✓</span>
+                <span>${this.escapeHtml(this.aiNotificationMessage)}</span>
+              </div>
+            ` : ''}
           </div>
         </section>
       `;
@@ -599,7 +960,151 @@ export class PoemReader {
       this.closeAiConsentModal();
     } else if (action === 'confirm-ai-analysis') {
       this.confirmAiAnalysis();
+    } else if (action === 'accept-ai-suggestion') {
+      const field = actionEl.getAttribute('data-field');
+      const itemId = actionEl.getAttribute('data-item-id');
+      this.handleAcceptSuggestion(field, itemId);
+    } else if (action === 'edit-ai-suggestion') {
+      const field = actionEl.getAttribute('data-field');
+      const itemId = actionEl.getAttribute('data-item-id');
+      this.handleStartEditSuggestion(field, itemId);
+    } else if (action === 'save-edit-suggestion') {
+      const field = actionEl.getAttribute('data-field');
+      const itemId = actionEl.getAttribute('data-item-id');
+      const explicitVal = (event && event.editValue !== undefined) ? event.editValue : null;
+      this.handleSaveEditSuggestion(field, itemId, explicitVal);
+    } else if (action === 'cancel-edit-suggestion') {
+      this.handleCancelEditSuggestion();
+    } else if (action === 'reject-ai-suggestion') {
+      const field = actionEl.getAttribute('data-field');
+      const itemId = actionEl.getAttribute('data-item-id');
+      this.handleRejectSuggestion(field, itemId);
+    } else if (action === 'reset-ai-suggestion') {
+      const field = actionEl.getAttribute('data-field');
+      const itemId = actionEl.getAttribute('data-item-id');
+      this.handleResetSuggestion(field, itemId);
+    } else if (action === 'apply-ai-suggestions') {
+      this.handleApplyApprovedSuggestions();
+    } else if (action === 'discard-ai-review') {
+      this.handleDiscardReview();
     }
+  }
+
+  /**
+   * Accepts a specific candidate suggestion
+   */
+  handleAcceptSuggestion(field, itemId = null) {
+    if (!this.aiReviewSession) return;
+    acceptSuggestion(this.aiReviewSession, field, itemId);
+    if (this.editingTarget && this.editingTarget.field === field && (!itemId || this.editingTarget.itemId === itemId)) {
+      this.editingTarget = null;
+    }
+    this.aiNotificationMessage = null;
+    this.update();
+  }
+
+  /**
+   * Enters inline edit mode for a suggestion
+   */
+  handleStartEditSuggestion(field, itemId = null) {
+    this.editingTarget = { field, itemId: itemId || null };
+    this.aiNotificationMessage = null;
+    this.update();
+
+    if (this.container && typeof this.container.querySelector === 'function') {
+      const inputEl = this.container.querySelector('.ai-editor-input');
+      if (inputEl && typeof inputEl.focus === 'function') {
+        inputEl.focus();
+      }
+    }
+  }
+
+  /**
+   * Saves human-edited text for a candidate suggestion
+   */
+  handleSaveEditSuggestion(field, itemId = null, explicitValue = null) {
+    if (!this.aiReviewSession) return;
+    let newValue = explicitValue;
+    if (newValue === null && this.container && typeof this.container.querySelector === 'function') {
+      const inputEl = this.container.querySelector('#edit-' + field + (itemId ? '-' + itemId : '') + '-input')
+        || this.container.querySelector('.ai-editor-input');
+      if (inputEl && inputEl.value !== undefined) {
+        newValue = inputEl.value;
+      }
+    }
+    if (typeof newValue === 'string' && newValue.trim() !== '') {
+      editSuggestion(this.aiReviewSession, field, newValue.trim(), itemId);
+    }
+    this.editingTarget = null;
+    this.aiNotificationMessage = null;
+    this.update();
+  }
+
+  /**
+   * Cancels editing a suggestion
+   */
+  handleCancelEditSuggestion() {
+    this.editingTarget = null;
+    this.update();
+  }
+
+  /**
+   * Rejects a candidate suggestion
+   */
+  handleRejectSuggestion(field, itemId = null) {
+    if (!this.aiReviewSession) return;
+    rejectSuggestion(this.aiReviewSession, field, itemId);
+    if (this.editingTarget && this.editingTarget.field === field && (!itemId || this.editingTarget.itemId === itemId)) {
+      this.editingTarget = null;
+    }
+    this.aiNotificationMessage = null;
+    this.update();
+  }
+
+  /**
+   * Resets a suggestion to initial suggested state
+   */
+  handleResetSuggestion(field, itemId = null) {
+    if (!this.aiReviewSession) return;
+    resetSuggestion(this.aiReviewSession, field, itemId);
+    if (this.editingTarget && this.editingTarget.field === field && (!itemId || this.editingTarget.itemId === itemId)) {
+      this.editingTarget = null;
+    }
+    this.aiNotificationMessage = null;
+    this.update();
+  }
+
+  /**
+   * Applies approved suggestions explicitly to PoemRepository
+   */
+  handleApplyApprovedSuggestions() {
+    if (!this.aiReviewSession || !this.poem) return;
+    const { changes, hasChanges, approvedCount } = computeApprovedChanges(this.aiReviewSession, this.poem);
+    if (!hasChanges && approvedCount === 0) return;
+
+    try {
+      const repo = this.poemRepo || poemRepository;
+      const updated = repo.update(this.poem.id, changes);
+      this.poem = updated;
+      this.aiNotificationMessage = `स्वीकृत सुझाव सफलतापूर्वक कविता में सहेजे गए (${approvedCount} स्वीकृत)।`;
+      this.editingTarget = null;
+      this.update();
+    } catch (err) {
+      this.aiNotificationMessage = `सुझाव सहेजने में त्रुटि: ${err.message}`;
+      this.update();
+    }
+  }
+
+  /**
+   * Discards the active AI suggestions review without saving
+   */
+  handleDiscardReview() {
+    this.aiReviewSession = null;
+    this.aiAnalysisResult = null;
+    this.aiAnalysisState = 'idle';
+    this.editingTarget = null;
+    this.aiNotificationMessage = null;
+    this.update();
   }
 
   /**
@@ -650,15 +1155,28 @@ export class PoemReader {
         this.aiAnalysisState = 'completed';
         this.aiAnalysisResult = res.result;
         this.aiAnalysisError = null;
+        this.aiReviewSession = createReviewSession({
+          poemId: this.poem.id,
+          result: res.result,
+          currentPoem: this.poem
+        });
+        this.editingTarget = null;
+        this.aiNotificationMessage = null;
       } else {
         this.aiAnalysisState = 'failed';
         this.aiAnalysisError = (res && res.error) ? res.error : 'विश्लेषण परिणाम प्राप्त नहीं हो सका।';
         this.aiAnalysisResult = null;
+        this.aiReviewSession = null;
+        this.editingTarget = null;
+        this.aiNotificationMessage = null;
       }
     } catch (err) {
       this.aiAnalysisState = 'failed';
       this.aiAnalysisError = err.message || 'अप्रत्याशित त्रुटि उत्पन्न हुई।';
       this.aiAnalysisResult = null;
+      this.aiReviewSession = null;
+      this.editingTarget = null;
+      this.aiNotificationMessage = null;
     } finally {
       this.isAnalyzing = false;
       this.update();

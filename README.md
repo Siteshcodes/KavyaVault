@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-574%2F574%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-589%2F589%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -408,6 +408,20 @@ Phase 4 introduces an AI assistant strictly focused on **organization, classific
   - **Security & XSS Prevention:** All AI suggestions and user texts are safely escaped, neutralizing script tags and HTML injection vectors.
   - **Full Unicode & Devanagari Integrity:** Devanagari conjuncts (`क्ष, त्र, ज्ञ, श्र, द्व, द्घ, हृ, ॐ`), matras, nuktas, punctuation (`।, ॥`), and emojis render faithfully.
   - **Comprehensive Verification:** 15 dedicated automated tests in `test_ai_analysis_ui.js` (574/574 total tests passing across 22 test suites).
+
+- ✅ **Task 4.3 — Human Review: Accept / Edit / Reject AI Suggestions**: Full human-review workflow for AI-generated poem metadata in `PoemReader`.
+  - **Critical Principle:** AI suggestions are NOT author truth. The user remains the sole final authority.
+  - **Independent Review Controls:** Every AI suggestion can be independently reviewed via dedicated controls:
+    - **Accept (`स्वीकार करें`):** Approves candidate value without mutating the poem.
+    - **Edit (`संपादित करें`):** Allows inline editing of the proposal, storing the human-authored text while preserving the original AI suggestion.
+    - **Reject (`अस्वीकार करें`):** Marks candidate rejected with visible strikethrough/badge, guaranteeing it will never be applied to the poem.
+    - **Reset (`रीसेट करें`):** Restores candidate to the initial suggested state.
+  - **Multi-Value Candidates:** Themes and keywords are reviewed as discrete, independent chips (`✓`, `✎`, `✗`, `↺`).
+  - **Existing Metadata Preservation:** Existing poem metadata (category, mood, tags) is shown side-by-side with suggestions. Approved themes/keywords merge safely with existing tags without silent replacement or loss of existing tags.
+  - **Explicit Apply Boundary:** Zero storage writes occur during review. Only an explicit user action on **"स्वीकृत सुझाव सहेजें"** commits approved changes to `PoemRepository`.
+  - **Author Content Immutability:** Poem body, title, author, dates, and manuscripts are strictly immutable.
+  - **Discard / Cancel:** Clicking **"समीक्षा रद्द करें"** exits review state immediately, leaving the poem in storage 100% unaltered.
+  - **Comprehensive Verification:** 15 dedicated automated tests in `test_ai_analysis_review.js` (589/589 total tests passing across 23 test suites).
 
 ---
 

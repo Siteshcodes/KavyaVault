@@ -102,6 +102,11 @@ export class PoemRepository {
       throw new StorageError('रचनाकार (Author) का नाम स्ट्रिंग होना चाहिए।', StorageErrorCode.VALIDATION_ERROR);
     }
 
+    // Category validation
+    if (poemData.category !== undefined && poemData.category !== null && typeof poemData.category !== 'string') {
+      throw new StorageError('कविता की श्रेणी (Category) स्ट्रिंग होनी चाहिए।', StorageErrorCode.VALIDATION_ERROR);
+    }
+
     // Tags validation
     if (poemData.tags !== undefined && !Array.isArray(poemData.tags)) {
       throw new StorageError('टैग (Tags) एक ऐरे होना अनिवार्य है।', StorageErrorCode.VALIDATION_ERROR);
@@ -135,6 +140,10 @@ export class PoemRepository {
 
     if (changes.author !== undefined && typeof changes.author !== 'string') {
       throw new StorageError('रचनाकार (Author) का नाम स्ट्रिंग होना चाहिए।', StorageErrorCode.VALIDATION_ERROR);
+    }
+
+    if (changes.category !== undefined && changes.category !== null && typeof changes.category !== 'string') {
+      throw new StorageError('कविता की श्रेणी (Category) स्ट्रिंग या null होनी चाहिए।', StorageErrorCode.VALIDATION_ERROR);
     }
 
     if (changes.tags !== undefined && !Array.isArray(changes.tags)) {
@@ -273,6 +282,7 @@ export class PoemRepository {
       title: poemData.title.trim(),
       body: poemData.body,
       author: typeof poemData.author === 'string' && poemData.author.trim() !== '' ? poemData.author.trim() : 'अज्ञात',
+      category: typeof poemData.category === 'string' && poemData.category.trim() !== '' ? poemData.category.trim() : null,
       createdAt: poemData.createdAt || now,
       updatedAt: poemData.updatedAt || now,
       isFavorite: Boolean(poemData.isFavorite),
@@ -320,6 +330,7 @@ export class PoemRepository {
       title: changes.title !== undefined ? changes.title.trim() : current.title,
       body: changes.body !== undefined ? changes.body : current.body,
       author: changes.author !== undefined ? changes.author.trim() : current.author,
+      category: changes.category !== undefined ? (typeof changes.category === 'string' && changes.category.trim() !== '' ? changes.category.trim() : null) : (current.category || null),
       isFavorite: changes.isFavorite !== undefined ? changes.isFavorite : current.isFavorite,
       isArchived: changes.isArchived !== undefined ? changes.isArchived : current.isArchived,
       tags: changes.tags !== undefined ? changes.tags.map(t => String(t).trim()) : current.tags,
