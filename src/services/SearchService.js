@@ -1,8 +1,36 @@
 /**
- * काव्यकलश (KavyaVault) — Search Service (SearchService.js)
+ * काव्यकलश (KavyaVault) — Search Service & Foundation (SearchService.js)
+ * Phase 1 & Phase 5 / Task 5.1: Intelligent Search Foundation
+ *
  * Deterministic, Unicode-safe, Hindi-first search across poetry repository.
  * Pure logic decoupled from DOM, UI, and LocalStorage.
+ *
+ * Phase 5 Architectural Extensions:
+ * - SearchService orchestrator class & strategy dispatch
+ * - Pluggable ISearchProvider interface (TextSearchProvider, SemanticSearchProvider, HybridSearchProvider)
+ * - Normalized SearchQuery and SearchResult domain models
+ * - 100% backward-compatible with Phase 1 search utilities
  */
+
+import {
+  SEARCH_MODE,
+  VALID_SEARCH_MODES,
+  SEARCH_STATUS,
+  VALID_SEARCH_STATUSES,
+  createSearchQuery,
+  createSearchResult,
+  validateSearchQuery
+} from './search/searchTypes.js';
+import { ISearchProvider } from './search/ISearchProvider.js';
+import { TextSearchProvider } from './search/TextSearchProvider.js';
+import { SemanticSearchProvider } from './search/SemanticSearchProvider.js';
+import { HybridSearchProvider } from './search/HybridSearchProvider.js';
+import { poemRepository } from './PoemRepository.js';
+import { StorageError, StorageErrorCode } from './storage/StorageError.js';
+
+/* ========================================================================
+   1. EXISTING PHASE 1 SEARCH UTILITIES (100% PRESERVED & BACKWARD-COMPATIBLE)
+   ======================================================================== */
 
 /**
  * Conservative Unicode search text normalizer.
@@ -268,3 +296,140 @@ export function searchPoems(poems, query) {
     totalCount: matches.length
   };
 }
+
+/* ========================================================================
+   2. PHASE 5 SEARCH SERVICE ARCHITECTURE & STRATEGY DISPATCH
+   ======================================================================== */
+
+export class SearchService {
+  /**
+   * @param {Object} [options={}]
+   * @param {Object} [options.poemRepo=poemRepository] Poem repository instance
+   */
+  constructor(options = {}) {
+    this.poemRepo = options.poemRepo || poemRepository;
+    this.providers = new Map();
+
+    // Register standard provider strategies
+    this.registerProvider(new TextSearchProvider({ poemRepo: this.poemRepo }));
+    this.registerProvider(new SemanticSearchProvider());
+    this.registerProvider(new HybridSearchProvider());
+  }
+
+  /**
+   * Registers a search provider implementation
+   * @param {ISearchProvider} provider
+   */
+  registerProvider(provider) {
+    if (!provider || typeof provider.getMode !== 'function' || typeof provider.search !== 'function') {
+      throw new StorageError(
+        'प्रदाता को ISearchProvider इंटरफ़ेस लागू करना अनिवार्य है।',
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+    this.providers.set(provider.getMode().toLowerCase(), provider);
+  }
+
+  /**
+   * Resolves a search strategy by mode
+   * @param {string} [mode='text']
+   * @returns {ISearchProvider}
+   */
+  getProvider(mode = 'text') {
+    const normMode = (mode || 'text').trim().toLowerCase();
+    const provider = this.providers.get(normMode);
+    if (!provider) {
+      throw new StorageError(
+        `अज्ञात खोज मोड: "${mode}"।`,
+        StorageErrorCode.VALIDATION_ERROR
+      );
+    }
+    return provider;
+  }
+
+  /**
+   * Lists registered search modes
+   * @returns {Array<string>}
+   */
+  listModes() {
+    return Array.from(this.providers.keys());
+  }
+
+  /**
+   * Executes unified search through resolved strategy
+   *
+   * @param {Object|string} queryInput SearchQuery object or raw string
+   * @param {Object} [options={}] Optional search context
+   * @returns {Promise<{
+   *   results: Array<Object>,
+   *   query: string,
+   *   mode: string,
+   *   totalCount: number,
+   *   status: string,
+   *   message?: string
+   * }>}
+   */
+  async search(queryInput, options = {}) {
+    let query;
+    try {
+      query = typeof queryInput === 'string'
+        ? createSearchQuery({ text: queryInput })
+        : createSearchQuery(queryInput);
+    } catch (err) {
+      return {
+        results: [],
+        query: queryInput && typeof queryInput.text === 'string' ? queryInput.text : '',
+        mode: queryInput && queryInput.mode ? queryInput.mode : SEARCH_MODE.TEXT,
+        totalCount: 0,
+        status: SEARCH_STATUS.ERROR,
+        message: err.message || 'अमान्य खोज अनुरोध।'
+      };
+    }
+
+    let provider;
+    try {
+      provider = this.getProvider(query.mode || SEARCH_MODE.TEXT);
+    } catch (err) {
+      return {
+        results: [],
+        query: query.text,
+        mode: query.mode,
+        totalCount: 0,
+        status: SEARCH_STATUS.ERROR,
+        message: err.message
+      };
+    }
+
+    const response = await provider.search(query, options);
+
+    return {
+      results: response.results || [],
+      query: response.query !== undefined ? response.query : query.text,
+      mode: provider.getMode(),
+      totalCount: typeof response.totalCount === 'number'
+        ? response.totalCount
+        : (response.results ? response.results.length : 0),
+      status: response.status || (response.results && response.results.length > 0
+        ? SEARCH_STATUS.SUCCESS
+        : SEARCH_STATUS.EMPTY),
+      message: response.message || null
+    };
+  }
+}
+
+export const searchService = new SearchService();
+
+// Re-export domain types and providers for developer convenience
+export {
+  SEARCH_MODE,
+  VALID_SEARCH_MODES,
+  SEARCH_STATUS,
+  VALID_SEARCH_STATUSES,
+  createSearchQuery,
+  createSearchResult,
+  validateSearchQuery,
+  ISearchProvider,
+  TextSearchProvider,
+  SemanticSearchProvider,
+  HybridSearchProvider
+};

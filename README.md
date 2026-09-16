@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-620%2F620%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-645%2F645%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -444,6 +444,30 @@ Phase 4 introduces an AI assistant strictly focused on **organization, classific
   - **Prompt-Injection Resistance:** Strict role separation. System prompt enforces organizational metadata tasks only (category, mood, themes, keywords, summary) and explicitly forbids poem rewriting, continuations, or altering wording. Poem content is treated strictly as untrusted data.
   - **Complete Immutability & Storage Isolation:** Original poems in memory and storage remain 100% byte-for-byte immutable. Adapter has zero access to `localStorage`, `sessionStorage`, `indexedDB`, or repositories.
   - **Comprehensive Verification:** 31 dedicated automated tests in `test_ai_provider_hardening.js` covering provider contracts, configuration, consent, minimization, timeouts, HTTP errors, schema validation, retries, deduplication, injection resistance, secrets audit, logging audit, and Unicode fidelity (620/620 total tests passing across 24 test suites).
+
+
+---
+
+## 🔍 Phase 5: Intelligent Search
+
+Phase 5 unifies deterministic exact text matching with future semantic retrieval and natural-language queries across the KavyaVault poetry library, while strictly preserving user privacy, offline local-first operation, and deterministic search behavior.
+
+### Completed:
+- ✅ **Task 5.1 — Intelligent Search Foundation**: Core architecture, search domain model, provider strategy abstraction, deterministic text search provider, and truthful future placeholders.
+  - **Decoupled Strategy Architecture:** `SearchQuery → SearchService → ISearchProvider (TextSearchProvider | SemanticSearchProvider | HybridSearchProvider) → Normalized SearchResult`. The UI depends on `SearchService` rather than embedding search traversal or scoring algorithms.
+  - **Search Domain Models (`src/services/search/searchTypes.js`):**
+    - `SearchQuery`: Encapsulates `text`, `mode` (`text`, `semantic`, `hybrid`), and optional `filters` (`category`, `tags`, `mood`, `isFavorite`, `isArchived`).
+    - `SearchResult`: Normalized result item containing `poemId`, `poem`, `score`, `source` (`"text"`), `matchedFields` (`['title', 'body', 'tag', 'author']`), and `matchContext`.
+  - **Controlled Search Modes (`SEARCH_MODE`):**
+    - `text`: Fully operational, deterministic Hindi-first exact, tokenized, and weighted text search.
+    - `semantic`: Future-ready contract. Truthfully reports `isAvailable() === false` and returns status `UNSUPPORTED` (`SEMANTIC_SEARCH_UNAVAILABLE`). Does not fake embeddings or perform external API calls.
+    - `hybrid`: Future-ready contract. Truthfully reports `isAvailable() === false` and returns status `UNSUPPORTED` (`HYBRID_SEARCH_UNAVAILABLE`).
+  - **Search Service Orchestrator (`src/services/SearchService.js`):** Validates and normalizes queries, dispatches to registered providers, and standardizes result envelopes. Retains 100% backward compatibility with all Phase 1 search functions (`normalizeSearchText`, `tokenizeQuery`, `escapeHtml`, `highlightMatches`, `scorePoemMatch`, `searchPoems`).
+  - **Deterministic Text Provider (`src/services/search/TextSearchProvider.js`):** Implements `ISearchProvider` using conservative NFC Unicode matching, multi-word conjunction (AND match), title > tag > author > body ranking, and stable multi-tier tie-breaking (`score DESC → updatedAt DESC → poemId ASC`).
+  - **Unicode & Devanagari Integrity:** Preserves complex Devanagari ligatures (`क्ष, त्र, ज्ञ, श्र, द्व, द्घ, हृ, ॐ`), matras, nuktas, halant/virama, chandrabindu, poetic punctuation (`।, ॥`), mixed Hindi/English, and emojis without destructive normalization.
+  - **Metadata Filtering Support:** Supports filtering on actual poem attributes (`category`, `tags`, `mood`, `isFavorite`, `isArchived`). Excludes archived poems by default unless explicitly requested.
+  - **Privacy & Security Guarantees:** 100% local, read-only operation with zero network calls, zero external embedding APIs, zero telemetry, zero storage writes, and strict XSS query sanitization.
+  - **Comprehensive Verification:** 25 dedicated automated tests in `test_intelligent_search_foundation.js` (645/645 total tests passing across 25 test suites).
 
 ---
 
