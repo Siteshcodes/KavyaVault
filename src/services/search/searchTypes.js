@@ -25,7 +25,8 @@ export const SEARCH_STATUS = Object.freeze({
   SUCCESS: 'success',
   EMPTY: 'empty',
   UNSUPPORTED: 'unsupported',
-  ERROR: 'error'
+  ERROR: 'error',
+  DEGRADED: 'degraded'
 });
 
 export const VALID_SEARCH_STATUSES = Object.freeze(Object.values(SEARCH_STATUS));

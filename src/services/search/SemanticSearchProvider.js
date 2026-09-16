@@ -17,6 +17,7 @@ import { LocalEmbeddingProvider } from './semantic/LocalEmbeddingProvider.js';
 import { IndexedDBVectorStore } from './vector/IndexedDBVectorStore.js';
 import { prepareQuerySemanticText } from './semantic/semanticPreparation.js';
 import { cosineSimilarity } from './semantic/vectorMath.js';
+import { normalizeSearchText } from '../SearchService.js';
 import { poemRepository } from '../PoemRepository.js';
 
 const DEFAULT_TOP_K = 20;
@@ -51,6 +52,40 @@ export class SemanticSearchProvider extends ISearchProvider {
    */
   isAvailable() {
     return Boolean(this.embeddingProvider && this.embeddingProvider.isAvailable());
+  }
+
+  /**
+   * Applies metadata filters to poem candidate
+   * @private
+   */
+  _applyFilters(poem, filters = {}) {
+    if (!filters || typeof filters !== 'object' || !poem) {
+      return true;
+    }
+    if (typeof filters.isArchived === 'boolean') {
+      if (Boolean(poem.isArchived) !== filters.isArchived) return false;
+    } else if (filters.includeArchived !== true) {
+      if (Boolean(poem.isArchived)) return false;
+    }
+    if (typeof filters.isFavorite === 'boolean') {
+      if (Boolean(poem.isFavorite) !== filters.isFavorite) return false;
+    }
+    if (typeof filters.category === 'string' && filters.category.trim() !== '') {
+      const normPoemCat = normalizeSearchText(poem.category || '');
+      const normFilterCat = normalizeSearchText(filters.category);
+      if (normPoemCat !== normFilterCat) return false;
+    }
+    if (typeof filters.mood === 'string' && filters.mood.trim() !== '') {
+      const normPoemMood = normalizeSearchText(poem.mood || poem.rasa || '');
+      const normFilterMood = normalizeSearchText(filters.mood);
+      if (normPoemMood !== normFilterMood) return false;
+    }
+    if (Array.isArray(filters.tags) && filters.tags.length > 0) {
+      const normPoemTags = Array.isArray(poem.tags) ? poem.tags.map(t => normalizeSearchText(t)) : [];
+      const matchesAnyTag = filters.tags.some(ft => normPoemTags.includes(normalizeSearchText(ft)));
+      if (!matchesAnyTag) return false;
+    }
+    return true;
   }
 
   /**
@@ -146,6 +181,9 @@ export class SemanticSearchProvider extends ISearchProvider {
         }
 
         const poem = poemsMap.get(record.poemId) || null;
+        if (query.filters && !this._applyFilters(poem, query.filters)) {
+          continue;
+        }
 
         scoredCandidates.push({
           poemId: record.poemId,

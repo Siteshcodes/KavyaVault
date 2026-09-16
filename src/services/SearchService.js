@@ -24,7 +24,11 @@ import {
 import { ISearchProvider } from './search/ISearchProvider.js';
 import { TextSearchProvider } from './search/TextSearchProvider.js';
 import { SemanticSearchProvider } from './search/SemanticSearchProvider.js';
-import { HybridSearchProvider } from './search/HybridSearchProvider.js';
+import {
+  HybridSearchProvider,
+  computeRRF,
+  DEFAULT_RRF_K
+} from './search/HybridSearchProvider.js';
 import {
   createPoemEmbedding,
   validateEmbeddingVector
@@ -334,12 +338,19 @@ export class SearchService {
     this.providers = new Map();
 
     // Register standard provider strategies
-    this.registerProvider(new TextSearchProvider({ poemRepo: this.poemRepo }));
-    this.registerProvider(new SemanticSearchProvider({
+    const textProvider = new TextSearchProvider({ poemRepo: this.poemRepo });
+    const semanticProvider = new SemanticSearchProvider({
       poemRepo: this.poemRepo,
       vectorStore: this.vectorStore
-    }));
-    this.registerProvider(new HybridSearchProvider());
+    });
+    const hybridProvider = new HybridSearchProvider({
+      textProvider,
+      semanticProvider
+    });
+
+    this.registerProvider(textProvider);
+    this.registerProvider(semanticProvider);
+    this.registerProvider(hybridProvider);
   }
 
   /**
@@ -473,5 +484,7 @@ export {
   cosineSimilarity,
   IVectorStore,
   IndexedDBVectorStore,
-  SemanticIndexService
+  SemanticIndexService,
+  computeRRF,
+  DEFAULT_RRF_K
 };

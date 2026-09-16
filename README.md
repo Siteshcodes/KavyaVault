@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-690%2F690%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-710%2F710%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -512,6 +512,31 @@ Phase 5 unifies deterministic exact text matching with future semantic retrieval
     - Bounded `topK` (default 20, max 100) and optional `minScore` threshold filtering.
     - Honest capability boundary: returns `SEARCH_STATUS.UNSUPPORTED` in production where `LocalEmbeddingProvider` is not active; fully functional with test-only providers in test environments.
   - **Comprehensive Verification:** 21 dedicated automated tests in `test_vector_index.js` (690/690 total tests passing across 27 test suites).
+
+- ✅ **Task 5.4 — Hybrid Search + Natural-Language Search UX**: Unified hybrid text + semantic retrieval using Reciprocal Rank Fusion (RRF), dignified Hindi-first search mode selector tabs, and graceful degradation.
+  - **Hybrid Strategy Provider (`src/services/search/HybridSearchProvider.js`):**
+    - Coordinates `TextSearchProvider` and `SemanticSearchProvider` without duplicating underlying search traversal.
+    - Implements standard Reciprocal Rank Fusion (RRF):
+      $$\text{RRF}(d) = \sum \frac{1}{k + \text{rank}_i(d)}, \quad k = 60$$
+      using 1-based ranks. Items appearing in both text and semantic result sets receive combined fused scores; items in a single list retain their individual rank contributions.
+    - **Score Normalization Guarantee:** Strictly merges ranked ordinal positions rather than mixing raw BM25/keyword relevance scores with cosine similarities $[-1.0, 1.0]$.
+    - **Deduplication by Canonical `poemId`:** Ensures no poem appears twice in search results. Results found in both lists are badged as `मिश्रित` (`शब्द + भावार्थ`) and retain combined ranking evidence.
+    - **Deterministic Tie-Breaking:** `fusedScore DESC` $\rightarrow$ `bestRank ASC` $\rightarrow$ poem `updatedAt DESC` $\rightarrow$ `poemId ASC`.
+  - **Truthful Degradation & Offline Resilience:**
+    - Current production `LocalEmbeddingProvider` is offline by design (zero unauthorized model downloads, zero external API connections).
+    - In Semantic Mode: Returns explicit `SEARCH_STATUS.UNSUPPORTED` banner with informative guidance; strictly zero fake results.
+    - In Hybrid Mode: Gracefully degrades to text search, returning matches with `status: SEARCH_STATUS.DEGRADED`, honest explanation banner, and badges identifying text matches.
+  - **Natural-Language Search UX (`src/components/search/SearchView.js` & `search.css`):**
+    - WAI-ARIA accessible segmented control with 3 modes:
+      - **पाठ खोज (Text Search):** *"शब्दों और वाक्यांशों में खोजें"*
+      - **भावार्थ खोज (Semantic Search):** *"अर्थ के आधार पर खोजें"*
+      - **मिश्रित खोज (Hybrid Search):** *"शब्द + अर्थ दोनों से खोजें"*
+    - Full keyboard navigation (`ArrowLeft`, `ArrowRight`, `Home`, `End`), `role="tablist"`, `role="tab"`, `role="tabpanel"`, and visible focus rings.
+    - Natural-language queries (e.g. *"पहाड़ और नदी वाली शांत कविता"*) accepted directly as query text without external LLM rewriting or hallucinated query expansion.
+    - Consistent metadata filtering across category, mood, tags, favorites, and archive status.
+    - Mobile-responsive layout (390px, 768px, 1024px, 1440px) with touch targets $\ge 44$px.
+  - **Security & Privacy:** XSS-safe text escaping, zero telemetry, zero cloud vector databases, and zero storage writes.
+  - **Comprehensive Verification:** 20 dedicated automated tests in `test_hybrid_search.js` (710/710 total tests passing across 28 test suites).
 
 ---
 
