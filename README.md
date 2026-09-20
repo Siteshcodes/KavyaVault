@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-833%2F833%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-896%2F896%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -606,7 +606,28 @@ Phase 6 enriches KavyaVault with a serene, personal digital library organization
     - Viewing poems never alters `poem.updatedAt` timestamps.
   - **Mobile Ergonomics (390px):**
     - Stacked full-width toolbar controls, smooth horizontal tab scrolling with auto-scroll on section change, 48px minimum touch targets, and zero horizontal page overflow.
-  - **Comprehensive Verification:** 31 dedicated automated tests in `test_library_ux.js` (833/833 total tests passing across 31 test suites).
+  - **Comprehensive Verification:** 31 dedicated automated tests in `test_library_ux.js`.
+
+- **Task 6.4: Library Data Integrity & Cross-View Hardening:**
+  - **CollectionRepository Read-Boundary Hardening:**
+    - `_readCollections()` now filters malformed entries (null, non-object, missing `.id`) at the storage read boundary, protecting all downstream operations (create, update, delete, addPoem, removePoem, removePoemFromAll) from crashes on corrupt storage.
+  - **TagService Empty Name Guard:**
+    - `extractTagsFromPoems()` now skips tags whose display name becomes empty after hash-prefix stripping (e.g., `###`), preventing `createTag()` validation errors on edge-case tag data.
+  - **Cross-View Consistency Guarantees:**
+    - Verified: favoriting via service → immediately visible in library query; unfavoriting → immediately invisible.
+    - Verified: poem deletion → stale references in collections and recent history gracefully disappear.
+    - Verified: editing poem category/tags → category counts and tag browser reflect new state immediately.
+  - **Malformed Storage Resilience:**
+    - Non-array collection storage, corrupt JSON in recent poems, null records in arrays, and collections with missing `poemIds` all recover safely to empty defaults.
+  - **Deduplication & Boundary Enforcement:**
+    - Duplicate poem IDs in collection creation deduplicated. Repeated views produce exactly one recent entry. Maximum 50 recent entries enforced.
+  - **Deletion Safety Guarantees:**
+    - Deleting a collection NEVER deletes referenced poems. Clearing recent history never affects poem records.
+  - **Unicode & Devanagari Integrity:**
+    - Complex conjuncts (क्ष, त्र, ज्ञ, श्र), nukta characters (ग़, ज़), chandrabindu, visarga, and Devanagari danda survive all organization operations intact.
+  - **Backward Compatibility:**
+    - Phase 1-5 minimal poem shapes (without tags/category/isFavorite) work with all Phase 6 services without migration.
+  - **Comprehensive Verification:** 63 dedicated automated tests in `test_library_integrity.js` (896/896 total tests passing across 32 test suites).
 
 ---
 

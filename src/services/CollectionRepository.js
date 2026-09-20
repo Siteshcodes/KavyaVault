@@ -47,7 +47,9 @@ export class CollectionRepository {
       if (!Array.isArray(data)) {
         return [];
       }
-      return data;
+      // Integrity hardening: filter out any malformed entries at the read boundary
+      // to protect all downstream operations from corrupt storage data
+      return data.filter(c => c && typeof c === 'object' && typeof c.id === 'string');
     } catch (err) {
       if (err instanceof StorageError && err.code === StorageErrorCode.DESERIALIZATION_ERROR) {
         console.error('[CollectionRepository] Corrupted collections storage detected. Returning empty list safely.');

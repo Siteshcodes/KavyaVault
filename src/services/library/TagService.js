@@ -55,6 +55,8 @@ export class TagService {
         if (!normalized) continue;
 
         const cleanDisplay = rawTag.trim().replace(/^#+/, '').trim();
+        // Integrity guard: skip tags that become empty after hash/whitespace stripping
+        if (!cleanDisplay) continue;
 
         if (tagMap.has(normalized)) {
           const entry = tagMap.get(normalized);
