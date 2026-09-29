@@ -1,0 +1,1029 @@
+/**
+ * काव्यकलश (KavyaVault) — Book Projects & Book Builder Styles (books.css)
+ * Phase 7 / Task 7.2: Book Builder UI & Poem Curation
+ *
+ * Literary, distraction-free aesthetic matching Bhojpatra / Syahi / Khaddar themes.
+ * Enforces 48px touch targets, accessible modal focus, and responsive mobile layouts (390px).
+ */
+
+/* ==========================================================================
+   1. BOOK PROJECTS LIST VIEW
+   ========================================================================== */
+
+.books-page-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-4) var(--space-4) var(--space-12);
+  max-width: var(--container-max-width, 1200px);
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.books-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.books-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.books-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-large);
+  color: var(--color-text);
+  margin: 0;
+  line-height: var(--line-height-heading);
+}
+
+.books-subtitle {
+  font-family: var(--font-reading);
+  font-size: var(--text-body-small);
+  color: var(--color-text-subtle);
+  margin: 0;
+}
+
+.books-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+@media (min-width: 680px) {
+  .books-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1040px) {
+  .books-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.book-card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--duration-fast) var(--ease-standard),
+              box-shadow var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard);
+  position: relative;
+}
+
+.book-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-accent);
+}
+
+.book-card-cover-band {
+  height: 110px;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+/* Background Theme Presets for Cover */
+.cover-bg-bhojpatra {
+  background: linear-gradient(135deg, #F4EAD4 0%, #E8DCC0 100%);
+  color: #3D2B1F;
+}
+
+.cover-bg-syahi {
+  background: linear-gradient(135deg, #1C1E24 0%, #121316 100%);
+  color: #E2D9C8;
+}
+
+.cover-bg-khaddar {
+  background: linear-gradient(135deg, #ECE5D8 0%, #DDD3C1 100%);
+  color: #382E25;
+}
+
+.cover-bg-makhmali-raat {
+  background: linear-gradient(135deg, #1A1F36 0%, #0F1222 100%);
+  color: #F0E8D9;
+}
+
+.book-card-cover-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-small);
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.3;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.book-card-cover-author {
+  font-family: var(--font-reading);
+  font-size: var(--text-caption);
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.book-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  flex: 1;
+}
+
+.book-card-desc {
+  font-family: var(--font-reading);
+  font-size: var(--text-body-small);
+  color: var(--color-text-subtle);
+  line-height: var(--line-height-reading);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.book-card-meta-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: auto;
+}
+
+.book-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface-offset, rgba(0, 0, 0, 0.04));
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-subtle);
+}
+
+.book-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-surface-offset, rgba(0, 0, 0, 0.02));
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.book-updated-text {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-subtle);
+}
+
+.book-card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ==========================================================================
+   2. BOOK BUILDER / EDITOR WORKSPACE
+   ========================================================================== */
+
+.book-builder-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-4) var(--space-4) var(--space-12);
+  max-width: var(--container-max-width, 1200px);
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.builder-top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.builder-top-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.builder-top-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.save-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-subtle);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface-offset, rgba(0, 0, 0, 0.04));
+}
+
+.save-badge.is-saved {
+  color: var(--color-success, #2e7d32);
+}
+
+/* Hero / Metadata Card */
+.builder-hero-card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+@media (min-width: 860px) {
+  .builder-hero-card {
+    flex-direction: row;
+  }
+}
+
+.builder-cover-column {
+  width: 100%;
+  max-width: 100%;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--space-5);
+  box-sizing: border-box;
+}
+
+@media (min-width: 860px) {
+  .builder-cover-column {
+    max-width: 280px;
+    border-right: 1px solid var(--color-border-subtle);
+  }
+}
+
+.cover-specimen-badge {
+  align-self: flex-start;
+  font-family: var(--font-interface);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.12);
+  margin-bottom: var(--space-3);
+}
+
+.cover-specimen-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading);
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.cover-specimen-subtitle {
+  font-family: var(--font-reading);
+  font-size: var(--text-body-small);
+  opacity: 0.9;
+  margin: var(--space-1) 0 0 0;
+}
+
+.cover-specimen-author {
+  font-family: var(--font-reading);
+  font-size: var(--text-body-small);
+  margin-top: var(--space-4);
+  font-weight: 600;
+}
+
+.builder-meta-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--space-5);
+  flex: 1;
+  gap: var(--space-4);
+}
+
+.builder-meta-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.builder-book-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-large);
+  color: var(--color-text);
+  margin: 0;
+  line-height: var(--line-height-heading);
+}
+
+.builder-book-subtitle {
+  font-family: var(--font-reading);
+  font-size: var(--text-body);
+  color: var(--color-text-subtle);
+  margin: 0;
+}
+
+.builder-book-author {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.builder-book-desc {
+  font-family: var(--font-reading);
+  font-size: var(--text-body-small);
+  color: var(--color-text-subtle);
+  line-height: var(--line-height-reading);
+  margin: 0;
+}
+
+.builder-dedication-quote {
+  font-family: var(--font-reading);
+  font-size: var(--text-body-small);
+  font-style: italic;
+  color: var(--color-accent);
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--color-accent);
+  margin: 0;
+}
+
+.builder-hero-stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.builder-stat-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-subtle);
+}
+
+.builder-stat-value {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* ==========================================================================
+   3. SECTIONS & POEMS WORKSPACE SPLIT
+   ========================================================================== */
+
+.builder-workspace-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+}
+
+@media (min-width: 900px) {
+  .builder-workspace-grid {
+    grid-template-columns: 340px 1fr;
+  }
+}
+
+/* Sections Column */
+.sections-panel {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  gap: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  height: fit-content;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.panel-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-small);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.sections-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.section-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+              background-color var(--duration-fast) var(--ease-standard);
+  min-height: var(--touch-target-min, 48px);
+  box-sizing: border-box;
+}
+
+.section-item-row:hover {
+  background-color: var(--color-surface-offset, rgba(0, 0, 0, 0.02));
+  border-color: var(--color-border);
+}
+
+.section-item-row.is-active {
+  border-color: var(--color-accent);
+  background-color: var(--color-surface-offset, rgba(0, 0, 0, 0.04));
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.section-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.section-item-title {
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.section-item-meta {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-subtle);
+}
+
+.section-item-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Poems Active Section Column */
+.poems-curation-panel {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  gap: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  min-height: 400px;
+}
+
+.curation-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.curation-section-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.curation-section-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-small);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.curation-section-desc {
+  font-family: var(--font-reading);
+  font-size: var(--text-body-small);
+  color: var(--color-text-subtle);
+  margin: 0;
+}
+
+.curated-poems-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.curated-poem-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  transition: background-color var(--duration-fast) var(--ease-standard);
+  min-height: var(--touch-target-min, 48px);
+  box-sizing: border-box;
+}
+
+.curated-poem-row:hover {
+  background-color: var(--color-surface-offset, rgba(0, 0, 0, 0.02));
+}
+
+.curated-poem-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+}
+
+.curated-poem-order {
+  font-family: var(--font-display);
+  font-size: var(--text-body-small);
+  color: var(--color-text-subtle);
+  min-width: 24px;
+}
+
+.curated-poem-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.curated-poem-title {
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.curated-poem-author-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-subtle);
+}
+
+.curated-poem-cat-badge {
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface-offset, rgba(0, 0, 0, 0.05));
+  font-size: 11px;
+}
+
+.curated-poem-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* ==========================================================================
+   4. MODALS (POEM PICKER, METADATA, STRUCTURAL PREVIEW, CONFIRMATION)
+   ========================================================================== */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space-4);
+  box-sizing: border-box;
+}
+
+.modal-container {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.modal-container.is-wide {
+  max-width: 780px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-small);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.modal-body {
+  padding: var(--space-5);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--color-border-subtle);
+  background-color: var(--color-surface-offset, rgba(0, 0, 0, 0.02));
+}
+
+/* Poem Picker Filter Toolbar */
+.picker-filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.picker-search-input {
+  width: 100%;
+  min-height: var(--touch-target-min, 48px);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-reading);
+  font-size: var(--text-body);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.picker-search-input:focus {
+  border-color: var(--color-accent);
+  outline: var(--focus-width, 2px) solid var(--focus-color);
+}
+
+.picker-filter-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.picker-chip-btn {
+  min-height: 36px;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.picker-chip-btn.is-active {
+  background-color: var(--color-accent);
+  color: var(--color-surface, #fff);
+  border-color: var(--color-accent);
+}
+
+.picker-poems-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+}
+
+.picker-poem-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.picker-poem-item:hover {
+  background-color: var(--color-surface-offset, rgba(0, 0, 0, 0.03));
+}
+
+.picker-poem-item.is-already-added {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--color-surface-offset, rgba(0, 0, 0, 0.02));
+}
+
+.picker-checkbox {
+  width: 20px;
+  height: 20px;
+  margin-top: 3px;
+  cursor: pointer;
+}
+
+.picker-poem-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.picker-poem-title {
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.picker-poem-sub {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-text-subtle);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.already-added-tag {
+  font-size: 11px;
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+/* Structural Tree Preview */
+.structural-tree {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  font-family: var(--font-reading);
+}
+
+.tree-book-header {
+  padding-bottom: var(--space-3);
+  border-bottom: 2px solid var(--color-border);
+}
+
+.tree-book-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.tree-book-meta {
+  font-size: var(--text-body-small);
+  color: var(--color-text-subtle);
+  margin: var(--space-1) 0 0 0;
+}
+
+.tree-section-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-left: var(--space-4);
+  border-left: 2px dashed var(--color-border);
+}
+
+.tree-section-title {
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-weight: 700;
+  color: var(--color-accent);
+  margin: 0;
+}
+
+.tree-poem-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-body-small);
+  color: var(--color-text);
+  padding: 2px 0;
+}
+
+.tree-bullet {
+  color: var(--color-accent);
+}
+
+/* Form Styles */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.form-label {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+  font-family: var(--font-reading);
+  font-size: var(--text-body);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  border-color: var(--color-accent);
+  outline: var(--focus-width, 2px) solid var(--focus-color);
+}
+
+/* ==========================================================================
+   5. BUTTONS & ACCESSIBILITY TOKENS
+   ========================================================================== */
+
+.btn-primary-action {
+  min-height: var(--touch-target-min, 48px);
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-accent);
+  color: var(--color-surface, #fff);
+  border: none;
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.btn-primary-action:hover {
+  opacity: 0.92;
+}
+
+.btn-secondary-action {
+  min-height: var(--touch-target-min, 48px);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  background-color: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-small);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.btn-secondary-action:hover {
+  background-color: var(--color-surface-offset, rgba(0, 0, 0, 0.04));
+}
+
+.btn-icon-control {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text-subtle);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.btn-icon-control:hover:not(:disabled) {
+  background-color: var(--color-surface-offset, rgba(0, 0, 0, 0.05));
+  color: var(--color-text);
+}
+
+.btn-icon-control:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.btn-icon-control.is-danger:hover:not(:disabled) {
+  background-color: rgba(211, 47, 47, 0.1);
+  color: var(--color-error, #d32f2f);
+}
+
+/* ==========================================================================
+   6. MOBILE RESPONSIVE (390px)
+   ========================================================================== */
+
+@media (max-width: 679px) {
+  .books-page-view,
+  .book-builder-view {
+    padding: var(--space-3) var(--space-3) var(--space-12);
+    overflow-x: hidden;
+  }
+
+  .books-top-bar,
+  .builder-top-nav {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .books-top-bar .btn-primary-action,
+  .builder-top-right .btn-primary-action,
+  .builder-top-right .btn-secondary-action {
+    width: 100%;
+  }
+
+  .curation-panel-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .curated-poem-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .curated-poem-controls {
+    justify-content: flex-end;
+    border-top: 1px solid var(--color-border-subtle);
+    padding-top: var(--space-1);
+  }
+
+  .modal-container {
+    max-height: 95vh;
+  }
+}

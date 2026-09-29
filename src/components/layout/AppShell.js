@@ -4,6 +4,7 @@
  */
 
 import './layout.css';
+import '../books/books.css';
 import '../manuscripts/manuscripts.css';
 import '../reader/reader.css';
 import '../editor/editor.css';
@@ -34,9 +35,12 @@ import { ManuscriptGallery } from '../manuscripts/ManuscriptGallery.js';
 import { ManuscriptTranscription } from '../manuscripts/ManuscriptTranscription.js';
 import { InputModeSelector } from '../input/InputModeSelector.js';
 import { SpeakInputView } from '../input/SpeakInputView.js';
+import { BooksListView } from '../books/BooksListView.js';
+import { BookEditorView } from '../books/BookEditorView.js';
 import { collectionRepository } from '../../services/CollectionRepository.js';
 import { poemRepository } from '../../services/PoemRepository.js';
 import { manuscriptRepository } from '../../services/ManuscriptRepository.js';
+import { bookProjectService } from '../../services/books/BookProjectService.js';
 import { formatPoeticDate } from '../../utils/date.js';
 
 export class AppShell {
@@ -59,6 +63,8 @@ export class AppShell {
     this.activeManuscriptTranscription = null;
     this.activeInputModeSelector = null;
     this.activeSpeakInput = null;
+    this.activeBooksListView = null;
+    this.activeBookEditorView = null;
   }
 
   /**
@@ -170,6 +176,14 @@ export class AppShell {
     if (this.activeSpeakInput) {
       this.activeSpeakInput.unmount();
       this.activeSpeakInput = null;
+    }
+    if (this.activeBooksListView) {
+      this.activeBooksListView.unmount();
+      this.activeBooksListView = null;
+    }
+    if (this.activeBookEditorView) {
+      this.activeBookEditorView.unmount();
+      this.activeBookEditorView = null;
     }
 
     const [pathOnly, searchPart] = (currentPath || '').split('?');
@@ -359,6 +373,39 @@ export class AppShell {
       return;
     }
 
+    // 15. Book Projects List Screen (/books)
+    if (cleanPath === ROUTES.BOOKS) {
+      this.activeBooksListView = new BooksListView({
+        container: this.contentContainer,
+        router: this.router
+      });
+      this.activeBooksListView.mount();
+      return;
+    }
+
+    // 16. New Book Project Screen (/books/new)
+    if (cleanPath === ROUTES.BOOK_NEW) {
+      this.activeBookEditorView = new BookEditorView({
+        container: this.contentContainer,
+        router: this.router,
+        bookId: null
+      });
+      this.activeBookEditorView.mount();
+      return;
+    }
+
+    // 17. Book Editor / Curation Screen (/books/:id)
+    if (cleanPath.startsWith('/books/') && cleanPath !== ROUTES.BOOK_NEW) {
+      const bookId = cleanPath.slice('/books/'.length);
+      this.activeBookEditorView = new BookEditorView({
+        container: this.contentContainer,
+        router: this.router,
+        bookId
+      });
+      this.activeBookEditorView.mount();
+      return;
+    }
+
     // 4. Settings Screen (Theme Switcher & Configuration)
     if (currentPath === ROUTES.SETTINGS) {
       const metadata = ROUTE_METADATA[ROUTES.SETTINGS];
@@ -490,6 +537,8 @@ export class AppShell {
       case ROUTES.ARCHIVE: return 'archive';
       case ROUTES.SETTINGS: return 'settings';
       case ROUTES.NEW_POEM: return 'quill';
+      case ROUTES.BOOKS: return 'book';
+      case ROUTES.BOOK_NEW: return 'quill';
       default: return 'book';
     }
   }
@@ -548,6 +597,25 @@ export class AppShell {
       document.title = ms
         ? `${ms.title} | पांडुलिपि | काव्यकलश (KavyaVault)`
         : 'पांडुलिपि | काव्यकलश (KavyaVault)';
+      return;
+    }
+
+    if (path === ROUTES.BOOKS) {
+      document.title = 'काव्य संकलन एवं पुस्तकें | काव्यकलश (KavyaVault)';
+      return;
+    }
+
+    if (path === ROUTES.BOOK_NEW) {
+      document.title = 'नया संकलन | काव्यकलश (KavyaVault)';
+      return;
+    }
+
+    if (path.startsWith('/books/')) {
+      const bookId = path.slice('/books/'.length);
+      const book = bookProjectService.getBook(bookId);
+      document.title = book
+        ? `${book.title} | पुस्तक संपादन | काव्यकलश (KavyaVault)`
+        : 'पुस्तक संपादन | काव्यकलश (KavyaVault)';
       return;
     }
 

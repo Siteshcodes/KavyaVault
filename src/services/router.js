@@ -28,7 +28,12 @@ class Router {
   isValidRoute(path) {
     if (!path) return false;
     const [cleanPath] = path.split('?');
-    return this.routes.includes(cleanPath);
+    if (this.routes.includes(cleanPath)) return true;
+    if (cleanPath.startsWith('/poems/')) return true;
+    if (cleanPath.startsWith('/collections/')) return true;
+    if (cleanPath.startsWith('/manuscripts/')) return true;
+    if (cleanPath.startsWith('/books/')) return true;
+    return false;
   }
 
   /**

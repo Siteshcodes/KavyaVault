@@ -17,6 +17,8 @@ export const ROUTES = {
   INPUT_MODES: '/input',
   INPUT_SCAN: '/input/scan',
   INPUT_SPEAK: '/input/speak',
+  BOOKS: '/books',
+  BOOK_NEW: '/books/new',
   TYPOGRAPHY_TEST: '/typography-test',
   PERSISTENCE_TEST: '/persistence-test'
 };
@@ -86,6 +88,15 @@ export const NAVIGATION_ITEMS = [
     description: 'सुरक्षित सहेजा गया साहित्यिक संदूक'
   },
   {
+    id: 'books',
+    path: ROUTES.BOOKS,
+    label: 'पुस्तक निर्माण',
+    mobileLabel: 'पुस्तकें',
+    enLabel: 'Books',
+    icon: 'folder',
+    description: 'काव्य संकलन एवं पुस्तक निर्माण कक्ष'
+  },
+  {
     id: 'settings',
     path: ROUTES.SETTINGS,
     label: 'सेटिंग्स',
@@ -112,7 +123,7 @@ export const DESKTOP_PRIMARY_ITEMS = NAVIGATION_ITEMS.filter(item =>
 );
 
 export const DESKTOP_SECONDARY_ITEMS = NAVIGATION_ITEMS.filter(item => 
-  ['manuscripts', 'archive', 'settings'].includes(item.id)
+  ['books', 'manuscripts', 'archive', 'settings'].includes(item.id)
 );
 
 export const DESKTOP_ACTION_ITEM = NAVIGATION_ITEMS.find(item => item.id === 'new-poem');
@@ -128,7 +139,7 @@ export const MOBILE_NAV_ITEMS = [
 
 // Mobile secondary menu items (accessible via mobile header drawer)
 export const MOBILE_DRAWER_ITEMS = NAVIGATION_ITEMS.filter(item => 
-  ['collections', 'manuscripts', 'archive', 'settings'].includes(item.id)
+  ['books', 'collections', 'manuscripts', 'archive', 'settings'].includes(item.id)
 );
 
 // Route metadata for page titles and accessible descriptions
@@ -137,6 +148,16 @@ export const ROUTE_METADATA = {
     title: 'होम',
     tagline: 'आज की रचना एवं एकांत काव्य-संसार',
     placeholder: 'जल्द ही आपका काव्य-संसार यहाँ दिखाई देगा।'
+  },
+  [ROUTES.BOOKS]: {
+    title: 'काव्य संकलन एवं पुस्तकें',
+    tagline: 'कविताओं से संपूर्ण पुस्तक निर्माण व संपादन',
+    placeholder: 'अभी कोई काव्य-संकलन तैयार नहीं है।'
+  },
+  [ROUTES.BOOK_NEW]: {
+    title: 'नया काव्य संकलन',
+    tagline: 'नई पुस्तक परियोजना प्रारंभ करें',
+    placeholder: 'पुस्तक का नाम व विवरण दर्ज करें।'
   },
   [ROUTES.POEMS]: {
     title: 'मेरी कविताएँ',

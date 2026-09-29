@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-942%2F942%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-1010%2F1010%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -652,9 +652,50 @@ Phase 7 introduces real book project generation to KavyaVault, empowering poets 
     - Construct books directly from explicit poem IDs, collections, categories, tags, or favorites without copying text.
   - **Missing Poem Resilience:**
     - Safely handles deleted or missing poem references without crashing, recording missing IDs in `missingPoemIds` and providing descriptive warnings.
-  - **Non-Destructive & Local-First:**
-    - Never mutates poems, manuscripts, favorites, tags, or recent history. Zero network calls, zero external image or PDF services.
   - **Comprehensive Verification:** 46 dedicated automated tests in `test_book_project.js` (942/942 total tests passing across 33 test suites).
+
+- ✅ **Task 7.2 — Book Builder UI & Poem Curation**: User-facing literary book builder interface built directly on top of `BookProjectService`.
+  - **Books Entry & Navigation:**
+    - Integrated seamlessly into main persistent navigation (`ROUTES.BOOKS = '/books'`, `ROUTES.BOOK_NEW = '/books/new'`).
+    - Dynamic route matching in `router.js` supporting `/books/:id` and subpaths without introducing secondary routers.
+  - **Book Projects List (`BooksListView`):**
+    - Grid of user books displaying cover band with background presets (`bhojpatra`, `syahi`, `khaddar`, `makhmali-raat`).
+    - Title, author, Devanagari numerals for section and poem counts, and poetic last-updated timestamps.
+    - Authentic Hindi empty state ("अभी कोई काव्य-संकलन तैयार नहीं है।") with call-to-action button.
+    - Confirmation dialog for book deletion emphasizing literary safety guarantee.
+  - **Focused Book Creation Flow (`/books/new`):**
+    - Live cover specimen preview dynamically updating as the author types title/subtitle/author and switches background presets.
+    - Form validation requiring non-empty title while preserving full Devanagari Unicode and nuktas.
+    - Automatic initialization of initial section ("प्रथम खण्ड") ready for immediate poem curation.
+  - **Book Builder & Editor Workspace (`BookEditorView`):**
+    - Hero Card displaying live cover thumbnail, full metadata, dedication quote, and summary stats.
+    - Split workspace: Sections Panel on the left, Curated Poems Panel on the right.
+    - Metadata editing modal for title, subtitle, author, dedication, description, language, and cover preset.
+  - **Section Management:**
+    - Add, edit title/description, delete safely, move up, move down.
+    - Safe non-destructive deletion guarantee: deleting a section strictly deletes section grouping and never deletes referenced poems.
+  - **Poem Picker Modal:**
+    - Direct browsing of existing library poems from `PoemRepository`.
+    - Real-time search filter matching title, author, category, or tags.
+    - Category filter chips and favorites-only toggle chip.
+    - "✓ पहले से सम्मिलित" badge and disabled checkbox for poems already present in the active section.
+    - Bulk selection and insertion into active section with duplicate prevention.
+  - **Poem Curation & Reordering:**
+    - Move up, move down within section with boundary safeguards.
+    - Safe removal from section without affecting the poem's existence in library, collections, or favorites.
+  - **Missing Poem Resilience in UI:**
+    - Resilient fallback row for referenced poems deleted from library ("रचना अनुपलब्ध").
+    - Safe removal control for missing references; prevents editor crashes.
+  - **Live Structural Tree Preview:**
+    - Hierarchical tree representation of book structure: Book -> Sections -> Poems.
+    - Overall book metrics (sections, poems, word count) in Devanagari numerals.
+    - Warning banner identifying any missing or archived poems.
+  - **Mobile & Accessibility:**
+    - Fully responsive across 390px, 768px, 1024px, and 1440px viewports with single-column collapse.
+    - Strict 48px touch target enforcement for all primary controls.
+    - Semantic ARIA dialog roles (`role="dialog"`, `aria-modal="true"`, `aria-labelledby`).
+    - Escape key modal dismissal and focus restoration to trigger elements.
+  - **Comprehensive Verification:** 68 dedicated automated tests in `test_book_builder_ui.js` (1010/1010 total tests passing across 34 test suites).
 
 ---
 
