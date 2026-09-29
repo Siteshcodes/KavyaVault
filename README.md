@@ -4,7 +4,7 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v18%2B-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-896%2F896%20Passing%20(100%25)-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-942%2F942%20Passing%20(100%25)-brightgreen.svg)]()
 [![Architecture](https://img.shields.io/badge/Architecture-Local--First%20Decoupled-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-Private-lightgrey.svg)]()
 
@@ -628,6 +628,33 @@ Phase 6 enriches KavyaVault with a serene, personal digital library organization
   - **Backward Compatibility:**
     - Phase 1-5 minimal poem shapes (without tags/category/isFavorite) work with all Phase 6 services without migration.
   - **Comprehensive Verification:** 63 dedicated automated tests in `test_library_integrity.js` (896/896 total tests passing across 32 test suites).
+
+---
+
+## 📖 Phase 7: Real Book Generation
+
+Phase 7 introduces real book project generation to KavyaVault, empowering poets to curate and publish complete literary works from their library with zero cloud dependencies and 100% local-first privacy.
+
+### In Progress / Completed:
+- ✅ **Task 7.1 — Book Project Foundation**: Core domain models, section architecture, deterministic ordering, live poem references, library selection, and export-neutral `BookDocument` contract.
+  - **Decoupled Architecture:**
+    ```text
+    UI (Future Views) → BookProjectService → BookProjectRepository → IStorageAdapter → Storage Driver
+    ```
+  - **Domain Models & Contracts (`src/services/books/bookTypes.js`):**
+    - `BookProject`: Root entity storing title, subtitle, author, dedication, description, language, cover config, sections, poemIds, and timestamps. References poems by ID only without duplicating poem bodies.
+    - `BookSection`: Ordered division storing title, description, deduplicated poemIds, and 0-indexed sequential order. Deleting sections strictly preserves underlying poems.
+    - `CoverConfig`: Local cover styling specification (type: `classic`, `simple`, `modern`, `ornate`; background token; local artwork reference).
+    - `BookDocument`: Export-neutral in-memory generation contract resolving live poem records from `PoemRepository` for downstream PDF/EPUB tasks.
+  - **Ordering Controls:**
+    - Explicit deterministic ordering for sections (`reorderSections`, `moveSectionUp`, `moveSectionDown`) and poems within sections (`reorderPoems`, `movePoemUp`, `movePoemDown`).
+  - **Selection from Library:**
+    - Construct books directly from explicit poem IDs, collections, categories, tags, or favorites without copying text.
+  - **Missing Poem Resilience:**
+    - Safely handles deleted or missing poem references without crashing, recording missing IDs in `missingPoemIds` and providing descriptive warnings.
+  - **Non-Destructive & Local-First:**
+    - Never mutates poems, manuscripts, favorites, tags, or recent history. Zero network calls, zero external image or PDF services.
+  - **Comprehensive Verification:** 46 dedicated automated tests in `test_book_project.js` (942/942 total tests passing across 33 test suites).
 
 ---
 

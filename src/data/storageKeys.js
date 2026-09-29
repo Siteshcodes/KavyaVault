@@ -14,5 +14,6 @@ export const STORAGE_KEYS = {
   MANUSCRIPTS: `${STORAGE_PREFIX}manuscripts`,
   RECENT_POEMS: `${STORAGE_PREFIX}recent_poems`,
   CATEGORIES: `${STORAGE_PREFIX}categories`,
-  TAGS: `${STORAGE_PREFIX}tags`
+  TAGS: `${STORAGE_PREFIX}tags`,
+  BOOK_PROJECTS: `${STORAGE_PREFIX}book_projects`
 };
