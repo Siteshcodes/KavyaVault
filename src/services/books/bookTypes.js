@@ -70,7 +70,11 @@ export function createCoverConfig(data = {}) {
     title: typeof data.title === 'string' ? normalizeString(data.title) : null,
     subtitle: typeof data.subtitle === 'string' ? normalizeString(data.subtitle) : null,
     author: typeof data.author === 'string' ? normalizeString(data.author) : null,
-    background: typeof data.background === 'string' ? normalizeString(data.background) : 'bhojpatra',
+    background: (typeof data.background === 'string' && data.background.trim() !== '')
+      ? normalizeString(data.background)
+      : (typeof data.theme === 'string' && data.theme.trim() !== '')
+        ? normalizeString(data.theme)
+        : 'bhojpatra',
     artworkReference: typeof data.artworkReference === 'string' && data.artworkReference.trim() !== ''
       ? data.artworkReference.trim()
       : null

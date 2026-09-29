@@ -19,6 +19,8 @@ import { CollectionRepository, collectionRepository } from '../CollectionReposit
 import { TagService, tagService } from '../library/TagService.js';
 import { StorageError, StorageErrorCode } from '../storage/StorageError.js';
 import { BookLayoutEngine } from './BookLayoutEngine.js';
+import { BookPdfGenerator } from './export/BookPdfGenerator.js';
+import { BookEpubGenerator } from './export/BookEpubGenerator.js';
 import {
   createBookProject,
   validateBookProject,
@@ -815,6 +817,32 @@ export class BookProjectService {
   generateBookLayout(bookId, layoutConfigInput = {}) {
     const bookDoc = this.generateBookDocument(bookId);
     return BookLayoutEngine.generateLayout(bookDoc, layoutConfigInput);
+  }
+
+  // ==========================================================================
+  // 8. LOCAL DOCUMENT EXPORT (PDF & EPUB)
+  // ==========================================================================
+
+  /**
+   * Exports a book project to a PDF binary document
+   * @param {string} bookId
+   * @param {Object} [layoutConfigInput={}]
+   * @returns {Object} PDF export result
+   */
+  exportToPdf(bookId, layoutConfigInput = {}) {
+    const layoutDoc = this.generateBookLayout(bookId, layoutConfigInput);
+    return BookPdfGenerator.generatePdf(layoutDoc);
+  }
+
+  /**
+   * Exports a book project to an EPUB 3 binary archive
+   * @param {string} bookId
+   * @param {Object} [layoutConfigInput={}]
+   * @returns {Object} EPUB export result
+   */
+  exportToEpub(bookId, layoutConfigInput = {}) {
+    const bookDoc = this.generateBookDocument(bookId);
+    return BookEpubGenerator.generateEpub(bookDoc, layoutConfigInput);
   }
 }
 

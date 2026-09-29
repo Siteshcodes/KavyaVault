@@ -28,7 +28,15 @@ export class BookLayoutService {
    * @param {import('./BookProjectService.js').BookProjectService} [options.bookService]
    */
   constructor(options = {}) {
-    this.bookService = options.bookService || bookProjectService;
+    this._bookService = options.bookService || null;
+  }
+
+  get bookService() {
+    return this._bookService || bookProjectService;
+  }
+
+  set bookService(service) {
+    this._bookService = service;
   }
 
   /**

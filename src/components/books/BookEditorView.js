@@ -20,6 +20,7 @@ import { escapeHtml, normalizeSearchText } from '../../services/SearchService.js
 import { formatPoeticDate } from '../../utils/date.js';
 import { COVER_TYPE } from '../../services/books/bookTypes.js';
 import { BookPrintPreview } from './BookPrintPreview.js';
+import { bookExportService } from '../../services/books/export/index.js';
 
 /**
  * Converts Western digits to Devanagari numerals
@@ -240,6 +241,28 @@ export class BookEditorView {
             >
               ${getIconSvg('book', 'nav-icon')}
               <span>मुद्रण पूर्वावलोकन</span>
+            </button>
+            <button
+              type="button"
+              class="btn-secondary-action"
+              data-action="export-pdf"
+              id="btn-top-export-pdf"
+              aria-label="पुस्तक को PDF प्रारूप में निर्यात करें"
+              title="PDF निर्यात"
+            >
+              ${getIconSvg('download', 'nav-icon')}
+              <span>PDF</span>
+            </button>
+            <button
+              type="button"
+              class="btn-secondary-action"
+              data-action="export-epub"
+              id="btn-top-export-epub"
+              aria-label="पुस्तक को EPUB प्रारूप में निर्यात करें"
+              title="EPUB निर्यात"
+            >
+              ${getIconSvg('download', 'nav-icon')}
+              <span>EPUB</span>
             </button>
             <button
               type="button"
@@ -1566,6 +1589,30 @@ export class BookEditorView {
         this.render();
         return;
       }
+      if (action === 'export-pdf') {
+        this.printPreview.exportPdf();
+        this.render();
+        return;
+      }
+      if (action === 'export-epub') {
+        this.printPreview.exportEpub();
+        this.render();
+        return;
+      }
+      if (action === 'native-print') {
+        this.printPreview.nativePrint();
+        return;
+      }
+    }
+
+    // Direct export outside modal
+    if (action === 'export-pdf') {
+      bookExportService.downloadPdf(this.bookId);
+      return;
+    }
+    if (action === 'export-epub') {
+      bookExportService.downloadEpub(this.bookId);
+      return;
     }
 
     if (action === 'close-modal') {

@@ -1766,5 +1766,158 @@
     padding: 0 var(--space-2);
     font-size: 12px;
   }
+
+  .print-export-cluster .print-print-btn {
+    display: none;
+  }
+
+  .print-export-cluster .print-export-btn span {
+    display: none;
+  }
 }
+
+/* ==========================================================================
+   PRINT PREVIEW EXPORT STYLES (TASK 7.4)
+   ========================================================================== */
+
+.print-export-cluster {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.print-export-btn {
+  min-height: var(--touch-target-min, 48px);
+  padding: 0 var(--space-3);
+  font-size: var(--text-body-small, 13px);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.print-print-btn {
+  min-height: var(--touch-target-min, 48px);
+  padding: 0 var(--space-3);
+  font-size: var(--text-body-small, 13px);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.print-drawer-export-group {
+  margin-top: var(--space-4);
+  background: rgba(255, 255, 255, 0.03);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.print-setting-hint {
+  font-size: 11px;
+  color: #a89f91;
+  margin: var(--space-1) 0 var(--space-3) 0;
+  line-height: 1.5;
+}
+
+.print-drawer-export-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.print-full-width-btn {
+  width: 100%;
+  min-height: var(--touch-target-min, 48px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Status Banner */
+.export-status-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  margin-bottom: var(--space-3);
+  line-height: 1.4;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.export-status-banner.is-generating-pdf,
+.export-status-banner.is-generating-epub {
+  background: rgba(140, 45, 25, 0.15);
+  color: #e8a290;
+  border: 1px solid rgba(140, 45, 25, 0.3);
+}
+
+.export-status-banner.is-success {
+  background: rgba(46, 125, 50, 0.2);
+  color: #81c784;
+  border: 1px solid rgba(76, 175, 80, 0.4);
+}
+
+.export-status-banner.is-error {
+  background: rgba(211, 47, 47, 0.2);
+  color: #e57373;
+  border: 1px solid rgba(239, 83, 80, 0.4);
+}
+
+.export-spinner {
+  display: inline-block;
+  animation: spin 1.5s infinite linear;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Print Media Optimization */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .print-page-sheet, .print-page-sheet * {
+    visibility: visible;
+  }
+
+  .print-page-sheet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    height: 100% !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 20mm !important;
+    page-break-after: always;
+  }
+
+  .print-prev-header,
+  .print-prev-footer,
+  .print-settings-drawer {
+    display: none !important;
+  }
+}
+
 

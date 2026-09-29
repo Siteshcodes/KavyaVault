@@ -28,6 +28,7 @@ import {
 } from '../../services/books/bookLayoutTypes.js';
 import { escapeHtml } from '../../services/SearchService.js';
 import { getIconSvg } from '../navigation/icons.js';
+import { bookExportService } from '../../services/books/export/index.js';
 
 export class BookPrintPreview {
   /**
@@ -52,6 +53,8 @@ export class BookPrintPreview {
     this.currentPageIndex = 0;
     this.zoomLevel = 1.0;
     this.showSettings = false;
+    this.exportStatus = null; // null | 'generating-pdf' | 'generating-epub' | 'success' | 'error'
+    this.exportMessage = '';
 
     // Zoom scale factors
     this.zoomLevels = [0.7, 0.85, 1.0, 1.25, 1.5];
@@ -217,6 +220,50 @@ export class BookPrintPreview {
   }
 
   // ==========================================================================
+  // EXPORT HANDLERS
+  // ==========================================================================
+
+  exportPdf() {
+    this.exportStatus = 'generating-pdf';
+    this.exportMessage = 'PDF तैयार किया जा रहा है...';
+    try {
+      const res = (this.bookService && typeof this.bookService.exportToPdf === 'function')
+        ? this.bookService.exportToPdf(this.book.id, this.layoutConfig)
+        : bookExportService.exportToPdf(this.book.id, this.layoutConfig);
+      bookExportService.downloadFile(res.filename, res.data, res.mimeType);
+      this.exportStatus = 'success';
+      this.exportMessage = `PDF "${res.filename}" सफलतापूर्वक डाउनलोड हुआ!`;
+      return res;
+    } catch (err) {
+      this.exportStatus = 'error';
+      this.exportMessage = `PDF निर्यात में त्रुटि: ${err.message || 'अज्ञात त्रुटि'}`;
+      throw err;
+    }
+  }
+
+  exportEpub() {
+    this.exportStatus = 'generating-epub';
+    this.exportMessage = 'EPUB 3 ई-पुस्तक तैयार की जा रही है...';
+    try {
+      const res = (this.bookService && typeof this.bookService.exportToEpub === 'function')
+        ? this.bookService.exportToEpub(this.book.id, this.layoutConfig)
+        : bookExportService.exportToEpub(this.book.id, this.layoutConfig);
+      bookExportService.downloadFile(res.filename, res.data, res.mimeType);
+      this.exportStatus = 'success';
+      this.exportMessage = `EPUB "${res.filename}" सफलतापूर्वक डाउनलोड हुआ!`;
+      return res;
+    } catch (err) {
+      this.exportStatus = 'error';
+      this.exportMessage = `EPUB निर्यात में त्रुटि: ${err.message || 'अज्ञात त्रुटि'}`;
+      throw err;
+    }
+  }
+
+  nativePrint() {
+    return bookExportService.printBook(this.book.id, this.layoutConfig);
+  }
+
+  // ==========================================================================
   // KEYBOARD NAVIGATION
   // ==========================================================================
 
@@ -336,6 +383,45 @@ export class BookPrintPreview {
             </div>
 
             <div class="print-prev-header-right">
+              <!-- Export Action Cluster -->
+              <div class="print-export-cluster">
+                <button
+                  type="button"
+                  class="btn-primary-action print-export-btn"
+                  data-action="export-pdf"
+                  id="btn-export-pdf"
+                  aria-label="PDF प्रारूप में पुस्तक निर्यात करें"
+                  title="PDF निर्यात"
+                >
+                  ${getIconSvg('download', 'nav-icon')}
+                  <span>PDF निर्यात</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="btn-secondary-action print-export-btn"
+                  data-action="export-epub"
+                  id="btn-export-epub"
+                  aria-label="EPUB 3 प्रारूप में ई-पुस्तक निर्यात करें"
+                  title="EPUB 3 निर्यात"
+                >
+                  ${getIconSvg('download', 'nav-icon')}
+                  <span>EPUB निर्यात</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="btn-secondary-action print-print-btn"
+                  data-action="native-print"
+                  id="btn-native-print"
+                  aria-label="ब्राउज़र द्वारा मुद्रण संवाद खोलें"
+                  title="मुद्रण (Print)"
+                >
+                  ${getIconSvg('quill', 'nav-icon')}
+                  <span>मुद्रण</span>
+                </button>
+              </div>
+
               <button
                 type="button"
                 class="btn-secondary-action ${this.showSettings ? 'is-active' : ''}"
@@ -864,6 +950,45 @@ export class BookPrintPreview {
               />
               <span>छंद विभाजन सुरक्षा (Widow/Orphan)</span>
             </label>
+          </div>
+
+          <div class="print-setting-divider"></div>
+
+          <!-- Drawer Export Section -->
+          <div class="print-setting-group print-drawer-export-group">
+            <span class="print-setting-label">स्थानीय पुस्तक निर्यात (Export)</span>
+            <p class="print-setting-hint">संपूर्ण साहित्यिक संकलन, छंद संरचना और देवनागरी मुद्रण कला के साथ डाउनलोड करें।</p>
+
+            ${this.exportStatus ? `
+              <div class="export-status-banner is-${this.exportStatus}" role="status" aria-live="polite">
+                ${this.exportStatus.startsWith('generating') ? '<span class="export-spinner" aria-hidden="true">⏳</span>' : ''}
+                <span>${escapeHtml(this.exportMessage)}</span>
+              </div>
+            ` : ''}
+
+            <div class="print-drawer-export-actions">
+              <button
+                type="button"
+                class="btn-primary-action print-full-width-btn"
+                data-action="export-pdf"
+                id="btn-drawer-export-pdf"
+                aria-label="PDF डाउनलोड करें"
+              >
+                ${getIconSvg('download', 'nav-icon')}
+                <span>PDF डाउनलोड करें (${this.layoutConfig.pageSize.toUpperCase()})</span>
+              </button>
+
+              <button
+                type="button"
+                class="btn-secondary-action print-full-width-btn"
+                data-action="export-epub"
+                id="btn-drawer-export-epub"
+                aria-label="EPUB 3 डाउनलोड करें"
+              >
+                ${getIconSvg('download', 'nav-icon')}
+                <span>EPUB 3 डाउनलोड करें (ई-रीडर)</span>
+              </button>
+            </div>
           </div>
         </div>
       </aside>

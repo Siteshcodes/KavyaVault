@@ -20,4 +20,13 @@ export {
   createLayoutConfig,
   validateLayoutConfig
 } from '../../services/books/bookLayoutTypes.js';
+export {
+  BookPdfGenerator,
+  BookEpubGenerator,
+  BookExportService,
+  bookExportService,
+  SimpleZip,
+  generateSafeExportFilename
+} from '../../services/books/export/index.js';
+
 
