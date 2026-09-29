@@ -19,6 +19,7 @@ import { getIconSvg } from '../navigation/icons.js';
 import { escapeHtml, normalizeSearchText } from '../../services/SearchService.js';
 import { formatPoeticDate } from '../../utils/date.js';
 import { COVER_TYPE } from '../../services/books/bookTypes.js';
+import { BookPrintPreview } from './BookPrintPreview.js';
 
 /**
  * Converts Western digits to Devanagari numerals
@@ -109,8 +110,12 @@ export class BookEditorView {
     this.errorMessage = null;
     this.lastFocusedElement = null;
 
+    // Print preview controller instance
+    this.printPreview = null;
+
     this.boundClickHandler = this.handleClick.bind(this);
     this.boundInputHandler = this.handleInput.bind(this);
+    this.boundChangeHandler = this.handleChange.bind(this);
     this.boundSubmitHandler = this.handleSubmit.bind(this);
     this.boundKeydownHandler = this.handleKeydown.bind(this);
   }
@@ -123,6 +128,7 @@ export class BookEditorView {
     if (this.container) {
       this.container.addEventListener('click', this.boundClickHandler);
       this.container.addEventListener('input', this.boundInputHandler);
+      this.container.addEventListener('change', this.boundChangeHandler);
       this.container.addEventListener('submit', this.boundSubmitHandler);
       if (typeof document !== 'undefined') {
         document.addEventListener('keydown', this.boundKeydownHandler);
@@ -137,6 +143,7 @@ export class BookEditorView {
     if (this.container) {
       this.container.removeEventListener('click', this.boundClickHandler);
       this.container.removeEventListener('input', this.boundInputHandler);
+      this.container.removeEventListener('change', this.boundChangeHandler);
       this.container.removeEventListener('submit', this.boundSubmitHandler);
       if (typeof document !== 'undefined') {
         document.removeEventListener('keydown', this.boundKeydownHandler);
@@ -190,6 +197,17 @@ export class BookEditorView {
       modalHtml = this.renderPoemPickerModal(book, activeSection);
     } else if (this.activeModal === 'preview') {
       modalHtml = this.renderPreviewModal(book);
+    } else if (this.activeModal === 'print-preview') {
+      if (!this.printPreview || this.printPreview.book.id !== book.id) {
+        this.printPreview = new BookPrintPreview({
+          book,
+          bookService: this.bookService,
+          onClose: () => {
+            this.closeModal();
+          }
+        });
+      }
+      modalHtml = this.printPreview.render();
     } else if (this.activeModal === 'delete-section') {
       const secToDelete = sections.find(s => s.id === this.deletingSectionId);
       modalHtml = this.renderDeleteSectionModal(secToDelete);
@@ -215,13 +233,23 @@ export class BookEditorView {
           <div class="builder-top-right">
             <button
               type="button"
+              class="btn-primary-action"
+              data-action="open-print-preview"
+              id="btn-open-print-preview"
+              aria-label="पुस्तक का मुद्रण पूर्वावलोकन देखें"
+            >
+              ${getIconSvg('book', 'nav-icon')}
+              <span>मुद्रण पूर्वावलोकन</span>
+            </button>
+            <button
+              type="button"
               class="btn-secondary-action"
               data-action="open-preview"
               id="btn-open-preview"
               aria-label="पुस्तक की संरचना का पूर्वावलोकन देखें"
             >
               ${getIconSvg('book', 'nav-icon')}
-              <span>संरचना पूर्वावलोकन</span>
+              <span>संरचना</span>
             </button>
             <button
               type="button"
@@ -1105,8 +1133,12 @@ export class BookEditorView {
           </div>
 
           <footer class="modal-footer">
-            <button type="button" class="btn-primary-action" data-action="close-modal">
-              <span>ठीक है</span>
+            <button type="button" class="btn-primary-action" data-action="open-print-preview" id="btn-modal-open-print-preview">
+              ${getIconSvg('book', 'nav-icon')}
+              <span>मुद्रण पूर्वावलोकन देखें</span>
+            </button>
+            <button type="button" class="btn-secondary-action" data-action="close-modal">
+              <span>बंद करें</span>
             </button>
           </footer>
         </div>
@@ -1367,6 +1399,26 @@ export class BookEditorView {
         }
       }
     }
+
+    // 3. Jump to page in Print Preview
+    if (e.target && e.target.id === 'jump-page-input' && this.printPreview) {
+      const val = parseInt(e.target.value, 10);
+      if (!isNaN(val)) {
+        this.printPreview.goToPage(val);
+        this.render();
+      }
+      return;
+    }
+
+    // 4. Live font size slider in Print Preview
+    if (e.target && e.target.id === 'cfg-font-size' && this.printPreview) {
+      const val = Number(e.target.value);
+      if (!isNaN(val)) {
+        this.printPreview.updateConfig({ bodyFontSize: val });
+        this.render();
+      }
+      return;
+    }
   }
 
   /**
@@ -1448,6 +1500,72 @@ export class BookEditorView {
       this.activeModal = 'preview';
       this.render();
       return;
+    }
+
+    if (action === 'open-print-preview') {
+      this.lastFocusedElement = trigger;
+      const book = this.bookService.getBook(this.bookId);
+      if (book) {
+        this.printPreview = new BookPrintPreview({
+          book,
+          bookService: this.bookService,
+          onClose: () => {
+            this.closeModal();
+          }
+        });
+        this.activeModal = 'print-preview';
+        this.render();
+      }
+      return;
+    }
+
+    if (action === 'close-print-preview') {
+      this.closeModal();
+      return;
+    }
+
+    // Print preview navigation and zoom actions
+    if (this.activeModal === 'print-preview' && this.printPreview) {
+      if (action === 'first-page') {
+        this.printPreview.firstPage();
+        this.render();
+        return;
+      }
+      if (action === 'prev-page') {
+        this.printPreview.prevPage();
+        this.render();
+        return;
+      }
+      if (action === 'next-page') {
+        this.printPreview.nextPage();
+        this.render();
+        return;
+      }
+      if (action === 'last-page') {
+        this.printPreview.lastPage();
+        this.render();
+        return;
+      }
+      if (action === 'zoom-in') {
+        this.printPreview.zoomIn();
+        this.render();
+        return;
+      }
+      if (action === 'zoom-out') {
+        this.printPreview.zoomOut();
+        this.render();
+        return;
+      }
+      if (action === 'zoom-reset') {
+        this.printPreview.resetZoom();
+        this.render();
+        return;
+      }
+      if (action === 'toggle-preview-settings') {
+        this.printPreview.toggleSettings();
+        this.render();
+        return;
+      }
     }
 
     if (action === 'close-modal') {
@@ -1557,6 +1675,60 @@ export class BookEditorView {
   }
 
   /**
+   * Central change event handler (selects, radios, checkboxes)
+   */
+  handleChange(e) {
+    if (!e || !e.target) return;
+
+    if (this.activeModal === 'print-preview' && this.printPreview) {
+      const action = e.target.getAttribute('data-action');
+
+      if (action === 'update-config-page-size') {
+        this.printPreview.updateConfig({ pageSize: e.target.value });
+        this.render();
+        return;
+      }
+      if (action === 'update-config-orientation') {
+        this.printPreview.updateConfig({ orientation: e.target.value });
+        this.render();
+        return;
+      }
+      if (action === 'update-config-body-font') {
+        this.printPreview.updateConfig({ bodyFont: e.target.value });
+        this.render();
+        return;
+      }
+      if (action === 'update-config-line-height') {
+        this.printPreview.updateConfig({ lineHeight: Number(e.target.value) });
+        this.render();
+        return;
+      }
+      if (action === 'update-config-alignment') {
+        this.printPreview.updateConfig({ alignment: e.target.value });
+        this.render();
+        return;
+      }
+      if (action === 'update-config-margins') {
+        const preset = e.target.value;
+        const margins = preset === 'compact' ? { top: 14, right: 12, bottom: 14, left: 12 }
+                      : preset === 'generous' ? { top: 28, right: 24, bottom: 28, left: 24 }
+                      : { top: 20, right: 18, bottom: 20, left: 18 };
+        this.printPreview.updateConfig({ margins });
+        this.render();
+        return;
+      }
+      if (action === 'toggle-config-flag') {
+        const flag = e.target.getAttribute('data-flag');
+        if (flag) {
+          this.printPreview.updateConfig({ [flag]: e.target.checked });
+          this.render();
+        }
+        return;
+      }
+    }
+  }
+
+  /**
    * Closes any open modal and restores keyboard focus
    */
   closeModal() {
@@ -1572,9 +1744,17 @@ export class BookEditorView {
   }
 
   /**
-   * Escape key dismisses modals
+   * Keyboard shortcuts handler
    */
   handleKeydown(e) {
+    if (this.activeModal === 'print-preview' && this.printPreview) {
+      const handled = this.printPreview.handleKeydown(e);
+      if (handled) {
+        this.render();
+        return;
+      }
+    }
+
     if (e.key === 'Escape' && this.activeModal) {
       if (typeof e.preventDefault === 'function') e.preventDefault();
       this.closeModal();

@@ -18,6 +18,7 @@ import { PoemRepository, poemRepository } from '../PoemRepository.js';
 import { CollectionRepository, collectionRepository } from '../CollectionRepository.js';
 import { TagService, tagService } from '../library/TagService.js';
 import { StorageError, StorageErrorCode } from '../storage/StorageError.js';
+import { BookLayoutEngine } from './BookLayoutEngine.js';
 import {
   createBookProject,
   validateBookProject,
@@ -799,6 +800,21 @@ export class BookProjectService {
   getLibraryPoems(options = {}) {
     const includeArchived = options.includeArchived !== false;
     return this.poemRepo ? this.poemRepo.getAll({ includeArchived }) : [];
+  }
+
+  // ==========================================================================
+  // 7. PRINT LAYOUT & PAGINATION GENERATION
+  // ==========================================================================
+
+  /**
+   * Generates an ephemeral print layout document for a book project
+   * @param {string} bookId
+   * @param {Object} [layoutConfigInput={}]
+   * @returns {Object} BookLayoutDocument
+   */
+  generateBookLayout(bookId, layoutConfigInput = {}) {
+    const bookDoc = this.generateBookDocument(bookId);
+    return BookLayoutEngine.generateLayout(bookDoc, layoutConfigInput);
   }
 }
 
