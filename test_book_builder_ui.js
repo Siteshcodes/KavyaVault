@@ -21,6 +21,7 @@
  * - Suite P: Unicode, Devanagari & Nukta Fidelity (क्ष, त्र, ज्ञ, nuktas, chandrabindu, ॐ)
  * - Suite Q: End-to-End Deletion Safety (poems, manuscripts, collections, favorites survive book/section delete)
  * - Suite R: Regression & Privacy (local-first, no external requests, zero synthetic poem fabrication)
+ * - Suite S: Architecture Hardening & Service Boundaries (BookProjectService mediation, zero direct repo/storage access)
  */
 
 import assert from 'node:assert';
@@ -1643,6 +1644,103 @@ runTest('R', 'Backward compatibility: BookProjects list and editor support books
   });
   assert.ok(container.innerHTML.includes('चरण ७.१ पुस्तक'));
   editor.unmount();
+});
+
+// ============================================================================
+// SUITE S: Architecture Hardening & Service Boundaries (Task 7.2 Hardening)
+// ============================================================================
+console.log('\n--- Suite S: Architecture Hardening & Service Boundaries ---');
+
+runTest('S', 'BookEditorView source contains ZERO direct repository imports or field references', () => {
+  const source = fs.readFileSync('./src/components/books/BookEditorView.js', 'utf8');
+  assert.ok(!source.includes('PoemRepository.js'), 'BookEditorView must NOT import PoemRepository directly');
+  assert.ok(!source.includes('CollectionRepository.js'), 'BookEditorView must NOT import CollectionRepository directly');
+  assert.ok(!source.includes('poemRepo'), 'BookEditorView must not maintain internal poemRepo field');
+  assert.ok(!source.includes('collectionRepo'), 'BookEditorView must not maintain internal collectionRepo field');
+});
+
+runTest('S', 'BookEditorView and BooksListView source contain ZERO direct localStorage or indexedDB access', () => {
+  const editorSource = fs.readFileSync('./src/components/books/BookEditorView.js', 'utf8');
+  const listSource = fs.readFileSync('./src/components/books/BooksListView.js', 'utf8');
+
+  assert.ok(!editorSource.includes('localStorage'), 'BookEditorView must not access localStorage directly');
+  assert.ok(!editorSource.includes('indexedDB'), 'BookEditorView must not access indexedDB directly');
+  assert.ok(!listSource.includes('localStorage'), 'BooksListView must not access localStorage directly');
+  assert.ok(!listSource.includes('indexedDB'), 'BooksListView must not access indexedDB directly');
+});
+
+runTest('S', 'BookEditorView functions cleanly when instantiated with ONLY bookService (no repository injection)', () => {
+  const { bookService, poemRepo, router } = createTestHarness();
+  const poem = poemRepo.create({ title: 'साधना', body: 'पंक्तियाँ...', author: 'महादेवी वर्मा' });
+  const book = bookService.createBook({
+    title: 'आर्किटेक्चर परीक्षण',
+    sections: [{ title: 'प्रथम खण्ड', poemIds: [poem.id], order: 0 }]
+  });
+
+  const container = createMockContainer();
+  // Notice: ONLY container, router, bookId, and bookService are provided
+  const editor = new BookEditorView({
+    container,
+    router,
+    bookId: book.id,
+    bookService
+  });
+
+  editor.mount();
+  assert.strictEqual(editor.poemRepo, undefined, 'poemRepo must not be defined on editor instance');
+  assert.strictEqual(editor.collectionRepo, undefined, 'collectionRepo must not be defined on editor instance');
+  assert.ok(container.innerHTML.includes('साधना'), 'Section poem must resolve via bookService.getPoem');
+  assert.ok(container.innerHTML.includes('महादेवी वर्मा'), 'Author must resolve via bookService.getPoem');
+  editor.unmount();
+});
+
+runTest('S', 'Poem picker modal retrieves library poems through bookService domain mediation', () => {
+  const { bookService, poemRepo, router } = createTestHarness();
+  poemRepo.create({ title: 'रश्मिरथी', body: 'पंक्तियाँ...', author: 'दिनकर', category: 'वीर' });
+  const book = bookService.createBook({
+    title: 'काव्य ग्रन्थ',
+    sections: [{ title: 'खण्ड १', poemIds: [], order: 0 }]
+  });
+
+  const container = createMockContainer();
+  const editor = new BookEditorView({
+    container,
+    router,
+    bookId: book.id,
+    bookService
+  });
+
+  editor.mount();
+  editor.activeSectionId = book.sections[0].id;
+  editor.activeModal = 'poem-picker';
+  editor.render();
+
+  assert.ok(container.innerHTML.includes('रश्मिरथी'), 'Picker must display poem retrieved via bookService.getLibraryPoems');
+  assert.ok(container.innerHTML.includes('दिनकर'), 'Picker must display author retrieved via bookService.getLibraryPoems');
+  editor.unmount();
+});
+
+runTest('S', 'BookProjectService domain mediation provides getPoem and getLibraryPoems with expected contracts', () => {
+  const { bookService, poemRepo } = createTestHarness();
+  const p1 = poemRepo.create({ title: 'कविता १', body: 'पाठ १', author: 'कवि १', isArchived: false });
+  const p2 = poemRepo.create({ title: 'अभिलेखागार कविता', body: 'पाठ २', author: 'कवि २', isArchived: true });
+
+  // getPoem
+  const fetched = bookService.getPoem(p1.id);
+  assert.ok(fetched !== null);
+  assert.strictEqual(fetched.title, 'कविता १');
+  assert.strictEqual(bookService.getPoem('non_existent_id'), null);
+  assert.strictEqual(bookService.getPoem(null), null);
+  assert.strictEqual(bookService.getPoem(''), null);
+
+  // getLibraryPoems default includes archived
+  const all = bookService.getLibraryPoems();
+  assert.strictEqual(all.length, 2);
+
+  // getLibraryPoems without archived
+  const activeOnly = bookService.getLibraryPoems({ includeArchived: false });
+  assert.strictEqual(activeOnly.length, 1);
+  assert.strictEqual(activeOnly[0].id, p1.id);
 });
 
 console.log('\n================================================================');

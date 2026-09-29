@@ -773,6 +773,33 @@ export class BookProjectService {
       generatedAt: new Date().toISOString()
     });
   }
+
+  // ==========================================================================
+  // 6. LIBRARY MEDIATION FOR BOOK CURATION
+  // ==========================================================================
+
+  /**
+   * Retrieves a single poem by ID from the library for book curation/display
+   * Domain-mediated access decoupling UI from direct repository imports
+   * @param {string} id
+   * @returns {Object|null}
+   */
+  getPoem(id) {
+    if (!id || typeof id !== 'string') return null;
+    return this.poemRepo ? this.poemRepo.getById(id.trim()) : null;
+  }
+
+  /**
+   * Retrieves library poems for book curation and poem picker
+   * Domain-mediated access decoupling UI from direct repository imports
+   * @param {Object} [options={}]
+   * @param {boolean} [options.includeArchived=true]
+   * @returns {Array<Object>}
+   */
+  getLibraryPoems(options = {}) {
+    const includeArchived = options.includeArchived !== false;
+    return this.poemRepo ? this.poemRepo.getAll({ includeArchived }) : [];
+  }
 }
 
 export const bookProjectService = new BookProjectService();

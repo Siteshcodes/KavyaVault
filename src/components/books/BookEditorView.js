@@ -14,8 +14,6 @@
  */
 
 import { bookProjectService } from '../../services/books/BookProjectService.js';
-import { poemRepository } from '../../services/PoemRepository.js';
-import { collectionRepository } from '../../services/CollectionRepository.js';
 import { ROUTES } from '../../data/navigation.js';
 import { getIconSvg } from '../navigation/icons.js';
 import { escapeHtml, normalizeSearchText } from '../../services/SearchService.js';
@@ -68,23 +66,17 @@ export class BookEditorView {
    * @param {Object} options.router
    * @param {string|null} [options.bookId=null]
    * @param {import('../../services/books/BookProjectService.js').BookProjectService} [options.bookService]
-   * @param {import('../../services/PoemRepository.js').PoemRepository} [options.poemRepo]
-   * @param {import('../../services/CollectionRepository.js').CollectionRepository} [options.collectionRepo]
    */
   constructor({
     container,
     router,
     bookId = null,
-    bookService = bookProjectService,
-    poemRepo = poemRepository,
-    collectionRepo = collectionRepository
+    bookService = bookProjectService
   }) {
     this.container = container;
     this.router = router;
     this.bookId = bookId;
     this.bookService = bookService;
-    this.poemRepo = poemRepo;
-    this.collectionRepo = collectionRepo;
 
     this.isCreating = !bookId || bookId === 'new';
     this.activeSectionId = null;
@@ -423,7 +415,7 @@ export class BookEditorView {
                     </button>
                   </div>
                 ` : activeSection.poemIds.map((pid, idx) => {
-                  const poem = this.poemRepo.getById(pid);
+                  const poem = this.bookService.getPoem(pid);
                   const isFirst = idx === 0;
                   const isLast = idx === activeSection.poemIds.length - 1;
                   const orderNum = toDevanagariNumber(idx + 1);
@@ -887,7 +879,7 @@ export class BookEditorView {
    * Modal: Poem Picker with Search and Filter
    */
   renderPoemPickerModal(book, activeSection) {
-    const allPoems = this.poemRepo.getAll({ includeArchived: true });
+    const allPoems = this.bookService.getLibraryPoems({ includeArchived: true });
     const existingPoemIds = new Set(activeSection.poemIds || []);
 
     // Filter poems according to active picker filters
