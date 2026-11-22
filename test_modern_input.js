@@ -760,8 +760,9 @@ async function runModernInputTests() {
     selector.mount();
 
     const html = container.innerHTML;
-    assert(html.includes('100% Local Privacy'), 'Renders Local Privacy header');
-    assert(html.includes('किसी बाह्य सर्वर, क्लाउड या एआई मॉडल को नहीं'), 'Mentions zero external/cloud/AI transmission');
+    assert(html.includes('स्थानीय लेखन और संग्रह'), 'Describes local storage');
+    assert(html.includes('ऑडियो ऑनलाइन भेज सकता है'), 'Discloses browser speech transmission');
+    assert(!html.includes('100% Local Privacy'), 'Does not promise offline speech privacy');
   });
 
   test('InputModeSelector shows honest placeholder status for Scan and Speak', () => {

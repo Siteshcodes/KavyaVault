@@ -6,7 +6,7 @@
  * directly from an ephemeral BookLayoutDocument:
  * - 100% deterministic pure-JavaScript PDF generation
  * - Preserves exact page count, page sizes (A5, A4, Letter), and orientations (portrait/landscape)
- * - Preserves Devanagari Unicode fidelity via Composite Type0 CID font and /ToUnicode CMap mapping
+ * - Embeds licensed Noto fonts, shapes Indic text with Fontkit, and preserves logical text with ActualText
  * - Preserves all Devanagari conjuncts, nuktas, sacred marks (ॐ, चाँद, दुःख, ।, ॥), and emojis
  * - Preserves poem line breaks and stanza structure without collapsing into prose
  * - Real binary validation: inspectable %PDF-1.4 header, xref table, trailer, and %%EOF
@@ -21,6 +21,8 @@ import {
   toDevanagariNumerals
 } from '../bookLayoutTypes.js';
 import { generateSafeExportFilename, sanitizeText } from './exportUtils.js';
+import { PdfFontRegistry, pdfString } from './PdfFontRegistry.js';
+import { createLayoutConfig, validateLayoutConfig } from '../bookLayoutTypes.js';
 
 // Metric points conversion: 1 mm = 72 / 25.4 = 2.83464567 pt
 const MM_TO_PT = 2.83464567;
@@ -92,280 +94,51 @@ export class BookPdfGenerator {
    * @returns {{ filename: string, mimeType: string, data: Uint8Array, size: number, pageCount: number, warnings: Array<string> }}
    */
   static generatePdf(layoutDoc, options = {}) {
-    if (!layoutDoc || !Array.isArray(layoutDoc.pages)) {
-      throw new Error('अमान्य लेआउट दस्तावेज़ (BookLayoutDocument आवश्यक है)।');
-    }
-
-    const warnings = [];
-    const config = layoutDoc.config || {};
+    if (!layoutDoc || !Array.isArray(layoutDoc.pages)) throw new Error('अमान्य लेआउट दस्तावेज़ (BookLayoutDocument आवश्यक है)।');
+    if (layoutDoc.pages.length > 1000) throw new Error('एक बार में अधिकतम 1000 पृष्ठ निर्यात करें।');
+    const config = createLayoutConfig(layoutDoc.config || {});
+    validateLayoutConfig(config);
     const meta = layoutDoc.metadata || {};
-    const rawTitle = meta.title || 'अनाम पुस्तक';
-    const cleanTitle = sanitizeText(rawTitle);
-    const author = sanitizeText(meta.author || 'काव्यकलश');
-    const filename = generateSafeExportFilename(cleanTitle, 'pdf');
-
-    // Determine dimensions in PDF points
-    const pageSize = config.pageSize || PAGE_SIZE.A5;
-    const orientation = config.orientation || PAGE_ORIENTATION.PORTRAIT;
-    const dims = PAGE_DIMENSIONS[pageSize] || PAGE_DIMENSIONS[PAGE_SIZE.A5];
-
-    const isLandscape = orientation === PAGE_ORIENTATION.LANDSCAPE;
-    const widthMm = isLandscape ? dims.heightMm : dims.widthMm;
-    const heightMm = isLandscape ? dims.widthMm : dims.heightMm;
-
-    const widthPt = Math.round(widthMm * MM_TO_PT * 100) / 100;
-    const heightPt = Math.round(heightMm * MM_TO_PT * 100) / 100;
-
-    const margins = config.margins || { top: 20, right: 18, bottom: 20, left: 18 };
-    const leftMarginPt = margins.left * MM_TO_PT;
-    const rightMarginPt = margins.right * MM_TO_PT;
-    const topMarginPt = margins.top * MM_TO_PT;
-    const bottomMarginPt = margins.bottom * MM_TO_PT;
-
-    const printableWidthPt = widthPt - leftMarginPt - rightMarginPt;
-
-    // Collect all unique characters in the document to build the /ToUnicode CMap
-    const charSet = new Set();
-    // Pre-populate with standard ASCII, common Devanagari range, and required test glyphs
-    for (let c = 0x20; c <= 0x7E; c++) charSet.add(String.fromCharCode(c));
-    // Hindi conjuncts, nuktas, punctuation, Om, chandrabindu, visarga, dandas
-    const testChars = 'क्षत्रज्ञश्रद्वद्घहृक़ख़ग़ज़ड़ढ़फ़चाँदॐदुःख।॥०१२३४५६७८९';
-    for (const ch of testChars) charSet.add(ch);
-
-    // Scan all text in layoutDoc blocks
-    for (const page of layoutDoc.pages) {
-      if (Array.isArray(page.blocks)) {
-        for (const block of page.blocks) {
-          if (typeof block.content === 'string') {
-            for (const ch of block.content) charSet.add(ch);
-          } else if (Array.isArray(block.content)) {
-            for (const item of block.content) {
-              if (typeof item === 'string') {
-                for (const ch of item) charSet.add(ch);
-              } else if (item && typeof item.title === 'string') {
-                for (const ch of item.title) charSet.add(ch);
-              }
-            }
-          }
-          if (Array.isArray(block.stanzas)) {
-            for (const stanza of block.stanzas) {
-              if (Array.isArray(stanza.lines)) {
-                for (const line of stanza.lines) {
-                  for (const ch of line) charSet.add(ch);
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Build PDF objects list
-    const objects = [];
-    const pageObjRefs = [];
-
-    // Helper to register an object and return its reference number
-    function addObject(content) {
-      objects.push(content);
-      return objects.length; // 1-indexed
-    }
-
-    // Prepare placeholders for object IDs
-    const infoObjId = 1;
-    const catalogObjId = 2;
-    const pagesTreeObjId = 3;
-    const toUnicodeObjId = 4;
-    const fontDescObjId = 5;
-    const cidFontObjId = 6;
-    const compositeFontObjId = 7;
-    const helveticaObjId = 8;
-
-    // 1. Info Dictionary
-    const isoDate = new Date();
-    const pdfDateStr = `D:${isoDate.getUTCFullYear()}${String(isoDate.getUTCMonth() + 1).padStart(2, '0')}${String(isoDate.getUTCDate()).padStart(2, '0')}${String(isoDate.getUTCHours()).padStart(2, '0')}${String(isoDate.getUTCMinutes()).padStart(2, '0')}${String(isoDate.getUTCSeconds()).padStart(2, '0')}Z`;
-
-    objects[infoObjId - 1] = `<<
-  /Title ${toPdfHex(cleanTitle)}
-  /Author ${toPdfHex(author)}
-  /Creator (काव्यकलश KavyaVault)
-  /Producer (KavyaVault Local Print Engine)
-  /CreationDate (${pdfDateStr})
-  /ModDate (${pdfDateStr})
->>`;
-
-    // 2. Catalog Dictionary
-    objects[catalogObjId - 1] = `<<
-  /Type /Catalog
-  /Pages ${pagesTreeObjId} 0 R
->>`;
-
-    // 3. Pages Tree Placeholder (will be populated after pages are created)
-    objects[pagesTreeObjId - 1] = null;
-
-    // 4. /ToUnicode CMap stream
-    const toUnicodeStream = BookPdfGenerator.buildToUnicodeCMap(charSet);
-    objects[toUnicodeObjId - 1] = `<<
-  /Length ${toUnicodeStream.length}
->>
-stream
-${toUnicodeStream}
-endstream`;
-
-    // 5. Font Descriptor
-    objects[fontDescObjId - 1] = `<<
-  /Type /FontDescriptor
-  /FontName /KavyaDevanagari
-  /Flags 4
-  /FontBBox [-500 -300 1200 1000]
-  /ItalicAngle 0
-  /Ascent 800
-  /Descent -200
-  /CapHeight 700
-  /StemV 80
->>`;
-
-    // 6. CIDFontType2 (Descendant)
-    objects[cidFontObjId - 1] = `<<
-  /Type /Font
-  /Subtype /CIDFontType2
-  /BaseFont /KavyaDevanagari
-  /CIDSystemInfo <<
-    /Registry (Adobe)
-    /Ordering (UCS)
-    /Supplement 0
-  >>
-  /FontDescriptor ${fontDescObjId} 0 R
-  /DW 1000
->>`;
-
-    // 7. Composite Type0 Font (/F1)
-    objects[compositeFontObjId - 1] = `<<
-  /Type /Font
-  /Subtype /Type0
-  /BaseFont /KavyaDevanagari
-  /Encoding /Identity-H
-  /DescendantFonts [${cidFontObjId} 0 R]
-  /ToUnicode ${toUnicodeObjId} 0 R
->>`;
-
-    // 8. Standard Helvetica (/F2)
-    objects[helveticaObjId - 1] = `<<
-  /Type /Font
-  /Subtype /Type1
-  /BaseFont /Helvetica
-  /Encoding /WinAnsiEncoding
->>`;
-
-    // 9. Generate Pages and Content Streams
-    const pages = layoutDoc.pages;
-    let nextObjId = helveticaObjId + 1;
-
-    for (let pIdx = 0; pIdx < pages.length; pIdx++) {
-      const page = pages[pIdx];
-      const pageObjId = nextObjId++;
-      const contentObjId = nextObjId++;
-
-      pageObjRefs.push(`${pageObjId} 0 R`);
-
-      // Generate PDF graphics and text stream for this page
-      const contentStream = BookPdfGenerator.renderPageStream(page, {
-        widthPt,
-        heightPt,
-        leftMarginPt,
-        rightMarginPt,
-        topMarginPt,
-        bottomMarginPt,
-        printableWidthPt,
-        config,
-        meta
-      });
-
-      // Register Page object
-      objects[pageObjId - 1] = `<<
-  /Type /Page
-  /Parent ${pagesTreeObjId} 0 R
-  /MediaBox [0 0 ${widthPt} ${heightPt}]
-  /Resources <<
-    /Font <<
-      /F1 ${compositeFontObjId} 0 R
-      /F2 ${helveticaObjId} 0 R
-    >>
-    /ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
-  >>
-  /Contents ${contentObjId} 0 R
->>`;
-
-      // Register Content stream object
-      objects[contentObjId - 1] = `<<
-  /Length ${contentStream.length}
->>
-stream
-${contentStream}
-endstream`;
-    }
-
-    // Populate Pages Tree (Object 3)
-    objects[pagesTreeObjId - 1] = `<<
-  /Type /Pages
-  /Count ${pages.length}
-  /Kids [${pageObjRefs.join(' ')}]
->>`;
-
-    // Assemble final PDF binary buffer
-    const binaryPdf = BookPdfGenerator.assemblePdfFile(objects);
-
-    return {
-      filename,
-      mimeType: 'application/pdf',
-      data: binaryPdf,
-      size: binaryPdf.length,
-      pageCount: pages.length,
-      warnings
-    };
+    const dims = PAGE_DIMENSIONS[config.pageSize];
+    const landscape = config.orientation === PAGE_ORIENTATION.LANDSCAPE;
+    const widthPt = Math.round((landscape ? dims.heightMm : dims.widthMm) * MM_TO_PT * 100) / 100;
+    const heightPt = Math.round((landscape ? dims.widthMm : dims.heightMm) * MM_TO_PT * 100) / 100;
+    const fontRegistry = new PdfFontRegistry();
+    const warnings = [...(layoutDoc.warnings || [])];
+    const env = {widthPt, heightPt, config, meta, fontRegistry, warnings,
+      leftMarginPt: config.margins.left * MM_TO_PT, rightMarginPt: config.margins.right * MM_TO_PT,
+      topMarginPt: Math.max(52, config.margins.top * MM_TO_PT), bottomMarginPt: config.margins.bottom * MM_TO_PT,
+      printableWidthPt: widthPt - (config.margins.left + config.margins.right) * MM_TO_PT};
+    const date = new Date(options.date || Date.now()).toISOString().replace(/[-:T]/g, '').slice(0,14);
+    const objects = [
+      '<< /Title ' + pdfString(meta.title || 'अनाम पुस्तक') + ' /Author ' + pdfString(meta.author || 'काव्यकलश') +
+      ' /Creator ' + pdfString('काव्यकलश KavyaVault') + ' /Producer (KavyaVault Local Print Engine) /CreationDate (D:' + date + 'Z) >>',
+      '<< /Type /Catalog /Pages 3 0 R /Lang (hi-IN) >>', null
+    ];
+    const add = content => (objects.push(content), objects.length);
+    const streams = layoutDoc.pages.map(page => BookPdfGenerator.renderPageStream(page, env));
+    const resources = fontRegistry.embed(add, BookPdfGenerator.streamObject);
+    const pages = streams.map(content => {
+      const contentRef = add(BookPdfGenerator.streamObject('', content));
+      return add('<< /Type /Page /Parent 3 0 R /MediaBox [0 0 ' + widthPt + ' ' + heightPt + '] /Resources << /Font << ' + resources + ' >> >> /Contents ' + contentRef + ' 0 R >>');
+    });
+    objects[2] = '<< /Type /Pages /Count ' + pages.length + ' /Kids [' + pages.map(id => id + ' 0 R').join(' ') + '] >>';
+    const data = BookPdfGenerator.assemblePdfFile(objects);
+    return {filename: generateSafeExportFilename(meta.title || 'अनाम पुस्तक', 'pdf'), mimeType: 'application/pdf', data,
+      size: data.length, pageCount: pages.length, warnings};
   }
 
-  /**
-   * Builds the /ToUnicode CMap mapping table for Devanagari and Latin characters
-   */
-  static buildToUnicodeCMap(charSet) {
-    const chars = Array.from(charSet).sort();
-    const mappings = [];
+  static streamObject(dictionary, content) {
+    const data = typeof content === 'string' ? new TextEncoder().encode(content) : content;
+    return BookPdfGenerator.concat([new TextEncoder().encode('<< /Length ' + data.length + ' ' + dictionary + ' >>\nstream\n'), data,
+      new TextEncoder().encode('\nendstream')]);
+  }
 
-    for (let i = 0; i < chars.length; i++) {
-      const ch = chars[i];
-      let utf16 = '';
-      for (let j = 0; j < ch.length; j++) {
-        utf16 += ch.charCodeAt(j).toString(16).padStart(4, '0');
-      }
-      // CID matches character index
-      const cidHex = i.toString(16).padStart(4, '0');
-      mappings.push(`<${cidHex}> <${utf16}>`);
-    }
-
-    // Split mappings into chunks of 100 (PDF CMap limit per beginbfchar)
-    let bfcharBlocks = '';
-    for (let i = 0; i < mappings.length; i += 100) {
-      const chunk = mappings.slice(i, i + 100);
-      bfcharBlocks += `${chunk.length} beginbfchar\n${chunk.join('\n')}\nendbfchar\n`;
-    }
-
-    return `/CIDInit /ProcSet findresource begin
-12 dict begin
-begincmap
-/CIDSystemInfo <<
-  /Registry (Adobe)
-  /Ordering (UCS)
-  /Supplement 0
->> def
-/CMapName /Kavya-ToUnicode def
-/CMapType 2 def
-1 begincodespacerange
-<0000> <FFFF>
-endcodespacerange
-${bfcharBlocks}endcmap
-CMapName currentdict /CMap defineresource pop
-end
-end`;
+  static concat(parts) {
+    const result = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+    let offset = 0;
+    for (const part of parts) { result.set(part, offset); offset += part.length; }
+    return result;
   }
 
   /**
@@ -376,7 +149,7 @@ end`;
     const stream = [];
 
     // Helper: translate top-down Y (layout) to bottom-up Y (PDF)
-    const pdfY = (topY) => Math.max(0, heightPt - topY);
+    const pdfY = (topY) => heightPt - topY;
 
     const themeKey = (meta.cover && (meta.cover.background || meta.cover.theme)) || 'bhojpatra';
     const palette = COVER_COLORS[themeKey] || COVER_COLORS.bhojpatra;
@@ -638,7 +411,7 @@ end`;
           stream.push(`${leftMarginPt} ${heightPt - 22} Td ${toPdfHex(page.header.left)} Tj`);
         }
         if (page.header.right) {
-          stream.push(`${widthPt - rightMarginPt - 50} ${heightPt - 22} Td ${toPdfHex(page.header.right)} Tj`);
+          stream.push(`${widthPt / 2 + 8} ${heightPt - 22} Td ${toPdfHex(page.header.right)} Tj`);
         }
         stream.push(`ET`);
         // Subtle header hairline
@@ -648,66 +421,55 @@ end`;
     }
 
     // Running Footer / Folio (Page Number in Devanagari)
-    if (page.displayPageNumber !== null && page.displayPageNumber !== undefined) {
-      const folioStr = page.displayPageNumberFormatted || toDevanagariNumerals(page.displayPageNumber);
+    if (config.pageNumbering !== 'none' && page.pageNumber !== null && page.pageNumber !== undefined) {
+      const folioStr = page.displayPageNumberFormatted || toDevanagariNumerals(page.pageNumber);
       stream.push(`BT /F1 9 Tf 0.4 0.35 0.30 rg`);
       // Center folio
-      stream.push(`${widthPt / 2 - 6} ${bottomMarginPt * 0.6} Td ${toPdfHex(folioStr)} Tj ET`);
+      const folioX = config.pageNumbering === 'bottom-outer' ? (page.pageNumber % 2 ? widthPt - rightMarginPt - 18 : leftMarginPt) : config.pageNumbering === 'top-right' ? widthPt - rightMarginPt - 18 : widthPt / 2 - 6;
+      const folioY = config.pageNumbering === 'top-right' ? heightPt - 38 : bottomMarginPt * 0.6;
+      stream.push(`${folioX} ${folioY} Td ${toPdfHex(folioStr)} Tj ET`);
     }
 
-    return stream.join('\n');
+    let fontSize = 12;
+    return stream.join('\n').replace(/\/F1 ([\d.]+) Tf|(-?[\d.]+) (-?[\d.]+) Td <([0-9A-F]*)> Tj/g, (match, size, sx, sy, hex) => {
+      if (size) { fontSize = Number(size); return ''; }
+      let text = hex.match(/.{4}/g)?.map(h => String.fromCharCode(parseInt(h,16))).join('') || '';
+      let x = Number(sx), y = Number(sy), maxWidth = widthPt - rightMarginPt - x, align = 'left';
+      if (['cover', 'title', 'section', 'dedication'].includes(page.type) && y > bottomMarginPt && y < heightPt - 40) {
+        x = leftMarginPt; maxWidth = printableWidthPt; align = 'center';
+      } else if (Math.abs(y - (heightPt - 22)) < 1) {
+        maxWidth = printableWidthPt / 2 - 8;
+        align = x > widthPt / 2 ? 'right' : 'left';
+      } else if (page.type === 'toc' && x < widthPt / 2 && fontSize <= 12) maxWidth -= 42;
+      else if (page.type === 'poem' && fontSize === config.bodyFontSize && y > bottomMarginPt && y < heightPt - topMarginPt) align = config.alignment === 'center' ? 'center' : 'left';
+      if (y < bottomMarginPt && fontSize > 9) throw new Error('पाठ पृष्ठ से बाहर जा रहा है। लेआउट जाँचें।');
+      if (Math.abs(y - (heightPt - 22)) < 1 || (page.type === 'toc' && x < widthPt / 2 && fontSize <= 12)) {
+        const label = env.fontRegistry.fitLabel(text, fontSize, maxWidth);
+        if (label !== text) {
+          const warning = 'लंबे शीर्षक विषय-सूची और पृष्ठ शीर्ष में संक्षिप्त हैं; रचना पृष्ठ पर पूरा शीर्षक है।';
+          if (!env.warnings.includes(warning)) env.warnings.push(warning);
+          text = label;
+        }
+      }
+      return env.fontRegistry.draw(text, x, y, fontSize, Math.max(18, maxWidth), align);
+    });
   }
 
   /**
    * Assembles indirect PDF objects into a complete binary buffer with xref table and trailer
    */
   static assemblePdfFile(objects) {
-    const textEncoder = new TextEncoder();
-    const parts = [];
-
-    // Header (PDF 1.4 + binary marker comment)
-    const header = `%PDF-1.4\n%\xE2\xE3\xCF\xD3\n`;
-    parts.push(textEncoder.encode(header));
-
-    let currentOffset = header.length;
-    const offsets = [0]; // Object 0 is free list
-
-    // Encode all objects
-    for (let i = 0; i < objects.length; i++) {
-      offsets.push(currentOffset);
-      const objNum = i + 1;
-      const objBody = `${objNum} 0 obj\n${objects[i]}\nendobj\n`;
-      const objBytes = textEncoder.encode(objBody);
-      parts.push(objBytes);
-      currentOffset += objBytes.length;
-    }
-
-    // Cross-reference table (xref)
-    const xrefOffset = currentOffset;
-    let xref = `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-
-    for (let i = 1; i <= objects.length; i++) {
-      const offStr = String(offsets[i]).padStart(10, '0');
-      xref += `${offStr} 00000 n \n`;
-    }
-
-    // Trailer
-    const trailer = `trailer\n<<\n  /Size ${objects.length + 1}\n  /Root 2 0 R\n  /Info 1 0 R\n>>\nstartxref\n${xrefOffset}\n%%EOF\n`;
-
-    parts.push(textEncoder.encode(xref));
-    parts.push(textEncoder.encode(trailer));
-
-    // Combine all parts into contiguous Uint8Array
-    let totalLength = 0;
-    for (const p of parts) totalLength += p.length;
-
-    const finalBuffer = new Uint8Array(totalLength);
-    let pos = 0;
-    for (const p of parts) {
-      finalBuffer.set(p, pos);
-      pos += p.length;
-    }
-
-    return finalBuffer;
+    const encode = text => new TextEncoder().encode(text);
+    const parts = [encode('%PDF-1.4\n%KavyaVault\n')];
+    const offsets = [0];
+    let offset = parts[0].length;
+    objects.forEach((object, i) => {
+      offsets.push(offset);
+      const part = BookPdfGenerator.concat([encode((i + 1) + ' 0 obj\n'), typeof object === 'string' ? encode(object) : object, encode('\nendobj\n')]);
+      parts.push(part); offset += part.length;
+    });
+    const xref = 'xref\n0 ' + (objects.length + 1) + '\n0000000000 65535 f \n' + offsets.slice(1).map(o => String(o).padStart(10,'0') + ' 00000 n \n').join('');
+    parts.push(encode(xref + 'trailer\n<<\n /Size ' + (objects.length + 1) + '\n /Root 2 0 R\n /Info 1 0 R\n>>\nstartxref\n' + offset + '\n%%EOF\n'));
+    return BookPdfGenerator.concat(parts);
   }
 }

@@ -435,11 +435,11 @@ runTest('InputModeSelector displays technically accurate privacy reassurance', (
 
   const html = container.innerHTML;
   assert(
-    html.includes('काव्यकलश इस सुविधा के लिए किसी बाहरी AI या क्लाउड API को सीधे कॉल नहीं करता।'),
+    html.includes('काव्यकलश किसी बाहरी AI या क्लाउड API को सीधे कॉल नहीं करता।'),
     'Privacy statement uses truthful phrasing without claiming unprovable absolutes'
   );
   assert(
-    html.includes('आपकी रचनाएँ, पांडुलिपियाँ एवं ध्वनि इनपुट केवल आपके अपने उपकरण में सुरक्षित रहते हैं।'),
+    html.includes('आपकी सहेजी गई रचनाएँ और पांडुलिपियाँ इस ब्राउज़र में रहती हैं।'),
     'Affirms local-first storage'
   );
 });
@@ -451,7 +451,7 @@ runTest('SpeakInputView displays technically accurate privacy note', () => {
 
   const html = container.innerHTML;
   assert(
-    html.includes('काव्यकलश इस सुविधा के लिए किसी बाहरी AI या क्लाउड API को सीधे कॉल नहीं करता।'),
+    html.includes('काव्यकलश किसी बाहरी AI या क्लाउड API को सीधे कॉल नहीं करता।'),
     'Speak privacy note uses truthful wording'
   );
   assert(

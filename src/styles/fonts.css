@@ -1,0 +1,7 @@
+/* Local, licensed fonts. No remote requests are needed for typography. */
+@font-face { font-family: 'Martel'; src: url('/fonts/Martel-Regular.ttf') format('truetype'); font-display: swap; font-weight: 400; }
+@font-face { font-family: 'Mukta'; src: url('/fonts/Mukta-Regular.ttf') format('truetype'); font-display: swap; font-weight: 400; }
+@font-face { font-family: 'Rozha One'; src: url('/fonts/RozhaOne-Regular.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Yatra One'; src: url('/fonts/YatraOne-Regular.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Tiro Devanagari Hindi'; src: url('/fonts/TiroDevanagariHindi-Regular.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Noto Serif Devanagari'; src: url('/fonts/NotoSerifDevanagari-Regular.ttf') format('truetype'); font-display: swap; }

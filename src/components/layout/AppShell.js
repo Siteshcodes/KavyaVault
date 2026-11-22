@@ -19,6 +19,7 @@ import { renderHomeView } from '../home/HomeView.js';
 import { ROUTES, ROUTE_METADATA } from '../../data/navigation.js';
 import { getIconSvg } from '../navigation/icons.js';
 import { renderThemeSelector, attachThemeSelectorEvents } from '../settings/ThemeSelector.js';
+import { renderBackupPanel, attachBackupEvents } from '../settings/BackupPanel.js';
 import { renderTypographyTest } from '../typography/TypographyTest.js';
 import { renderPersistenceTest, runPersistenceDiagnostic } from '../persistence/PersistenceTest.js';
 import { LibraryView } from '../library/LibraryView.js';
@@ -419,10 +420,12 @@ export class AppShell {
         <div class="standard-page-view">
           ${headerHtml}
           ${renderThemeSelector()}
+          ${renderBackupPanel()}
         </div>
       `;
 
       attachThemeSelectorEvents(this.contentContainer);
+      attachBackupEvents(this.contentContainer);
       return;
     }
 

@@ -66,6 +66,24 @@ export class BookExportService {
     return BookEpubGenerator.generateEpub(bookDoc, layoutConfigInput);
   }
 
+  async generateAsync(bookId, format, config = {}, signal) {
+    if (!['pdf', 'epub'].includes(format)) throw new Error('असमर्थित निर्यात प्रारूप।');
+    if (signal?.aborted) throw new Error('निर्यात रद्द किया गया।');
+    if (typeof Worker === 'undefined') return format === 'pdf' ? this.exportToPdf(bookId, config) : this.exportToEpub(bookId, config);
+    const bookDocument = this.bookService.generateBookDocument(bookId);
+    return new Promise((resolve, reject) => {
+      const worker = new Worker(new URL('./exportWorker.js', import.meta.url), { type: 'module' });
+      const finish = (error, result) => { clearTimeout(timer); signal?.removeEventListener('abort', cancel); worker.terminate(); error ? reject(error) : resolve(result); };
+      const cancel = () => finish(new Error('निर्यात रद्द किया गया।'));
+      const timer = setTimeout(() => finish(new Error('निर्यात में बहुत समय लगा। छोटी पुस्तक से फिर प्रयास करें।')), 120000);
+      signal?.addEventListener('abort', cancel, { once: true });
+      worker.onmessage = ({ data }) => finish(data.error ? new Error(data.error) : null, data.result);
+      worker.onerror = () => finish(new Error('निर्यात प्रक्रिया शुरू नहीं हो सकी। ऐप फिर खोलकर प्रयास करें।'));
+      try { worker.postMessage({ bookDocument, format, config }); }
+      catch { finish(new Error('निर्यात के लिए पुस्तक पढ़ी नहीं जा सकी।')); }
+    });
+  }
+
   /**
    * Triggers a local browser download for the generated export buffer
    * In non-browser (Node.js/test) environments, returns file metadata safely without throwing

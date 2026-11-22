@@ -55,6 +55,7 @@ export function generateSafeExportFilename(rawTitle, ext) {
 export function xmlEscape(str) {
   if (str === null || str === undefined) return '';
   return String(str)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uD800-\uDFFF\uFFFE\uFFFF]/gu, '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
@@ -68,6 +69,7 @@ export function xmlEscape(str) {
 export function xmlAttributeEscape(str) {
   if (str === null || str === undefined) return '';
   return String(str)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uD800-\uDFFF\uFFFE\uFFFF]/gu, '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')

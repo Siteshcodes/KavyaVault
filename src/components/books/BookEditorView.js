@@ -20,7 +20,7 @@ import { escapeHtml, normalizeSearchText } from '../../services/SearchService.js
 import { formatPoeticDate } from '../../utils/date.js';
 import { COVER_TYPE } from '../../services/books/bookTypes.js';
 import { BookPrintPreview } from './BookPrintPreview.js';
-import { bookExportService } from '../../services/books/export/index.js';
+import { BookExportService } from '../../services/books/export/index.js';
 
 /**
  * Converts Western digits to Devanagari numerals
@@ -125,6 +125,7 @@ export class BookEditorView {
    * Mounts the view and binds listeners
    */
   mount() {
+    this.destroyed = false;
     this.render();
     if (this.container) {
       this.container.addEventListener('click', this.boundClickHandler);
@@ -141,6 +142,8 @@ export class BookEditorView {
    * Unmounts the view and cleans up
    */
   unmount() {
+    this.destroyed = true;
+    this.exportController?.abort();
     if (this.container) {
       this.container.removeEventListener('click', this.boundClickHandler);
       this.container.removeEventListener('input', this.boundInputHandler);
@@ -218,6 +221,7 @@ export class BookEditorView {
 
     this.container.innerHTML = `
       <div class="book-builder-view standard-page-view" role="region" aria-label="पुस्तक संपादन कार्यशाला">
+        ${this.exportMessage ? `<div class="book-export-notice" role="status" aria-live="polite">${escapeHtml(this.exportMessage)}</div>` : ''}
         <!-- Top Navigation Bar -->
         <header class="builder-top-nav">
           <div class="builder-top-left">
@@ -247,6 +251,7 @@ export class BookEditorView {
               class="btn-secondary-action"
               data-action="export-pdf"
               id="btn-top-export-pdf"
+              ${this.exportBusy ? 'disabled aria-busy="true"' : ''}
               aria-label="पुस्तक को PDF प्रारूप में निर्यात करें"
               title="PDF निर्यात"
             >
@@ -258,6 +263,7 @@ export class BookEditorView {
               class="btn-secondary-action"
               data-action="export-epub"
               id="btn-top-export-epub"
+              ${this.exportBusy ? 'disabled aria-busy="true"' : ''}
               aria-label="पुस्तक को EPUB प्रारूप में निर्यात करें"
               title="EPUB निर्यात"
             >
@@ -1447,6 +1453,27 @@ export class BookEditorView {
   /**
    * Central click event handler
    */
+  async runExport(format) {
+    if (this.exportBusy || this.destroyed) return;
+    this.exportBusy = true;
+    this.exportMessage = format.toUpperCase() + ' तैयार हो रहा है…';
+    this.exportController = new AbortController();
+    this.render();
+    try {
+      const exporter = new BookExportService({ bookService: this.bookService });
+      const config = this.printPreview?.layoutConfig || {};
+      const result = await exporter.generateAsync(this.bookId, format, config, this.exportController.signal);
+      if (this.destroyed) return;
+      exporter.downloadFile(result.filename, result.data, result.mimeType);
+      this.exportMessage = format.toUpperCase() + ' डाउनलोड शुरू हुआ।' + (result.warnings.length ? ' चेतावनी: ' + result.warnings.join(' ') : '');
+    } catch (error) {
+      this.exportMessage = /[\u0900-\u097f]/u.test(error.message) ? error.message : 'निर्यात नहीं हो सका। पुस्तक की सामग्री जाँचें और फिर प्रयास करें।';
+    } finally {
+      this.exportBusy = false;
+      if (!this.destroyed) this.render();
+    }
+  }
+
   handleClick(e) {
     // Backdrop click closes modal
     if (e.target && e.target.classList && e.target.classList.contains('modal-backdrop')) {
@@ -1458,6 +1485,10 @@ export class BookEditorView {
     if (!trigger) return;
 
     const action = trigger.getAttribute('data-action');
+    if (action === 'export-pdf' || action === 'export-epub') {
+      void this.runExport(action === 'export-pdf' ? 'pdf' : 'epub');
+      return;
+    }
 
     // Section selection
     if (action === 'select-section') {
@@ -1589,30 +1620,10 @@ export class BookEditorView {
         this.render();
         return;
       }
-      if (action === 'export-pdf') {
-        this.printPreview.exportPdf();
-        this.render();
-        return;
-      }
-      if (action === 'export-epub') {
-        this.printPreview.exportEpub();
-        this.render();
-        return;
-      }
       if (action === 'native-print') {
         this.printPreview.nativePrint();
         return;
       }
-    }
-
-    // Direct export outside modal
-    if (action === 'export-pdf') {
-      bookExportService.downloadPdf(this.bookId);
-      return;
-    }
-    if (action === 'export-epub') {
-      bookExportService.downloadEpub(this.bookId);
-      return;
     }
 
     if (action === 'close-modal') {

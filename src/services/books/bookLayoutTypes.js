@@ -202,6 +202,11 @@ export function validateLayoutConfig(config) {
   if (!config || typeof config !== 'object') {
     throw new StorageError('लेआउट विन्यास (LayoutConfig) एक ऑब्जेक्ट होना चाहिए।', StorageErrorCode.VALIDATION_ERROR);
   }
+  for (const field of ['bodyFontSize', 'titleFontSize', 'sectionFontSize', 'lineHeight', 'stanzaSpacing', 'paragraphSpacing']) {
+    if (config[field] !== undefined && !Number.isFinite(config[field])) {
+      throw new StorageError('लेआउट में एक अमान्य संख्या है।', StorageErrorCode.VALIDATION_ERROR);
+    }
+  }
 
   if (config.pageSize && !VALID_PAGE_SIZES.includes(config.pageSize)) {
     throw new StorageError(`अमान्य पृष्ठ आकार: "${config.pageSize}"`, StorageErrorCode.VALIDATION_ERROR);

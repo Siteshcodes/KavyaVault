@@ -729,7 +729,7 @@ runTest('G', 'PDF Info dictionary contains Title, Author, Creator, and timestamp
 
   assert.ok(pdfStr.includes('/Title <'));
   assert.ok(pdfStr.includes('/Author <'));
-  assert.ok(pdfStr.includes('/Creator (काव्यकलश KavyaVault)'));
+  assert.ok(pdfStr.includes('/Creator <FEFF'), 'Unicode metadata uses a UTF-16 BOM');
   assert.ok(pdfStr.includes('/CreationDate (D:'));
 });
 
@@ -748,7 +748,7 @@ runTest('G', 'PDF Pages tree Count strictly matches layoutDoc.pages.length', () 
 
   const decoder = new TextDecoder('latin1');
   const pdfStr = decoder.decode(res.data.subarray(0, 2000));
-  assert.ok(pdfStr.includes(`/Type /Pages\n  /Count ${layoutDoc.pages.length}`));
+  assert.ok(new RegExp(`/Type /Pages\\s+/Count ${layoutDoc.pages.length}\\b`).test(pdfStr));
 });
 
 runTest('G', 'Xref table contains 10-digit zero-padded offsets for all indirect objects', () => {
