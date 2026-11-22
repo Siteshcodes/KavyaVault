@@ -8,5 +8,5 @@
       { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
     ]
   },
-  "storage": { "rules": "storage.rules" }
+  "firestore": { "rules": "firestore.rules" }
 }

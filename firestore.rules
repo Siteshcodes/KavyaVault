@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/libraries/current {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['version', 'parts', 'bytes', 'updatedAt'])
+        && request.resource.data.version is string
+        && request.resource.data.parts is int && request.resource.data.parts > 0 && request.resource.data.parts <= 110
+        && request.resource.data.bytes is int && request.resource.data.bytes > 0 && request.resource.data.bytes <= 41943040
+        && request.resource.data.updatedAt is string;
+    }
+    match /users/{uid}/snapshots/{version}/parts/{index} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['data'])
+        && request.resource.data.data is string
+        && request.resource.data.data.size() <= 600000;
+    }
+  }
+}
