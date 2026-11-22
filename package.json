@@ -18,6 +18,10 @@
     "vite": "^6.2.0"
   },
   "dependencies": {
+    "firebase": "^13.4.0",
     "fontkit": "2.0.4"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.13.6"
   }
 }
