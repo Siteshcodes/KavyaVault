@@ -64,10 +64,10 @@ export function renderThemeSelector() {
     <section class="settings-view" aria-labelledby="settings-theme-heading">
       <fieldset class="theme-selector-fieldset">
         <legend id="settings-theme-heading" class="theme-selector-legend">
-          विषय / रूप-सज्जा
+          रूप-रंग
         </legend>
         <p class="theme-selector-tagline">
-          अपनी पठन व लेखन साधना हेतु वातावरण चुनें। यह रूप-रंग संपूर्ण संग्रह में तत्काल सक्रिय हो जाएगा।
+          पढ़ने और लिखने के लिए रंग चुनें।
         </p>
 
         <div class="theme-options-grid" role="radiogroup" aria-label="काव्यकलश विषय विकल्प">
