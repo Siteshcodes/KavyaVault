@@ -39,6 +39,8 @@ PDF/EPUB export makes no network calls. Fonts are bundled with their licenses. P
 
 ## Protect your archive
 
+Optional Google sign-in and manual cloud copies are described in [Firebase rollout](docs/FIREBASE-ROLLOUT.md). Cloud copying is not automatic sync. The Firebase project must have Google Authentication and owner-only Firestore rules configured on its no-billing Spark plan. Browser data remains local until you explicitly upload it.
+
 Settings → **पूरा बैकअप डाउनलोड करें** saves poems, drafts, manuscripts, collections, books and relationships. Keep that file outside the browser profile. Restore replaces the destination library after review and confirmation; it does not merge archives. Close other app tabs before restoring.
 
 Browser storage can be cleared or evicted. Changing the hostname or port creates a separate library. There is no cloud synchronization. Read [recovery instructions](docs/RECOVERY.md) before moving data.

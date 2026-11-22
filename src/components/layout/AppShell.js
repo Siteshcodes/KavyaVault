@@ -19,6 +19,7 @@ import { ROUTES, ROUTE_METADATA } from '../../data/navigation.js';
 import { getIconSvg } from '../navigation/icons.js';
 import { renderThemeSelector, attachThemeSelectorEvents } from '../settings/ThemeSelector.js';
 import { renderBackupPanel, attachBackupEvents } from '../settings/BackupPanel.js';
+import { renderCloudLibraryPanel, attachCloudLibraryEvents } from '../settings/CloudLibraryPanel.js';
 import { renderTypographyTest } from '../typography/TypographyTest.js';
 import { renderPersistenceTest, runPersistenceDiagnostic } from '../persistence/PersistenceTest.js';
 import { LibraryView } from '../library/LibraryView.js';
@@ -119,6 +120,8 @@ export class AppShell {
    */
   renderRoute(currentPath) {
     if (!this.contentContainer) return;
+
+    if (this.cloudCleanup) { this.cloudCleanup(); this.cloudCleanup = null; }
 
     // Cleanup previous view state if active
     if (this.activeLibraryView) {
@@ -419,6 +422,7 @@ export class AppShell {
         <div class="standard-page-view">
           ${headerHtml}
           ${renderBackupPanel()}
+          ${renderCloudLibraryPanel()}
           ${renderThemeSelector()}
           <details class="backup-panel settings-details" aria-label="पुराने अभिलेख">
             <summary>पुराने अभिलेख</summary>
@@ -439,6 +443,7 @@ export class AppShell {
 
       attachThemeSelectorEvents(this.contentContainer);
       attachBackupEvents(this.contentContainer);
+      this.cloudCleanup = attachCloudLibraryEvents(this.contentContainer);
       return;
     }
 
