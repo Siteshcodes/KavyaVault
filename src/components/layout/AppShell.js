@@ -412,21 +412,28 @@ export class AppShell {
       const headerHtml = renderPageHeader({
         title: metadata.title,
         subtitle: metadata.tagline,
-        description: 'काव्यकलश के रूप-रंग और मुद्रण अनुभव को अपनी रुचि अनुसार ढालें।'
+        description: 'बैकअप, रूप-रंग और पहले से सहेजे गए अभिलेख।'
       });
 
       this.contentContainer.innerHTML = `
         <div class="standard-page-view">
           ${headerHtml}
-          ${renderThemeSelector()}
           ${renderBackupPanel()}
-          <section class="settings-archive-links" aria-label="पुराने अभिलेख" style="margin-top: 2rem;">
-            <h2>पुराने अभिलेख</h2>
-            <p>पहले से सहेजी गई सामग्री यहाँ उपलब्ध है।</p>
-            <a href="${ROUTES.MANUSCRIPTS}" data-link>पांडुलिपियाँ</a> ·
-            <a href="${ROUTES.ARCHIVE}" data-link>संग्रहित कविताएँ</a> ·
-            <a href="${ROUTES.COLLECTIONS}" data-link>संग्रह</a>
-          </section>
+          ${renderThemeSelector()}
+          <details class="backup-panel settings-details" aria-label="पुराने अभिलेख">
+            <summary>पुराने अभिलेख</summary>
+            <p>पहले से सहेजी गई सामग्री खोलें।</p>
+            <div class="settings-link-list">
+              <a href="${ROUTES.MANUSCRIPTS}" data-link>पांडुलिपियाँ</a>
+              <a href="${ROUTES.ARCHIVE}" data-link>संग्रहित कविताएँ</a>
+              <a href="${ROUTES.COLLECTIONS}" data-link>संग्रह</a>
+            </div>
+          </details>
+          <details class="backup-panel settings-details" aria-label="इस संस्करण के बारे में">
+            <summary>इस संस्करण के बारे में</summary>
+            <p>कविताएँ और पुस्तकें इस ब्राउज़र में रखी जाती हैं। पूरा बैकअप नियमित रूप से डाउनलोड करें। ऐप पहली बार लोड होने के बाद सामान्य लेखन और पुस्तक निर्यात ऑफ़लाइन चल सकते हैं।</p>
+            <p>आवाज़ की पहचान ब्राउज़र की ऑनलाइन सेवा इस्तेमाल कर सकती है। स्वचालित OCR, वास्तविक AI विश्लेषण और अर्थ आधारित खोज इस संस्करण में उपलब्ध नहीं हैं।</p>
+          </details>
         </div>
       `;
 
