@@ -47,7 +47,7 @@ export class Navigation {
 
     return `
       <aside class="nav-sidebar" aria-label="मुख्य डेस्कटॉप साइडबार">
-        <a href="${ROUTES.HOME}" class="sidebar-brand" data-link aria-label="काव्यकलश मुख्य पृष्ठ">
+        <a href="${ROUTES.POEMS}" class="sidebar-brand" data-link aria-label="मेरी कविताएँ">
           <span class="brand-title">काव्यकलश</span>
           <span class="brand-subtitle">KavyaVault</span>
         </a>
@@ -91,7 +91,7 @@ export class Navigation {
   renderMobileHeader() {
     return `
       <header class="mobile-header" aria-label="मोबाइल शीर्ष शीर्षक">
-        <a href="${ROUTES.HOME}" class="mobile-brand" data-link aria-label="काव्यकलश मुख्य द्वार">
+        <a href="${ROUTES.POEMS}" class="mobile-brand" data-link aria-label="मेरी कविताएँ">
           <span class="mobile-brand-title">काव्यकलश</span>
           <span class="mobile-brand-tagline">साहित्यिक धरोहर</span>
         </a>

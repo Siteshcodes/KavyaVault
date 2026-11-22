@@ -119,27 +119,26 @@ export const NAVIGATION_ITEMS = [
 
 // Desktop navigation groupings derived from single source of truth
 export const DESKTOP_PRIMARY_ITEMS = NAVIGATION_ITEMS.filter(item => 
-  ['home', 'poems', 'favorites', 'collections', 'search'].includes(item.id)
+  ['poems', 'books'].includes(item.id)
 );
 
 export const DESKTOP_SECONDARY_ITEMS = NAVIGATION_ITEMS.filter(item => 
-  ['books', 'manuscripts', 'archive', 'settings'].includes(item.id)
+  ['settings'].includes(item.id)
 );
 
 export const DESKTOP_ACTION_ITEM = NAVIGATION_ITEMS.find(item => item.id === 'new-poem');
 
 // Mobile bottom navigation bar items (5 primary touch points including center quill action)
 export const MOBILE_NAV_ITEMS = [
-  NAVIGATION_ITEMS.find(item => item.id === 'home'),
   NAVIGATION_ITEMS.find(item => item.id === 'poems'),
   NAVIGATION_ITEMS.find(item => item.id === 'new-poem'), // Prominent center action
-  NAVIGATION_ITEMS.find(item => item.id === 'favorites'),
-  NAVIGATION_ITEMS.find(item => item.id === 'search')
+  NAVIGATION_ITEMS.find(item => item.id === 'books'),
+  NAVIGATION_ITEMS.find(item => item.id === 'settings')
 ];
 
 // Mobile secondary menu items (accessible via mobile header drawer)
 export const MOBILE_DRAWER_ITEMS = NAVIGATION_ITEMS.filter(item => 
-  ['books', 'collections', 'manuscripts', 'archive', 'settings'].includes(item.id)
+  ['collections', 'manuscripts', 'archive'].includes(item.id)
 );
 
 // Route metadata for page titles and accessible descriptions

@@ -18,6 +18,8 @@
 import { SimpleZip } from './SimpleZip.js';
 import { xmlEscape, xmlAttributeEscape, generateSafeExportFilename, toDevanagariNumerals, sanitizeText } from './exportUtils.js';
 import { parsePoemStanzas } from '../BookLayoutEngine.js';
+import { fontSources, fontLicense, emojiLicense } from './bundledFonts.js';
+import { createLayoutConfig } from '../bookLayoutTypes.js';
 
 export class BookEpubGenerator {
   /**
@@ -30,6 +32,7 @@ export class BookEpubGenerator {
     if (!bookDoc || typeof bookDoc !== 'object') {
       throw new Error('अमान्य पुस्तक दस्तावेज़ (BookDocument आवश्यक है)।');
     }
+    layoutConfig = createLayoutConfig(layoutConfig);
 
     const warnings = Array.isArray(bookDoc.warnings) ? [...bookDoc.warnings] : [];
     const meta = bookDoc.metadata || {};
@@ -43,6 +46,8 @@ export class BookEpubGenerator {
     const filename = generateSafeExportFilename(cleanTitle, 'epub');
 
     const sections = Array.isArray(bookDoc.sections) ? bookDoc.sections : [];
+    const totalCharacters = sections.reduce((sum, section) => sum + (section.poems || []).reduce((n, poem) => n + (poem.body || '').length, 0), 0);
+    if (totalCharacters > 2000000) throw new Error('पुस्तक बहुत बड़ी है। इसे छोटे भागों में निर्यात करें।');
     const showCover = layoutConfig.showCover !== false;
     const showTitlePage = layoutConfig.showTitlePage !== false;
     const showDedication = layoutConfig.showDedication !== false && dedication.trim() !== '';
@@ -74,6 +79,14 @@ export class BookEpubGenerator {
     ];
     const spineItems = [];
     const navEntries = [];
+    for (const source of fontSources) {
+      const filename = `fonts/${source.name}.ttf`;
+      zip.addFile(`OEBPS/${filename}`, Uint8Array.from(atob(source.base64), c => c.charCodeAt(0)));
+      manifestItems.push({ id: source.name, href: filename, mediaType: 'font/ttf' });
+    }
+    zip.addFile('OEBPS/OFL.txt', fontLicense);
+    zip.addFile('OEBPS/OFL-Emoji.txt', emojiLicense);
+    manifestItems.push({ id: 'font-license', href: 'OFL.txt', mediaType: 'text/plain' }, { id: 'emoji-license', href: 'OFL-Emoji.txt', mediaType: 'text/plain' });
 
     // 4. Cover Page (if enabled)
     if (showCover) {
@@ -204,12 +217,16 @@ export class BookEpubGenerator {
    * Generates EPUB-safe CSS stylesheet
    */
   static generateStylesheet(layoutConfig) {
-    const fontFamily = "'Martel', 'Noto Serif Devanagari', 'Devanagari Sangam MN', serif";
+    const fontFamily = "'Kavya Devanagari', 'Kavya Latin', 'Kavya Symbols', 'Kavya Emoji', serif";
     const lineHeight = layoutConfig.lineHeight || 1.95;
     const bodySize = layoutConfig.bodyFontSize || 12;
 
     return `/* काव्यकलश (KavyaVault) — EPUB 3 Typography Stylesheet */
 @charset "UTF-8";
+@font-face { font-family: 'Kavya Devanagari'; src: url('fonts/NotoSerifDevanagari.ttf'); }
+@font-face { font-family: 'Kavya Latin'; src: url('fonts/NotoSerif.ttf'); }
+@font-face { font-family: 'Kavya Symbols'; src: url('fonts/NotoSansSymbols2.ttf'); }
+@font-face { font-family: 'Kavya Emoji'; src: url('fonts/NotoEmoji.ttf'); }
 
 body {
   margin: 5% 8%;
@@ -219,7 +236,6 @@ body {
   line-height: ${lineHeight};
   color: #1A1615;
   background-color: transparent;
-  direction: ltr;
 }
 
 h1, h2, h3, h4 {
@@ -240,7 +256,7 @@ p {
 .epub-cover {
   text-align: center;
   margin-top: 25%;
-  page-break-after: always;
+  /* Each spine document already starts on a new page. */
 }
 
 .epub-cover-badge {
@@ -280,7 +296,6 @@ p {
 .epub-titlepage {
   text-align: center;
   margin-top: 20%;
-  page-break-after: always;
 }
 
 .epub-titlepage-title {
@@ -311,7 +326,6 @@ p {
 .epub-dedication {
   text-align: center;
   margin-top: 30%;
-  page-break-after: always;
 }
 
 .epub-dedication-heading {
@@ -336,7 +350,6 @@ p {
 
 /* Table of Contents */
 .epub-toc-container {
-  page-break-after: always;
 }
 
 .epub-toc-title {
@@ -373,7 +386,6 @@ p {
 .epub-section-divider {
   text-align: center;
   margin-top: 30%;
-  page-break-after: always;
 }
 
 .epub-section-num {
@@ -397,7 +409,6 @@ p {
 
 /* Poem Styling (POETRY INTEGRITY: LINES MUST NEVER COLLAPSE) */
 .epub-poem-page {
-  page-break-after: always;
 }
 
 .epub-poem-header {
@@ -667,7 +678,7 @@ ${bodyHtml}
     return `<?xml version="1.0" encoding="UTF-8"?>
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1" xml:lang="hi">
   <head>
-    <meta name="dtb:uid" content="urn:uuid:${xmlAttributeEscape(bookId)}"/>
+    <meta name="dtb:uid" content="urn:kavyavault:${xmlAttributeEscape(bookId)}"/>
     <meta name="dtb:depth" content="2"/>
     <meta name="dtb:totalPageCount" content="0"/>
     <meta name="dtb:maxPageNumber" content="0"/>
@@ -699,7 +710,7 @@ ${bodyHtml}
     return `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="pub-id" version="3.0" xml:lang="hi">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-    <dc:identifier id="pub-id">urn:uuid:${xmlEscape(bookId)}</dc:identifier>
+    <dc:identifier id="pub-id">urn:kavyavault:${xmlEscape(bookId)}</dc:identifier>
     <dc:title>${xmlEscape(title)}</dc:title>
     <dc:creator>${xmlEscape(author)}</dc:creator>
     <dc:language>hi</dc:language>

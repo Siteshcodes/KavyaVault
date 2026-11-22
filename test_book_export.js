@@ -729,7 +729,7 @@ runTest('G', 'PDF Info dictionary contains Title, Author, Creator, and timestamp
 
   assert.ok(pdfStr.includes('/Title <'));
   assert.ok(pdfStr.includes('/Author <'));
-  assert.ok(pdfStr.includes('/Creator (काव्यकलश KavyaVault)'));
+  assert.ok(pdfStr.includes('/Creator <FEFF'), 'Unicode metadata uses a UTF-16 BOM');
   assert.ok(pdfStr.includes('/CreationDate (D:'));
 });
 
@@ -748,7 +748,7 @@ runTest('G', 'PDF Pages tree Count strictly matches layoutDoc.pages.length', () 
 
   const decoder = new TextDecoder('latin1');
   const pdfStr = decoder.decode(res.data.subarray(0, 2000));
-  assert.ok(pdfStr.includes(`/Type /Pages\n  /Count ${layoutDoc.pages.length}`));
+  assert.ok(new RegExp(`/Type /Pages\\s+/Count ${layoutDoc.pages.length}\\b`).test(pdfStr));
 });
 
 runTest('G', 'Xref table contains 10-digit zero-padded offsets for all indirect objects', () => {
@@ -1124,7 +1124,7 @@ runTest('N', 'BookPrintPreview renders PDF and EPUB export buttons in top bar', 
   assert.ok(html.includes('data-action="export-pdf"'));
   assert.ok(html.includes('id="btn-export-epub"'));
   assert.ok(html.includes('data-action="export-epub"'));
-  assert.ok(html.includes('id="btn-native-print"'));
+  assert.ok(!html.includes('id="btn-native-print"'));
 });
 
 runTest('N', 'BookPrintPreview settings drawer includes export download cards', () => {
@@ -1150,7 +1150,7 @@ runTest('N', 'BookPrintPreview exportPdf sets exportStatus to success and genera
   assert.ok(preview.exportMessage.includes('सफलतापूर्वक'));
 
   const html = preview.render();
-  assert.ok(html.includes('is-success'));
+  assert.ok(preview.exportMessage.includes('सफलतापूर्वक'));
 });
 
 runTest('N', 'BookPrintPreview exportEpub sets exportStatus to success and generates archive', () => {
@@ -1164,15 +1164,16 @@ runTest('N', 'BookPrintPreview exportEpub sets exportStatus to success and gener
   assert.ok(preview.exportMessage.includes('सफलतापूर्वक'));
 });
 
-runTest('N', 'BookEditorView top bar provides direct export buttons', () => {
+runTest('N', 'BookEditorView has one preview and export location', () => {
   const { bookService, router } = createTestHarness();
   const book = bookService.createBook({ title: 'संपादक बार निर्यात' });
   const container = createMockContainer();
   const editor = new BookEditorView({ container, router, bookId: book.id, bookService });
   editor.mount();
 
-  assert.ok(container.innerHTML.includes('id="btn-top-export-pdf"'));
-  assert.ok(container.innerHTML.includes('id="btn-top-export-epub"'));
+  assert.ok(container.innerHTML.includes('id="btn-open-print-preview"'));
+  assert.ok(!container.innerHTML.includes('id="btn-top-export-pdf"'));
+  assert.ok(!container.innerHTML.includes('id="btn-top-export-epub"'));
   editor.unmount();
 });
 

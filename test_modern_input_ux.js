@@ -349,7 +349,7 @@ runTest('ManuscriptCapture in scanToPoemMode provides return link to /input', ()
   assert(html.includes(ROUTES.INPUT_MODES), 'Back href targets /input');
 });
 
-runTest('PoetryEditor provides return link to /input ("माध्यम")', () => {
+runTest('PoetryEditor keeps input modes secondary', () => {
   const storage = new LocalStorageAdapter(new InMemoryStorage());
   const poemRepo = new PoemRepository(storage);
   const container = new DOMMockElement('div');
@@ -361,8 +361,7 @@ runTest('PoetryEditor provides return link to /input ("माध्यम")', ()
   });
   const html = editor.render();
 
-  assert(html.includes('/input'), 'Quick access link to /input exists in editor');
-  assert(html.includes('माध्यम'), 'Button labeled "माध्यम"');
+  assert(!html.includes('href="/input"'), 'No input mode link in primary editor');
 });
 
 // Group 3: Lifecycle Cleanup on Screen Exit
@@ -435,11 +434,11 @@ runTest('InputModeSelector displays technically accurate privacy reassurance', (
 
   const html = container.innerHTML;
   assert(
-    html.includes('काव्यकलश इस सुविधा के लिए किसी बाहरी AI या क्लाउड API को सीधे कॉल नहीं करता।'),
+    html.includes('काव्यकलश किसी बाहरी AI या क्लाउड API को सीधे कॉल नहीं करता।'),
     'Privacy statement uses truthful phrasing without claiming unprovable absolutes'
   );
   assert(
-    html.includes('आपकी रचनाएँ, पांडुलिपियाँ एवं ध्वनि इनपुट केवल आपके अपने उपकरण में सुरक्षित रहते हैं।'),
+    html.includes('आपकी सहेजी गई रचनाएँ और पांडुलिपियाँ इस ब्राउज़र में रहती हैं।'),
     'Affirms local-first storage'
   );
 });
@@ -451,7 +450,7 @@ runTest('SpeakInputView displays technically accurate privacy note', () => {
 
   const html = container.innerHTML;
   assert(
-    html.includes('काव्यकलश इस सुविधा के लिए किसी बाहरी AI या क्लाउड API को सीधे कॉल नहीं करता।'),
+    html.includes('काव्यकलश किसी बाहरी AI या क्लाउड API को सीधे कॉल नहीं करता।'),
     'Speak privacy note uses truthful wording'
   );
   assert(

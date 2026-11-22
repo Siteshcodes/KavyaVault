@@ -5,7 +5,7 @@
  * Privacy Guarantees:
  * - Uses ONLY browser-native Web Speech API (SpeechRecognition / webkitSpeechRecognition).
  * - Zero third-party cloud speech APIs (no OpenAI, Azure, AWS, Google Cloud endpoints).
- * - Zero telemetry or transmission of user voice or poem content.
+ * - No app telemetry. Browser-managed speech may send audio to a recognition service.
  * - Safe detection of browser support with graceful fallback.
  */
 

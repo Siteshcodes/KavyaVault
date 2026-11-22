@@ -323,7 +323,7 @@ export class LibraryView {
     const headerHtml = renderPageHeader({
       title: 'मेरी कविताएँ',
       subtitle: 'साहित्यिक धरोहर व पुस्तकालय',
-      description: 'रस, विधा, संग्रह, समयरेखा और टैग के आधार पर आपकी सम्पूर्ण काव्य धरोहर।',
+      description: 'अपनी कविताएँ पढ़ें और संग्रह में रखें।',
       action: `
         <a href="${ROUTES.NEW_POEM}" data-link class="btn-primary-action" aria-label="नई कविता लिखें">
           ${getIconSvg('quill', 'nav-icon')}

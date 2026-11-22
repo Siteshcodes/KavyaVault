@@ -16,14 +16,10 @@ import { getIconSvg } from '../navigation/icons.js';
 
 export const LIBRARY_SECTIONS = [
   { id: 'all', label: 'सभी कविताएँ', icon: 'book' },
-  { id: 'favorites', label: 'पसंदीदा', icon: 'heart' },
-  { id: 'recent', label: 'हाल में पढ़ी गई', icon: 'clock' },
   { id: 'collections', label: 'संग्रह', icon: 'collection' },
-  { id: 'categories', label: 'श्रेणियाँ', icon: 'folder' },
-  { id: 'tags', label: 'टैग', icon: 'tag' },
-  { id: 'archived', label: 'अभिलेख', icon: 'archive' },
-  { id: 'timeline', label: 'समयरेखा', icon: 'timeline' }
+  { id: 'archived', label: 'अभिलेख', icon: 'archive' }
 ];
+const visibleSections = new Set(LIBRARY_SECTIONS.map(section => section.id));
 
 export const SORT_OPTIONS = [
   { value: 'updatedAt:desc', label: 'नवीनतम अद्यतन' },
@@ -66,7 +62,7 @@ export function renderLibraryToolbar({
   const tabsHtml = showFilters
     ? `
       <nav class="library-sections-nav" role="tablist" aria-label="पुस्तकालय विभाग">
-        ${LIBRARY_SECTIONS.map(sec => {
+        ${(visibleSections.has(currentSection) ? LIBRARY_SECTIONS : [...LIBRARY_SECTIONS, { id: currentSection, label: 'पुराना दृश्य', icon: 'book' }]).map(sec => {
           const isActive = currentSection === sec.id;
           return `
             <button

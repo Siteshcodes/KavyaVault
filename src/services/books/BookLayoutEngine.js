@@ -82,35 +82,33 @@ export class BookLayoutEngine {
     const pageHeightPt = heightMm * MM_TO_PT;
     const pageWidthPt = widthMm * MM_TO_PT;
 
-    const topMarginPt = config.margins.top * MM_TO_PT;
+    const topMarginPt = Math.max(52, config.margins.top * MM_TO_PT);
     const bottomMarginPt = config.margins.bottom * MM_TO_PT;
     const leftMarginPt = config.margins.left * MM_TO_PT;
     const rightMarginPt = config.margins.right * MM_TO_PT;
 
     // Running header/footer reserve (~36pt total)
     const headerFooterReservePt = 36;
-    const availableHeightPt = Math.max(120, pageHeightPt - (topMarginPt + bottomMarginPt) - headerFooterReservePt);
+    const availableHeightPt = pageHeightPt - (topMarginPt + bottomMarginPt) - headerFooterReservePt;
     const availableWidthPt = Math.max(100, pageWidthPt - (leftMarginPt + rightMarginPt));
 
     const linePitchPt = config.bodyFontSize * config.lineHeight;
 
     // Total lines that fit on a standard content page
-    const linesPerFullPage = Math.max(8, Math.floor(availableHeightPt / linePitchPt));
-
-    // Space occupied by poem title, author, and top ornamental rule
-    const titleOverheadPt = (config.titleFontSize * 1.5) + (config.showAuthor ? config.bodyFontSize * 1.3 : 0) + config.stanzaSpacing;
-    const titleLinesOverhead = Math.ceil(titleOverheadPt / linePitchPt);
+    const linesPerFullPage = Math.max(1, Math.floor(availableHeightPt / linePitchPt));
 
     // Available lines on first page of a poem
-    const linesOnFirstPoemPage = Math.max(5, linesPerFullPage - titleLinesOverhead);
+    const firstTop = 15 + config.titleFontSize * 1.5 + (config.showAuthor ? 18 : 0) + config.stanzaSpacing;
+    const capacity = overhead => Math.floor((pageHeightPt - topMarginPt - bottomMarginPt - overhead - config.bodyFontSize * 1.4) / linePitchPt) + 1;
+    const linesOnFirstPoemPage = capacity(firstTop);
+    if (linesOnFirstPoemPage < 1) throw new StorageError('इस पृष्ठ पर पाठ के लिए पर्याप्त स्थान नहीं है। हाशिये या फ़ॉन्ट आकार घटाएँ।', StorageErrorCode.VALIDATION_ERROR);
 
     // Available lines on poem continuation pages (with minimal "(क्रमशः)" continuation marker)
-    const continuationLinesOverhead = Math.ceil((config.bodyFontSize * 1.5) / linePitchPt);
-    const linesOnContinuationPage = Math.max(6, linesPerFullPage - continuationLinesOverhead);
+    const linesOnContinuationPage = Math.max(1, capacity(39));
 
     // TOC items per page capacity
     const tocItemHeightPt = 22;
-    const itemsPerTocPage = Math.max(6, Math.floor((availableHeightPt - 40) / tocItemHeightPt));
+    const itemsPerTocPage = Math.max(1, Math.floor((availableHeightPt - 40) / tocItemHeightPt));
 
     return {
       widthMm,
@@ -398,84 +396,30 @@ export class BookLayoutEngine {
    * @returns {Array<{ stanzas: Array<Array<string>> }>} Array of pages with stanzas
    */
   static paginatePoemStanzas(stanzas, capacities, config) {
-    if (!Array.isArray(stanzas) || stanzas.length === 0) {
-      // Empty poem yields a single empty poem page
-      return [{ stanzas: [[]] }];
-    }
-
+    if (!Array.isArray(stanzas) || !stanzas.length) return [{ stanzas: [[]] }];
     const pages = [];
-    let currentCapacity = capacities.linesOnFirstPoemPage;
-    let currentStanzas = [];
-    let linesOnCurrentPage = 0;
-
-    for (let sIdx = 0; sIdx < stanzas.length; sIdx++) {
-      const stanza = stanzas[sIdx];
-      const stanzaLineCount = stanza.length;
-      // Stanza separation gap equivalent to ~1 line
-      const stanzaGapLines = currentStanzas.length > 0 ? 1 : 0;
-      const neededLines = stanzaLineCount + stanzaGapLines;
-
-      if (linesOnCurrentPage + neededLines <= currentCapacity) {
-        // Fits completely on the current page
-        currentStanzas.push(stanza);
-        linesOnCurrentPage += neededLines;
-      } else {
-        // Stanza exceeds remaining capacity on this page
-        const remainingLines = currentCapacity - (linesOnCurrentPage + stanzaGapLines);
-
-        if (config.widowOrphanControl && remainingLines >= 2 && stanzaLineCount - remainingLines >= 2) {
-          // Split stanza between pages safely without leaving orphan or widow
-          const firstPart = stanza.slice(0, remainingLines);
-          const secondPart = stanza.slice(remainingLines);
-
-          currentStanzas.push(firstPart);
-          pages.push({ stanzas: currentStanzas });
-
-          // Start continuation page
-          currentCapacity = capacities.linesOnContinuationPage;
-          currentStanzas = [secondPart];
-          linesOnCurrentPage = secondPart.length;
-        } else if (currentStanzas.length > 0) {
-          // Push entire stanza to a fresh continuation page
-          pages.push({ stanzas: currentStanzas });
-          currentCapacity = capacities.linesOnContinuationPage;
-          currentStanzas = [];
-          linesOnCurrentPage = 0;
-
-          // Check if stanza itself is longer than an entire continuation page
-          if (stanzaLineCount > currentCapacity) {
-            // Split long stanza across continuation pages
-            let start = 0;
-            while (start < stanzaLineCount) {
-              const chunk = stanza.slice(start, start + currentCapacity);
-              if (chunk.length < stanzaLineCount) {
-                pages.push({ stanzas: [chunk] });
-              } else {
-                currentStanzas = [chunk];
-                linesOnCurrentPage = chunk.length;
-              }
-              start += currentCapacity;
-            }
-          } else {
-            currentStanzas.push(stanza);
-            linesOnCurrentPage = stanzaLineCount;
-          }
-        } else {
-          // If first stanza of page is larger than capacity, split it
-          const chunk = stanza.slice(0, currentCapacity);
-          const rest = stanza.slice(currentCapacity);
-          pages.push({ stanzas: [chunk] });
-          currentCapacity = capacities.linesOnContinuationPage;
-          currentStanzas = [rest];
-          linesOnCurrentPage = rest.length;
-        }
+    let current = [], used = 0, capacity = capacities.linesOnFirstPoemPage;
+    const gap = Math.ceil(config.stanzaSpacing / capacities.linePitchPt) || 0;
+    const flush = () => {
+      if (current.length) pages.push({ stanzas: current });
+      current = []; used = 0; capacity = capacities.linesOnContinuationPage;
+    };
+    for (const stanza of stanzas) {
+      let offset = 0;
+      while (offset < stanza.length) {
+        const space = current.length ? gap : 0;
+        const free = capacity - used - space;
+        const remaining = stanza.length - offset;
+        if (free <= 0 || (current.length && remaining > free && config.widowOrphanControl && free < 2)) { flush(); continue; }
+        if (current.length && remaining > free && remaining <= capacities.linesOnContinuationPage && (!config.widowOrphanControl || remaining - free < 2)) { flush(); continue; }
+        let count = Math.min(free, remaining);
+        if (config.widowOrphanControl && remaining - count === 1 && count > 2) count--;
+        current.push(stanza.slice(offset, offset + count));
+        used += space + count; offset += count;
+        if (offset < stanza.length) flush();
       }
     }
-
-    if (currentStanzas.length > 0) {
-      pages.push({ stanzas: currentStanzas });
-    }
-
-    return pages.length > 0 ? pages : [{ stanzas: [[]] }];
+    flush();
+    return pages.length ? pages : [{ stanzas: [[]] }];
   }
 }

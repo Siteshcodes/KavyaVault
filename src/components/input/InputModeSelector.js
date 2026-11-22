@@ -101,9 +101,9 @@ export class InputModeSelector {
         <div class="input-privacy-banner" role="region" aria-label="गोपनीयता आश्वासन">
           <span class="privacy-banner-icon" aria-hidden="true">🔐</span>
           <div class="privacy-banner-content">
-            <span class="privacy-banner-title">स्थानीय एवं एकांत रचना (100% Local Privacy)</span>
+            <span class="privacy-banner-title">स्थानीय लेखन और संग्रह</span>
             <p class="privacy-banner-text">
-              काव्यकलश इस सुविधा के लिए किसी बाहरी AI या क्लाउड API को सीधे कॉल नहीं करता। आपकी रचनाएँ, पांडुलिपियाँ एवं ध्वनि इनपुट केवल आपके अपने उपकरण में सुरक्षित रहते हैं। कोई भी डेटा किसी बाह्य सर्वर, क्लाउड या एआई मॉडल को नहीं भेजा जाता।
+              आपकी सहेजी गई रचनाएँ और पांडुलिपियाँ इस ब्राउज़र में रहती हैं। वाणी इनपुट ब्राउज़र की सेवा पर निर्भर है और ऑडियो ऑनलाइन भेज सकता है। काव्यकलश किसी बाहरी AI या क्लाउड API को सीधे कॉल नहीं करता।
             </p>
           </div>
         </div>
@@ -159,7 +159,7 @@ export class InputModeSelector {
             </div>
             <h2 class="input-mode-title">बोलें / बोलकर लिखें (Speak)</h2>
             <p class="input-mode-desc">
-              अपनी वाणी में कविता का पाठ करें। ब्राउज़र की स्थानीय वाक्-पहचान द्वारा शब्द सीधे प्रारूप में दर्ज होंगे।
+              अपनी वाणी में कविता का पाठ करें। ब्राउज़र की वाक्-पहचान द्वारा शब्द सीधे प्रारूप में दर्ज होंगे।
             </p>
             <div class="input-mode-action">
               <a href="${ROUTES.INPUT_SPEAK}" data-link class="btn-input-action btn-input-primary" id="btn-mode-speak" aria-label="बोलकर लिखें कक्ष में प्रवेश करें" style="text-decoration: none;">

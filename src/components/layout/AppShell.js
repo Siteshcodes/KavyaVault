@@ -15,10 +15,10 @@ import '../home/home.css';
 import { Navigation } from '../navigation/Navigation.js';
 import { renderPageHeader } from './PageHeader.js';
 import { renderEmptyState } from './EmptyState.js';
-import { renderHomeView } from '../home/HomeView.js';
 import { ROUTES, ROUTE_METADATA } from '../../data/navigation.js';
 import { getIconSvg } from '../navigation/icons.js';
 import { renderThemeSelector, attachThemeSelectorEvents } from '../settings/ThemeSelector.js';
+import { renderBackupPanel, attachBackupEvents } from '../settings/BackupPanel.js';
 import { renderTypographyTest } from '../typography/TypographyTest.js';
 import { renderPersistenceTest, runPersistenceDiagnostic } from '../persistence/PersistenceTest.js';
 import { LibraryView } from '../library/LibraryView.js';
@@ -189,9 +189,9 @@ export class AppShell {
     const [pathOnly, searchPart] = (currentPath || '').split('?');
     const cleanPath = pathOnly || '/';
 
-    // 1. Home / Foyer Screen
+    // Open the poetry library by default.
     if (cleanPath === ROUTES.HOME) {
-      this.contentContainer.innerHTML = renderHomeView();
+      this.router.navigate(ROUTES.POEMS, true);
       return;
     }
 
@@ -419,10 +419,19 @@ export class AppShell {
         <div class="standard-page-view">
           ${headerHtml}
           ${renderThemeSelector()}
+          ${renderBackupPanel()}
+          <section class="settings-archive-links" aria-label="पुराने अभिलेख" style="margin-top: 2rem;">
+            <h2>पुराने अभिलेख</h2>
+            <p>पहले से सहेजी गई सामग्री यहाँ उपलब्ध है।</p>
+            <a href="${ROUTES.MANUSCRIPTS}" data-link>पांडुलिपियाँ</a> ·
+            <a href="${ROUTES.ARCHIVE}" data-link>संग्रहित कविताएँ</a> ·
+            <a href="${ROUTES.COLLECTIONS}" data-link>संग्रह</a>
+          </section>
         </div>
       `;
 
       attachThemeSelectorEvents(this.contentContainer);
+      attachBackupEvents(this.contentContainer);
       return;
     }
 

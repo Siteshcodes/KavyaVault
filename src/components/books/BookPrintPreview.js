@@ -397,6 +397,8 @@ export class BookPrintPreview {
                   <span>PDF निर्यात</span>
                 </button>
 
+                <details class="print-secondary-export">
+                  <summary>अन्य प्रारूप</summary>
                 <button
                   type="button"
                   class="btn-secondary-action print-export-btn"
@@ -408,31 +410,10 @@ export class BookPrintPreview {
                   ${getIconSvg('download', 'nav-icon')}
                   <span>EPUB निर्यात</span>
                 </button>
+                </details>
 
-                <button
-                  type="button"
-                  class="btn-secondary-action print-print-btn"
-                  data-action="native-print"
-                  id="btn-native-print"
-                  aria-label="ब्राउज़र द्वारा मुद्रण संवाद खोलें"
-                  title="मुद्रण (Print)"
-                >
-                  ${getIconSvg('quill', 'nav-icon')}
-                  <span>मुद्रण</span>
-                </button>
               </div>
 
-              <button
-                type="button"
-                class="btn-secondary-action ${this.showSettings ? 'is-active' : ''}"
-                data-action="toggle-preview-settings"
-                id="btn-toggle-layout-settings"
-                aria-label="मुद्रण व लेआउट विन्यास खोलें"
-                title="लेआउट विन्यास"
-              >
-                ${getIconSvg('settings', 'nav-icon')}
-                <span>विन्यास</span>
-              </button>
 
               <button
                 type="button"
@@ -473,7 +454,7 @@ export class BookPrintPreview {
             </main>
 
             <!-- Settings Drawer (Right Side) -->
-            ${this.renderSettingsDrawer()}
+            ${this.showSettings ? this.renderSettingsDrawer() : ''}
           </div>
 
           <!-- Bottom Control Toolbar -->
@@ -835,13 +816,14 @@ export class BookPrintPreview {
 
           <!-- Font Family -->
           <div class="print-setting-group">
-            <label for="cfg-body-font" class="print-setting-label">देवनागरी फ़ॉन्ट (Typeface)</label>
+            <label for="cfg-body-font" class="print-setting-label">पूर्वावलोकन का देवनागरी फ़ॉन्ट (Typeface)</label>
             <select id="cfg-body-font" class="print-select" data-action="update-config-body-font">
               <option value="${BODY_FONT.MARTEL}" ${this.layoutConfig.bodyFont === BODY_FONT.MARTEL ? 'selected' : ''}>मार्टेल (Martel — क्लासिक पुस्तक शैली)</option>
               <option value="${BODY_FONT.ROZHA_ONE}" ${this.layoutConfig.bodyFont === BODY_FONT.ROZHA_ONE ? 'selected' : ''}>रोझा वन (Rozha One — सुशोभित)</option>
               <option value="${BODY_FONT.YATRA_ONE}" ${this.layoutConfig.bodyFont === BODY_FONT.YATRA_ONE ? 'selected' : ''}>यात्रा वन (Yatra One — काष्ठ ब्लॉक)</option>
               <option value="${BODY_FONT.MUKTA}" ${this.layoutConfig.bodyFont === BODY_FONT.MUKTA ? 'selected' : ''}>मुक्ता (Mukta — समकालीन सरल)</option>
             </select>
+            <p class="print-setting-hint">PDF और EPUB में स्थानीय Noto फ़ॉन्ट सम्मिलित होते हैं। पूरी पुस्तक छापने के लिए डाउनलोड किया गया PDF खोलें।</p>
           </div>
 
           <!-- Font Size -->
@@ -957,7 +939,7 @@ export class BookPrintPreview {
           <!-- Drawer Export Section -->
           <div class="print-setting-group print-drawer-export-group">
             <span class="print-setting-label">स्थानीय पुस्तक निर्यात (Export)</span>
-            <p class="print-setting-hint">संपूर्ण साहित्यिक संकलन, छंद संरचना और देवनागरी मुद्रण कला के साथ डाउनलोड करें।</p>
+            <p class="print-setting-hint">पूरी पुस्तक छापने के लिए PDF चुनें। PDF से हिन्दी पाठ कॉपी करने पर कुछ पाठकों में मात्राएँ बदल या दोहराई जा सकती हैं; अक्षरशः पाठ के लिए EPUB या मूल रचना इस्तेमाल करें।</p>
 
             ${this.exportStatus ? `
               <div class="export-status-banner is-${this.exportStatus}" role="status" aria-live="polite">

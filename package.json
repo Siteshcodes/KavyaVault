@@ -6,11 +6,18 @@
   "description": "काव्यकलश (KavyaVault) — एक एकांत साहित्यिक धरोहर व डिजिटल काव्य पुस्तकालय",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/build-offline.mjs",
     "preview": "vite preview",
-    "test": "node test_persistence.js && node test_library.js && node test_editor.js && node test_reader.js && node test_search.js && node test_favorites_archive.js && node test_collections.js && node test_hardening.js && node test_manuscripts.js && node test_manuscripts_capture.js && node test_manuscript_transform.js && node test_manuscript_gallery.js && node test_manuscript_poem_linking.js && node test_manuscript_transcription.js && node test_manuscript_versioning.js && node test_manuscript_metadata.js && node test_modern_input.js && node test_scan_to_poem.js && node test_speak_to_poem.js && node test_modern_input_ux.js && node test_ai_analysis_foundation.js && node test_ai_analysis_ui.js && node test_ai_analysis_review.js && node test_ai_provider_hardening.js && node test_intelligent_search_foundation.js && node test_local_semantic_representation.js && node test_vector_index.js && node test_hybrid_search.js && node test_library_organization.js && node test_library_ui.js && node test_library_ux.js && node test_library_integrity.js && node test_book_project.js && node test_book_builder_ui.js && node test_book_layout_print_preview.js && node test_book_export.js"
+    "test": "node test_persistence.js && node test_library.js && node test_editor.js && node test_reader.js && node test_search.js && node test_favorites_archive.js && node test_collections.js && node test_hardening.js && node test_manuscripts.js && node test_manuscripts_capture.js && node test_manuscript_transform.js && node test_manuscript_gallery.js && node test_manuscript_poem_linking.js && node test_manuscript_transcription.js && node test_manuscript_versioning.js && node test_manuscript_metadata.js && node test_modern_input.js && node test_scan_to_poem.js && node test_speak_to_poem.js && node test_modern_input_ux.js && node test_ai_analysis_foundation.js && node test_ai_analysis_ui.js && node test_ai_analysis_review.js && node test_ai_provider_hardening.js && node test_intelligent_search_foundation.js && node test_local_semantic_representation.js && node test_vector_index.js && node test_hybrid_search.js && node test_library_organization.js && node test_library_ui.js && node test_library_ux.js && node test_library_integrity.js && node test_book_project.js && node test_book_builder_ui.js && node test_book_layout_print_preview.js && node test_book_export.js && node --test test_release.js",
+    "fonts:bundle": "node scripts/bundle-fonts.mjs",
+    "verify:exports": "node scripts/verify-exports.mjs",
+    "release": "npm run build && node scripts/package-release.mjs"
   },
   "devDependencies": {
+    "pdf-lib": "1.17.1",
     "vite": "^6.2.0"
+  },
+  "dependencies": {
+    "fontkit": "2.0.4"
   }
 }
