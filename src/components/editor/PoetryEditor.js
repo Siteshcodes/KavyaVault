@@ -244,10 +244,6 @@ export class PoetryEditor {
               </div>
             ` : ''}
 
-            <!-- Quick Access to Input Modes -->
-            <a href="/input" data-link class="btn-input-modes-nav" aria-label="अन्य इनपुट माध्यम चुनें" title="टाइप, स्कैन व बोलकर लिखें">
-              <span>माध्यम</span>
-            </a>
           </div>
 
           <div class="editor-top-right">
@@ -317,8 +313,9 @@ export class PoetryEditor {
           </div>
 
           <!-- Tags Input -->
-          <div class="editor-tags-wrap">
-            <label for="editor-tags" class="editor-tags-label">टैग (Tags):</label>
+          <details class="editor-tags-wrap">
+            <summary>अतिरिक्त विवरण</summary>
+            <label for="editor-tags" class="editor-tags-label">टैग (वैकल्पिक):</label>
             <input
               type="text"
               id="editor-tags"
@@ -327,7 +324,7 @@ export class PoetryEditor {
               value="${this.escapeHtml(this.tags)}"
               autocomplete="off"
             />
-          </div>
+          </details>
         </main>
 
         <!-- Bottom Footer: Live Metrics & Keyboard Hint -->

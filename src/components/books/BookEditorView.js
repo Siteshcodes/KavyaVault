@@ -249,40 +249,6 @@ export class BookEditorView {
             <button
               type="button"
               class="btn-secondary-action"
-              data-action="export-pdf"
-              id="btn-top-export-pdf"
-              ${this.exportBusy ? 'disabled aria-busy="true"' : ''}
-              aria-label="पुस्तक को PDF प्रारूप में निर्यात करें"
-              title="PDF निर्यात"
-            >
-              ${getIconSvg('download', 'nav-icon')}
-              <span>PDF</span>
-            </button>
-            <button
-              type="button"
-              class="btn-secondary-action"
-              data-action="export-epub"
-              id="btn-top-export-epub"
-              ${this.exportBusy ? 'disabled aria-busy="true"' : ''}
-              aria-label="पुस्तक को EPUB प्रारूप में निर्यात करें"
-              title="EPUB निर्यात"
-            >
-              ${getIconSvg('download', 'nav-icon')}
-              <span>EPUB</span>
-            </button>
-            <button
-              type="button"
-              class="btn-secondary-action"
-              data-action="open-preview"
-              id="btn-open-preview"
-              aria-label="पुस्तक की संरचना का पूर्वावलोकन देखें"
-            >
-              ${getIconSvg('book', 'nav-icon')}
-              <span>संरचना</span>
-            </button>
-            <button
-              type="button"
-              class="btn-secondary-action"
               data-action="open-metadata-modal"
               id="btn-edit-metadata"
               aria-label="पुस्तक विवरण संपादित करें"

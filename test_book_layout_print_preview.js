@@ -745,7 +745,7 @@ runTest('Q', 'BookPrintPreview instantiates and renders centered page canvas wit
   assert.ok(html.includes('btn-next-page'));
   assert.ok(html.includes('btn-zoom-in'));
   assert.ok(html.includes('btn-zoom-out'));
-  assert.ok(html.includes('btn-toggle-layout-settings'));
+  assert.ok(!html.includes('btn-toggle-layout-settings'));
 });
 
 runTest('Q', 'Navigation controls advance, reverse, and jump to specific pages', () => {

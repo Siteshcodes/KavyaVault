@@ -1439,7 +1439,7 @@ runTest('O', 'Action buttons have meaningful Hindi aria-labels for screen reader
   const editor = new BookEditorView({ container, router, bookId: book.id, bookService, poemRepo });
   editor.mount();
 
-  assert.ok(container.innerHTML.includes('aria-label="पुस्तक की संरचना का पूर्वावलोकन देखें"'));
+  assert.ok(container.innerHTML.includes('aria-label="पुस्तक का मुद्रण पूर्वावलोकन देखें"'));
   assert.ok(container.innerHTML.includes('aria-label="पुस्तक विवरण संपादित करें"'));
   assert.ok(container.innerHTML.includes('aria-label="नया खण्ड जोड़ें"'));
   assert.ok(container.innerHTML.includes('aria-label="इस खण्ड में रचनाएँ जोड़ें"'));

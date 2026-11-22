@@ -397,6 +397,8 @@ export class BookPrintPreview {
                   <span>PDF निर्यात</span>
                 </button>
 
+                <details class="print-secondary-export">
+                  <summary>अन्य प्रारूप</summary>
                 <button
                   type="button"
                   class="btn-secondary-action print-export-btn"
@@ -408,31 +410,10 @@ export class BookPrintPreview {
                   ${getIconSvg('download', 'nav-icon')}
                   <span>EPUB निर्यात</span>
                 </button>
+                </details>
 
-                <button
-                  type="button"
-                  class="btn-secondary-action print-print-btn"
-                  data-action="native-print"
-                  id="btn-native-print"
-                  aria-label="वर्तमान पूर्वावलोकन पृष्ठ मुद्रित करें"
-                  title="वर्तमान पृष्ठ मुद्रण (Print)"
-                >
-                  ${getIconSvg('quill', 'nav-icon')}
-                  <span>यह पृष्ठ</span>
-                </button>
               </div>
 
-              <button
-                type="button"
-                class="btn-secondary-action ${this.showSettings ? 'is-active' : ''}"
-                data-action="toggle-preview-settings"
-                id="btn-toggle-layout-settings"
-                aria-label="मुद्रण व लेआउट विन्यास खोलें"
-                title="लेआउट विन्यास"
-              >
-                ${getIconSvg('settings', 'nav-icon')}
-                <span>विन्यास</span>
-              </button>
 
               <button
                 type="button"
@@ -473,7 +454,7 @@ export class BookPrintPreview {
             </main>
 
             <!-- Settings Drawer (Right Side) -->
-            ${this.renderSettingsDrawer()}
+            ${this.showSettings ? this.renderSettingsDrawer() : ''}
           </div>
 
           <!-- Bottom Control Toolbar -->

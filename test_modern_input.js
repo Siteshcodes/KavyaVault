@@ -593,13 +593,12 @@ async function runModernInputTests() {
     assert(containerSpeak.innerHTML.includes('🎙️'), 'Must render microphone emoji');
   });
 
-  test('PoetryEditor renders quick access link to /input', () => {
+  test('PoetryEditor keeps advanced input modes out of the writing canvas', () => {
     const { poemRepo, router } = createTestEnvironment();
     const { container } = createEditorMockContainer();
     const editor = new PoetryEditor({ container, router, repository: poemRepo });
     editor.mount();
-    assert(container.innerHTML.includes('href="/input"'), 'Must contain link to /input');
-    assert(container.innerHTML.includes('btn-input-modes-nav'), 'Must contain btn-input-modes-nav class');
+    assert(!container.innerHTML.includes('href="/input"'), 'Input modes should be secondary');
   });
 
   test('PoetryEditor autosave preserves source, manuscriptId, and inputMetadata', () => {

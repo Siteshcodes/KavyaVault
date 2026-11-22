@@ -229,9 +229,9 @@ async function runLibraryUITests() {
     const view = new LibraryView(container, mockRouter, 'all', { libraryService: service, poemRepo, collectionRepo: colRepo });
     view.mount();
 
-    // 1. Renders 8 section tabs
+    // 1. Renders primary section tabs
     const html = container.innerHTML;
-    assert.strictEqual(LIBRARY_SECTIONS.length, 8, 'Should define 8 library sections');
+    assert.strictEqual(LIBRARY_SECTIONS.length, 3, 'Should define 3 primary library sections');
     LIBRARY_SECTIONS.forEach(sec => {
       assert.ok(html.includes(`data-section="${sec.id}"`), `Should render tab for section: ${sec.id}`);
       assert.ok(html.includes(sec.label), `Should render Hindi label for section: ${sec.label}`);
@@ -905,16 +905,16 @@ async function runLibraryUITests() {
       key: 'ArrowRight',
       preventDefault: () => {}
     });
-    // Next tab after 'all' is 'favorites'
-    assert.strictEqual(view.activeSection, 'favorites');
+    // Next primary tab after 'all' is 'collections'
+    assert.strictEqual(view.activeSection, 'collections');
 
     view.handleKeydown({
       target: mockTabElement,
       key: 'End',
       preventDefault: () => {}
     });
-    // End jumps to 'timeline' (index 7)
-    assert.strictEqual(view.activeSection, 'timeline');
+    // End jumps to the last primary tab
+    assert.strictEqual(view.activeSection, 'archived');
 
     view.handleKeydown({
       target: mockTabElement,

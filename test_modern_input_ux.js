@@ -349,7 +349,7 @@ runTest('ManuscriptCapture in scanToPoemMode provides return link to /input', ()
   assert(html.includes(ROUTES.INPUT_MODES), 'Back href targets /input');
 });
 
-runTest('PoetryEditor provides return link to /input ("माध्यम")', () => {
+runTest('PoetryEditor keeps input modes secondary', () => {
   const storage = new LocalStorageAdapter(new InMemoryStorage());
   const poemRepo = new PoemRepository(storage);
   const container = new DOMMockElement('div');
@@ -361,8 +361,7 @@ runTest('PoetryEditor provides return link to /input ("माध्यम")', ()
   });
   const html = editor.render();
 
-  assert(html.includes('/input'), 'Quick access link to /input exists in editor');
-  assert(html.includes('माध्यम'), 'Button labeled "माध्यम"');
+  assert(!html.includes('href="/input"'), 'No input mode link in primary editor');
 });
 
 // Group 3: Lifecycle Cleanup on Screen Exit
