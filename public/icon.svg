@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="काव्यकलश">
+  <rect width="512" height="512" rx="108" fill="#f7f0df"/>
+  <path d="M98 360c52-16 105-16 158 8 53-24 106-24 158-8v65c-52-16-105-16-158 8-53-24-106-24-158-8z" fill="#efe0bd" stroke="#743b30" stroke-width="16" stroke-linejoin="round"/>
+  <path d="M256 368v65" stroke="#743b30" stroke-width="13"/>
+  <path d="M178 131c28 15 50 16 78 3 28 13 50 12 78-3-9 29-11 50-3 74 18 48 11 92-17 124-15 18-35 28-58 28s-43-10-58-28c-28-32-35-76-17-124 8-24 6-45-3-74z" fill="#b96745" stroke="#743b30" stroke-width="15" stroke-linejoin="round"/>
+  <path d="M166 129c55 27 125 27 180 0" fill="none" stroke="#743b30" stroke-width="17" stroke-linecap="round"/>
+  <path d="M221 83c17 11 31 26 35 47 4-21 18-36 35-47" fill="none" stroke="#46705a" stroke-width="15" stroke-linecap="round"/>
+  <path d="M206 220c31 11 69 11 100 0" fill="none" stroke="#efdbb0" stroke-width="12" stroke-linecap="round"/>
+</svg>

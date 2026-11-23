@@ -82,9 +82,9 @@ export function renderHomeView(options = {}) {
   // 1. Welcome Greeting Card
   const welcomeHtml = `
     <section class="foyer-welcome" aria-labelledby="foyer-heading">
-      <h2 id="foyer-heading" class="foyer-greeting">नमस्कार, आपका काव्य-संसार</h2>
+      <h2 id="foyer-heading" class="foyer-greeting">काव्यकलश में आपका स्वागत है</h2>
       <p class="foyer-tagline">
-        शब्दों को सँजोने का अपना शांत, एकांत स्थान। यहाँ आपकी भावनाएँ अमर पंक्तियों में ढलती हैं।
+        साहित्यिक धरोहर व पुस्तकालय · Kavyakalash। शब्दों को सँजोने का अपना शांत स्थान।
       </p>
       <div class="foyer-action-wrap">
         <a

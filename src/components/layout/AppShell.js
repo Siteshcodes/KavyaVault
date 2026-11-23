@@ -1,5 +1,5 @@
 /**
- * काव्यकलश (KavyaVault) — Application Shell Controller (AppShell.js)
+ * काव्यकलश (Kavyakalash) — Application Shell Controller (AppShell.js)
  * Coordinates persistent navigation and route view swapping.
  */
 
@@ -19,7 +19,6 @@ import { ROUTES, ROUTE_METADATA } from '../../data/navigation.js';
 import { getIconSvg } from '../navigation/icons.js';
 import { renderThemeSelector, attachThemeSelectorEvents } from '../settings/ThemeSelector.js';
 import { renderBackupPanel, attachBackupEvents } from '../settings/BackupPanel.js';
-import { renderCloudLibraryPanel, attachCloudLibraryEvents } from '../settings/CloudLibraryPanel.js';
 import { renderTypographyTest } from '../typography/TypographyTest.js';
 import { renderPersistenceTest, runPersistenceDiagnostic } from '../persistence/PersistenceTest.js';
 import { LibraryView } from '../library/LibraryView.js';
@@ -422,7 +421,7 @@ export class AppShell {
         <div class="standard-page-view">
           ${headerHtml}
           ${renderBackupPanel()}
-          ${renderCloudLibraryPanel()}
+          <div id="cloud-panel"><p role="status">Google खाता जाँचा जा रहा है…</p></div>
           ${renderThemeSelector()}
           <details class="backup-panel settings-details" aria-label="पुराने अभिलेख">
             <summary>पुराने अभिलेख</summary>
@@ -443,7 +442,14 @@ export class AppShell {
 
       attachThemeSelectorEvents(this.contentContainer);
       attachBackupEvents(this.contentContainer);
-      this.cloudCleanup = attachCloudLibraryEvents(this.contentContainer);
+      const cloudSlot = this.contentContainer.querySelector('#cloud-panel');
+      import('../settings/CloudLibraryPanel.js').then(({ renderCloudLibraryPanel, attachCloudLibraryEvents }) => {
+        if (!cloudSlot.isConnected) return;
+        cloudSlot.innerHTML = renderCloudLibraryPanel();
+        this.cloudCleanup = attachCloudLibraryEvents(cloudSlot);
+      }).catch(() => {
+        if (cloudSlot.isConnected) cloudSlot.textContent = 'Google सेवा लोड नहीं हुई। स्थानीय लेखन और बैकअप उपलब्ध हैं। / Cloud service could not load; local writing is available.';
+      });
       return;
     }
 
@@ -569,27 +575,27 @@ export class AppShell {
    */
   updateDocumentTitle(path) {
     if (path === ROUTES.MANUSCRIPTS || path === '/manuscripts') {
-      document.title = 'पांडुलिपि वीथिका | काव्यकलश (KavyaVault)';
+      document.title = 'पांडुलिपि वीथिका | काव्यकलश (Kavyakalash)';
       return;
     }
 
     if (path === ROUTES.SEARCH) {
-      document.title = 'काव्य अन्वेषण | काव्यकलश (KavyaVault)';
+      document.title = 'काव्य अन्वेषण | काव्यकलश (Kavyakalash)';
       return;
     }
 
     if (path === ROUTES.FAVORITES) {
-      document.title = 'पसंदीदा रचनाएँ | काव्यकलश (KavyaVault)';
+      document.title = 'पसंदीदा रचनाएँ | काव्यकलश (Kavyakalash)';
       return;
     }
 
     if (path === ROUTES.ARCHIVE) {
-      document.title = 'साहित्यिक अभिलेख | काव्यकलश (KavyaVault)';
+      document.title = 'साहित्यिक अभिलेख | काव्यकलश (Kavyakalash)';
       return;
     }
 
     if (path === ROUTES.COLLECTIONS) {
-      document.title = 'काव्य संग्रह | काव्यकलश (KavyaVault)';
+      document.title = 'काव्य संग्रह | काव्यकलश (Kavyakalash)';
       return;
     }
 
@@ -597,18 +603,18 @@ export class AppShell {
       const collectionId = path.slice('/collections/'.length);
       const collection = collectionRepository.getById(collectionId);
       document.title = collection
-        ? `${collection.name} | काव्यकलश (KavyaVault)`
-        : 'काव्य संग्रह | काव्यकलश (KavyaVault)';
+        ? `${collection.name} | काव्यकलश (Kavyakalash)`
+        : 'काव्य संग्रह | काव्यकलश (Kavyakalash)';
       return;
     }
 
     if (path === ROUTES.NEW_POEM) {
-      document.title = 'नई रचना | काव्यकलश (KavyaVault)';
+      document.title = 'नई रचना | काव्यकलश (Kavyakalash)';
       return;
     }
 
     if (path === ROUTES.MANUSCRIPT_NEW || path === '/manuscripts/import') {
-      document.title = 'पांडुलिपि संरक्षण | काव्यकलश (KavyaVault)';
+      document.title = 'पांडुलिपि संरक्षण | काव्यकलश (Kavyakalash)';
       return;
     }
 
@@ -616,18 +622,18 @@ export class AppShell {
       const msId = path.slice('/manuscripts/'.length);
       const ms = manuscriptRepository.getById(msId);
       document.title = ms
-        ? `${ms.title} | पांडुलिपि | काव्यकलश (KavyaVault)`
-        : 'पांडुलिपि | काव्यकलश (KavyaVault)';
+        ? `${ms.title} | पांडुलिपि | काव्यकलश (Kavyakalash)`
+        : 'पांडुलिपि | काव्यकलश (Kavyakalash)';
       return;
     }
 
     if (path === ROUTES.BOOKS) {
-      document.title = 'काव्य संकलन एवं पुस्तकें | काव्यकलश (KavyaVault)';
+      document.title = 'काव्य संकलन एवं पुस्तकें | काव्यकलश (Kavyakalash)';
       return;
     }
 
     if (path === ROUTES.BOOK_NEW) {
-      document.title = 'नया संकलन | काव्यकलश (KavyaVault)';
+      document.title = 'नया संकलन | काव्यकलश (Kavyakalash)';
       return;
     }
 
@@ -635,8 +641,8 @@ export class AppShell {
       const bookId = path.slice('/books/'.length);
       const book = bookProjectService.getBook(bookId);
       document.title = book
-        ? `${book.title} | पुस्तक संपादन | काव्यकलश (KavyaVault)`
-        : 'पुस्तक संपादन | काव्यकलश (KavyaVault)';
+        ? `${book.title} | पुस्तक संपादन | काव्यकलश (Kavyakalash)`
+        : 'पुस्तक संपादन | काव्यकलश (Kavyakalash)';
       return;
     }
 
@@ -644,8 +650,8 @@ export class AppShell {
       const id = path.slice('/poems/'.length, -'/edit'.length);
       const poem = poemRepository.getById(id);
       document.title = poem
-        ? `संपादित करें: ${poem.title || 'रचना'} | काव्यकलश (KavyaVault)`
-        : 'कविता संपादन | काव्यकलश (KavyaVault)';
+        ? `संपादित करें: ${poem.title || 'रचना'} | काव्यकलश (Kavyakalash)`
+        : 'कविता संपादन | काव्यकलश (Kavyakalash)';
       return;
     }
 
@@ -653,16 +659,16 @@ export class AppShell {
       const id = path.slice('/poems/'.length);
       const poem = poemRepository.getById(id);
       if (poem) {
-        document.title = `${poem.title || 'रचना'} — ${poem.author || 'अज्ञात'} | काव्यकलश (KavyaVault)`;
+        document.title = `${poem.title || 'रचना'} — ${poem.author || 'अज्ञात'} | काव्यकलश (Kavyakalash)`;
         return;
       }
     }
 
     const meta = ROUTE_METADATA[path];
     if (meta) {
-      document.title = `${meta.title} | काव्यकलश (KavyaVault)`;
+      document.title = `${meta.title} | काव्यकलश (Kavyakalash)`;
     } else {
-      document.title = `काव्यकलश (KavyaVault) — साहित्यिक धरोहर`;
+      document.title = `काव्यकलश (Kavyakalash) — साहित्यिक धरोहर`;
     }
   }
 }

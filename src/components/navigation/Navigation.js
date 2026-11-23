@@ -49,7 +49,8 @@ export class Navigation {
       <aside class="nav-sidebar" aria-label="मुख्य डेस्कटॉप साइडबार">
         <a href="${ROUTES.POEMS}" class="sidebar-brand" data-link aria-label="मेरी कविताएँ">
           <span class="brand-title">काव्यकलश</span>
-          <span class="brand-subtitle">KavyaVault</span>
+          <span class="brand-subtitle">Kavyakalash</span>
+          <span class="brand-tagline">साहित्यिक धरोहर व पुस्तकालय</span>
         </a>
 
         <nav aria-label="मुख्य अनुभाग" class="nav-group">
@@ -93,7 +94,7 @@ export class Navigation {
       <header class="mobile-header" aria-label="मोबाइल शीर्ष शीर्षक">
         <a href="${ROUTES.POEMS}" class="mobile-brand" data-link aria-label="मेरी कविताएँ">
           <span class="mobile-brand-title">काव्यकलश</span>
-          <span class="mobile-brand-tagline">साहित्यिक धरोहर</span>
+          <span class="mobile-brand-tagline">साहित्यिक धरोहर व पुस्तकालय</span>
         </a>
         <button
           type="button"

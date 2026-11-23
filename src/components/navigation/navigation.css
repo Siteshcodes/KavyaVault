@@ -54,6 +54,12 @@
   margin-top: var(--space-1);
 }
 
+.brand-tagline {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
 /* Navigation Groups */
 .nav-group {
   display: flex;
