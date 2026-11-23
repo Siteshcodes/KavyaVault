@@ -11,6 +11,7 @@ export const ROUTES = {
   SEARCH: '/search',
   ARCHIVE: '/archive',
   SETTINGS: '/settings',
+  PROFILE: '/profile',
   NEW_POEM: '/poems/new',
   MANUSCRIPTS: '/manuscripts',
   MANUSCRIPT_NEW: '/manuscripts/new',
@@ -97,6 +98,15 @@ export const NAVIGATION_ITEMS = [
     description: 'काव्य संकलन एवं पुस्तक निर्माण कक्ष'
   },
   {
+    id: 'profile',
+    path: ROUTES.PROFILE,
+    label: 'मेरी प्रोफ़ाइल',
+    mobileLabel: 'प्रोफ़ाइल',
+    enLabel: 'My Profile',
+    icon: 'profile',
+    description: 'खाता, परिचय और लेखन आँकड़े'
+  },
+  {
     id: 'settings',
     path: ROUTES.SETTINGS,
     label: 'सेटिंग्स',
@@ -123,7 +133,7 @@ export const DESKTOP_PRIMARY_ITEMS = NAVIGATION_ITEMS.filter(item =>
 );
 
 export const DESKTOP_SECONDARY_ITEMS = NAVIGATION_ITEMS.filter(item => 
-  ['settings'].includes(item.id)
+  ['profile', 'settings'].includes(item.id)
 );
 
 export const DESKTOP_ACTION_ITEM = NAVIGATION_ITEMS.find(item => item.id === 'new-poem');
@@ -138,7 +148,7 @@ export const MOBILE_NAV_ITEMS = [
 
 // Mobile secondary menu items (accessible via mobile header drawer)
 export const MOBILE_DRAWER_ITEMS = NAVIGATION_ITEMS.filter(item => 
-  ['collections', 'manuscripts', 'archive'].includes(item.id)
+  ['collections', 'manuscripts', 'archive', 'profile'].includes(item.id)
 );
 
 // Route metadata for page titles and accessible descriptions
@@ -187,6 +197,11 @@ export const ROUTE_METADATA = {
     title: 'सज्जा व व्यवस्था',
     tagline: 'काव्य पठन मुद्रणकला व विषय-रंग',
     placeholder: 'सज्जा, फॉन्ट एवं व्यक्तिगत प्राथमिकताएं यहाँ प्रबंधित होंगी।'
+  },
+  [ROUTES.PROFILE]: {
+    title: 'मेरी प्रोफ़ाइल',
+    tagline: 'मेरा परिचय और साहित्य',
+    placeholder: 'खाते और लेखन की जानकारी।'
   },
   [ROUTES.NEW_POEM]: {
     title: 'नई रचना',

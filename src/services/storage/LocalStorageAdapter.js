@@ -6,6 +6,7 @@
 import { IStorageAdapter } from './IStorageAdapter.js';
 import { StorageError, StorageErrorCode } from './StorageError.js';
 import { STORAGE_PREFIX } from '../../data/storageKeys.js';
+import { scopedStorage } from './LibraryWorkspace.js';
 
 export class LocalStorageAdapter extends IStorageAdapter {
   constructor(storage = null) {
@@ -20,10 +21,10 @@ export class LocalStorageAdapter extends IStorageAdapter {
   getStorage() {
     if (this.storage) return this.storage;
     if (typeof window !== 'undefined' && window.localStorage) {
-      return window.localStorage;
+      return scopedStorage(window.localStorage);
     }
     if (typeof globalThis !== 'undefined' && globalThis.localStorage) {
-      return globalThis.localStorage;
+      return scopedStorage(globalThis.localStorage);
     }
     return null;
   }

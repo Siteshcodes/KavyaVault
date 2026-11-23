@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer, setDoc, deleteDoc } from 'firebase/firestore';
 import { backupService, MAX_BACKUP_BYTES } from '../storage/BackupService.js';
 import { splitSnapshot, joinSnapshot } from './cloudSnapshotCodec.js';
@@ -18,16 +18,18 @@ const configured = Object.values(config).every(Boolean);
 const app = configured ? initializeApp(config) : null;
 const auth = app ? getAuth(app) : null;
 const database = app ? getFirestore(app) : null;
+export const cloudConnection = { auth, database };
 const provider = new GoogleAuthProvider();
 const manifestRef = uid => doc(database, 'users', uid, 'libraries', 'current');
 const partRef = (uid, version, index) => doc(database, 'users', uid, 'snapshots', version, 'parts', String(index));
 
 export const cloudLibraryService = {
   get configured() { return configured; },
-  observe(callback) { return auth ? onAuthStateChanged(auth, callback) : (queueMicrotask(() => callback(null)), () => {}); },
+  observe(callback, onError) { return auth ? onAuthStateChanged(auth, callback, onError) : (queueMicrotask(() => callback(null)), () => {}); },
   get user() { return auth?.currentUser || null; },
-  async signIn() {
+  async signIn(remember = true) {
     if (!auth) throw new Error('Google सेवा अभी कॉन्फ़िगर नहीं है।');
+    await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
     if (/Android|iPhone|iPad/i.test(navigator.userAgent)) return signInWithRedirect(auth, provider);
     return signInWithPopup(auth, provider);
   },

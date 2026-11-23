@@ -1,0 +1,15 @@
+.welcome-screen { min-height: 100dvh; display: grid; place-items: center; padding: 1.25rem; background: var(--color-bg); }
+.welcome-card { width: min(900px,100%); padding: clamp(1.5rem,5vw,4rem); border: 1px solid var(--color-border); border-radius: 1.5rem; background: var(--color-surface); box-shadow: 0 18px 60px #3e2c1d18; }
+.welcome-kicker { color: var(--color-accent); letter-spacing: .08em; }
+.welcome-card h1 { font-family: var(--font-display); font-size: clamp(2rem,6vw,3.5rem); margin: .5rem 0; }
+.welcome-intro { font-size: 1.1rem; line-height: 1.8; }
+.welcome-options { display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap: 1rem; margin-top: 2rem; }
+.welcome-options section { padding: 1.5rem; border: 1px solid var(--color-border); border-radius: 1rem; display: flex; flex-direction: column; align-items: start; gap: .8rem; }
+.welcome-options h2 { font-family: var(--font-display); margin: 0; }
+.welcome-options p { flex: 1; line-height: 1.7; margin: 0; }
+.welcome-options label { display: flex; align-items: center; gap: .5rem; }
+.welcome-options button { margin-top: .5rem; }
+.migration-overlay { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; background: #17100cb8; }
+.migration-dialog { width: min(650px,100%); max-height: 90dvh; overflow: auto; padding: 2rem; border-radius: 1rem; background: var(--color-surface); color: var(--color-text); display: grid; gap: 1rem; }
+.migration-dialog h2 { margin: 0; font-family: var(--font-display); }
+.migration-actions { display: flex; flex-wrap: wrap; gap: .7rem; }

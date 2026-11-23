@@ -19,6 +19,8 @@ import { ROUTES, ROUTE_METADATA } from '../../data/navigation.js';
 import { getIconSvg } from '../navigation/icons.js';
 import { renderThemeSelector, attachThemeSelectorEvents } from '../settings/ThemeSelector.js';
 import { renderBackupPanel, attachBackupEvents } from '../settings/BackupPanel.js';
+import { cloudLibraryService } from '../../services/cloud/CloudLibraryService.js';
+import { mountProfileView } from '../profile/ProfileView.js';
 import { renderTypographyTest } from '../typography/TypographyTest.js';
 import { renderPersistenceTest, runPersistenceDiagnostic } from '../persistence/PersistenceTest.js';
 import { LibraryView } from '../library/LibraryView.js';
@@ -78,6 +80,7 @@ export class AppShell {
       <div class="app-shell">
         <div id="nav-container"></div>
         <main class="content-area" id="main-content" tabindex="-1">
+          <div id="sync-indicator" class="sync-indicator" role="status" aria-live="polite"></div>
           <div class="container page" id="page-content"></div>
         </main>
       </div>
@@ -120,6 +123,7 @@ export class AppShell {
   renderRoute(currentPath) {
     if (!this.contentContainer) return;
 
+    if (this.profileCleanup) { this.profileCleanup(); this.profileCleanup = null; }
     if (this.cloudCleanup) { this.cloudCleanup(); this.cloudCleanup = null; }
 
     // Cleanup previous view state if active
@@ -408,6 +412,12 @@ export class AppShell {
       return;
     }
 
+    if (currentPath === ROUTES.PROFILE) {
+      if (cloudLibraryService.user) this.profileCleanup = mountProfileView(this.contentContainer, cloudLibraryService.user);
+      else this.contentContainer.innerHTML = '<div class="standard-page-view"><h1>मेरी प्रोफ़ाइल / My Profile</h1><p>अतिथि के रूप में आपकी रचनाएँ इस डिवाइस पर सुरक्षित हैं। Google से प्रवेश करके प्रोफ़ाइल और क्लाउड सिंक उपयोग करें।</p><a href="/settings" data-link class="btn-secondary-action">Google प्रवेश सेटिंग्स / Sign-in settings</a></div>';
+      return;
+    }
+
     // 4. Settings Screen (Theme Switcher & Configuration)
     if (currentPath === ROUTES.SETTINGS) {
       const metadata = ROUTE_METADATA[ROUTES.SETTINGS];
@@ -563,6 +573,7 @@ export class AppShell {
       case ROUTES.MANUSCRIPTS: return 'archive';
       case ROUTES.ARCHIVE: return 'archive';
       case ROUTES.SETTINGS: return 'settings';
+      case ROUTES.PROFILE: return 'profile';
       case ROUTES.NEW_POEM: return 'quill';
       case ROUTES.BOOKS: return 'book';
       case ROUTES.BOOK_NEW: return 'quill';

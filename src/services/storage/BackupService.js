@@ -1,5 +1,6 @@
 import { STORAGE_KEYS } from '../../data/storageKeys.js';
 import { CURRENT_SCHEMA_VERSION } from './MigrationManager.js';
+import { scopedStorage } from './LibraryWorkspace.js';
 
 export const BACKUP_KEYS = Object.freeze(Object.values(STORAGE_KEYS));
 export const RESTORE_JOURNAL = 'kavyavault:restore_journal';
@@ -63,7 +64,7 @@ function validateRecords(records) {
 
 export class BackupService {
   constructor(storage = null) { this.driver = storage; }
-  get storage() { return this.driver || globalThis.localStorage; }
+  get storage() { return this.driver || scopedStorage(globalThis.localStorage); }
   snapshot() { return Object.fromEntries(BACKUP_KEYS.map(key => [key, this.storage.getItem(key)])); }
 
   async exportBackup() {
