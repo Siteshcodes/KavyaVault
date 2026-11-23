@@ -1,9 +1,12 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function owner(uid) { return request.auth != null && request.auth.uid == uid; }
+    function syncKind(kind) { return kind in ['poems', 'collections', 'manuscripts', 'books', 'drafts', 'theme', 'categories', 'tags']; }
     match /users/{uid}/libraries/current {
       allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if request.auth != null && request.auth.uid == uid
+      allow delete: if owner(uid);
+      allow create, update: if request.auth != null && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['version', 'parts', 'bytes', 'updatedAt'])
         && request.resource.data.version is string
         && request.resource.data.parts is int && request.resource.data.parts > 0 && request.resource.data.parts <= 110
@@ -16,6 +19,38 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['data'])
         && request.resource.data.data is string
         && request.resource.data.data.size() <= 600000;
+    }
+    match /users/{uid}/sync/{kind}/items/{id} {
+      allow read: if owner(uid) && syncKind(kind);
+      allow create, update: if owner(uid) && syncKind(kind)
+        && request.resource.data.keys().hasOnly(['revision', 'version', 'bytes', 'sha256', 'inline', 'parts', 'deletedAt', 'updatedAt'])
+        && request.resource.data.keys().hasAll(['revision', 'version', 'bytes', 'sha256', 'inline', 'parts', 'deletedAt', 'updatedAt'])
+        && request.resource.data.revision is int && request.resource.data.revision > 0
+        && request.resource.data.version is string && request.resource.data.version.size() <= 64
+        && request.resource.data.bytes is int && request.resource.data.bytes > 0 && request.resource.data.bytes <= 41943040
+        && request.resource.data.sha256 is string && request.resource.data.sha256.matches('^[0-9a-f]{64}$')
+        && request.resource.data.inline is string && request.resource.data.inline.size() <= 350000
+        && request.resource.data.parts is int && request.resource.data.parts >= 0 && request.resource.data.parts <= 110
+        && request.resource.data.deletedAt is string && request.resource.data.deletedAt.size() <= 40
+        && request.resource.data.updatedAt is string && request.resource.data.updatedAt.size() <= 40;
+      allow delete: if owner(uid);
+      match /versions/{version}/parts/{index} {
+        allow read, delete: if owner(uid) && syncKind(kind);
+        allow create, update: if owner(uid) && syncKind(kind)
+          && request.resource.data.keys().hasOnly(['data'])
+          && request.resource.data.data is string && request.resource.data.data.size() <= 600000;
+      }
+    }
+    match /users/{uid}/profile/current {
+      allow read, delete: if owner(uid);
+      allow create, update: if owner(uid)
+        && request.resource.data.keys().hasOnly(['displayName', 'penName', 'bio', 'birthDate', 'updatedAt'])
+        && request.resource.data.keys().hasAll(['displayName', 'penName', 'bio', 'birthDate', 'updatedAt'])
+        && request.resource.data.displayName is string && request.resource.data.displayName.size() <= 100
+        && request.resource.data.penName is string && request.resource.data.penName.size() <= 100
+        && request.resource.data.bio is string && request.resource.data.bio.size() <= 1000
+        && request.resource.data.birthDate is string && request.resource.data.birthDate.size() <= 10
+        && request.resource.data.updatedAt is string && request.resource.data.updatedAt.size() <= 40;
     }
   }
 }

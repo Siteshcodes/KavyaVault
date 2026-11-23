@@ -4,6 +4,8 @@
  * and live DOM attribute synchronization.
  */
 
+import { scopedStorage } from './storage/LibraryWorkspace.js';
+
 export const THEMES = [
   {
     id: 'bhojpatra',
@@ -79,7 +81,7 @@ class ThemeService {
   init() {
     let savedThemeId = null;
     try {
-      savedThemeId = localStorage.getItem(STORAGE_KEY);
+      savedThemeId = scopedStorage(localStorage).getItem(STORAGE_KEY);
     } catch (e) {
       console.warn('[KavyaVault Theme] Could not access localStorage:', e);
     }
@@ -129,7 +131,7 @@ class ThemeService {
     this.applyTheme(themeId);
 
     try {
-      localStorage.setItem(STORAGE_KEY, themeId);
+      scopedStorage(localStorage).setItem(STORAGE_KEY, themeId);
     } catch (e) {
       console.warn('[KavyaVault Theme] Could not persist theme preference:', e);
     }
