@@ -1,5 +1,6 @@
 node_modules
 dist
+firestore-debug.log
 .DS_Store
 *.local
 artifacts/
