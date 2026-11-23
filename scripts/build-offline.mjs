@@ -19,7 +19,9 @@ self.addEventListener('activate', event => event.waitUntil((async () => {
 })()));
 self.addEventListener('fetch', event => {
   const request = event.request, url = new URL(request.url);
-  if (request.method !== 'GET' || url.origin !== self.location.origin) return;
+  // Firebase Hosting reserves /__/ for its auth helper and SDK configuration.
+  // Serving the app shell here breaks Google sign-in popups.
+  if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/__/')) return;
   if (request.mode === 'navigate') {
     event.respondWith(caches.open(CACHE).then(async cache => (await cache.match('/index.html')) || fetch(request)));
   } else if (FILES.includes(url.pathname)) {

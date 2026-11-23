@@ -48,25 +48,39 @@ export const cloudLibraryService = {
     const previous = await this.cloudInfo();
     const version = crypto.randomUUID();
     const parts = snapshot.parts.length;
-    for (let index = 0; index < parts; index++) {
-      if (auth.currentUser?.uid !== user.uid) throw new Error('खाता बदल गया है। अपलोड रोका गया।');
-      await setDoc(partRef(user.uid, version, index), { data: snapshot.parts[index] });
+    const updatedAt = new Date().toISOString();
+    let written = 0;
+    try {
+      for (let index = 0; index < parts; index++) {
+        if (auth.currentUser?.uid !== user.uid) throw new Error('खाता बदल गया है। अपलोड रोका गया।');
+        await setDoc(partRef(user.uid, version, index), { data: snapshot.parts[index] });
+        written++;
+      }
+      if (auth.currentUser?.uid !== user.uid) throw new Error('खाता बदल गया है। क्लाउड स्थिति फिर जाँचें।');
+      await setDoc(manifestRef(user.uid), { version, parts, bytes: snapshot.bytes, updatedAt });
+    } catch (error) {
+      // The previous manifest still points to the complete previous snapshot.
+      // Orphan cleanup is best effort: network failure may also prevent deletes.
+      if (auth.currentUser?.uid === user.uid) {
+        for (let index = 0; index < written; index++) {
+          try { await deleteDoc(partRef(user.uid, version, index)); } catch { /* Retry by uploading again later. */ }
+        }
+      }
+      throw error;
     }
-    if (auth.currentUser?.uid !== user.uid) throw new Error('खाता बदल गया है। क्लाउड स्थिति फिर जाँचें।');
-    await setDoc(manifestRef(user.uid), { version, parts, bytes: snapshot.bytes, updatedAt: new Date().toISOString() });
     if (previous.exists && /^[0-9a-f-]{36}$/.test(previous.version) && Number.isInteger(previous.parts) && previous.parts <= 110) {
       for (let index = 0; index < previous.parts; index++) {
         try { await deleteDoc(partRef(user.uid, previous.version, index)); } catch { /* Old copy can be cleaned later. */ }
       }
     }
-    return { exists: true, version, parts, bytes: snapshot.bytes, updatedAt: new Date().toISOString() };
+    return { exists: true, version, parts, bytes: snapshot.bytes, updatedAt };
   },
   async download() {
     const user = auth?.currentUser;
     if (!user) throw new Error('पहले Google खाते में प्रवेश करें।');
     const info = await this.cloudInfo();
     if (!info.exists) throw new Error('इस खाते में कोई क्लाउड प्रति नहीं है।');
-    if (!/^[0-9a-f-]{36}$/.test(info.version) || !Number.isInteger(info.parts) || info.parts < 1 || info.parts > 110 || !Number.isInteger(info.bytes) || info.bytes > MAX_BACKUP_BYTES) throw new Error('क्लाउड प्रति का विवरण अमान्य है।');
+    if (!/^[0-9a-f-]{36}$/.test(info.version) || !Number.isInteger(info.parts) || info.parts < 1 || info.parts > 110 || !Number.isInteger(info.bytes) || info.bytes < 1 || info.bytes > MAX_BACKUP_BYTES) throw new Error('क्लाउड प्रति का विवरण अमान्य है।');
     const chunks = [];
     for (let index = 0; index < info.parts; index++) {
       const part = await getDocFromServer(partRef(user.uid, info.version, index));

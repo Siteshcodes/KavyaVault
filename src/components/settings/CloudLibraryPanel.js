@@ -1,6 +1,18 @@
 import { cloudLibraryService } from '../../services/cloud/CloudLibraryService.js';
 import { backupService } from '../../services/storage/BackupService.js';
 
+export function cloudErrorMessage(error) {
+  const messages = {
+    'auth/popup-blocked': 'पॉपअप रोक दिया गया। ब्राउज़र में पॉपअप की अनुमति दें और फिर प्रयास करें। / Allow popups and try again.',
+    'auth/popup-closed-by-user': 'प्रवेश रद्द हुआ। / Sign-in was cancelled.',
+    'auth/unauthorized-domain': 'यह वेबसाइट Firebase Authentication में अधिकृत नहीं है। / This domain is not authorized for sign-in.',
+    'auth/operation-not-allowed': 'Firebase में Google प्रवेश सक्षम नहीं है। / Google sign-in is not enabled.',
+    'auth/network-request-failed': 'नेटवर्क उपलब्ध नहीं है। स्थानीय लेखन जारी रख सकते हैं। / Check your connection; offline writing still works.',
+    'permission-denied': 'क्लाउड पहुँच अस्वीकृत हुई। खाते और सुरक्षा नियम जाँचें। / Cloud access was denied.'
+  };
+  return messages[error?.code] || error?.message || 'क्लाउड सेवा उपलब्ध नहीं है। / Cloud service is unavailable.';
+}
+
 export function renderCloudLibraryPanel() {
   return `<section class="backup-panel" aria-labelledby="cloud-heading">
     <h2 id="cloud-heading">Google खाता और क्लाउड प्रति</h2>
@@ -34,14 +46,22 @@ export function attachCloudLibraryEvents(container) {
   }
   let candidate = null, busy = false, currentUid = null;
   const clearCandidate = () => { candidate = null; find('cloud-review').hidden = true; find('cloud-ack').checked = false; find('cloud-restore').disabled = true; };
-  const run = async action => {
+  const run = async (action, timeoutMs = 0) => {
     if (busy) return;
     busy = true;
     for (const id of ['cloud-sign-in', 'cloud-upload', 'cloud-download', 'cloud-sign-out', 'cloud-restore']) find(id).disabled = true;
     status.textContent = 'कृपया प्रतीक्षा करें…';
-    try { await action(); }
-    catch (error) { status.textContent = error.message || 'क्लाउड सेवा उपलब्ध नहीं है।'; }
+    let timer;
+    try {
+      await (timeoutMs ? Promise.race([
+        action(),
+        new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('प्रवेश में बहुत समय लग रहा है। पॉपअप बंद करके फिर प्रयास करें। / Sign-in timed out; close the popup and try again.')), timeoutMs); })
+      ]) : action());
+      if (status.textContent === 'कृपया प्रतीक्षा करें…') status.textContent = '';
+    }
+    catch (error) { status.textContent = cloudErrorMessage(error); }
     finally {
+      if (timer) clearTimeout(timer);
       busy = false;
       for (const id of ['cloud-sign-in', 'cloud-upload', 'cloud-download', 'cloud-sign-out']) find(id).disabled = false;
       find('cloud-restore').disabled = !candidate || !find('cloud-ack').checked;
@@ -58,9 +78,9 @@ export function attachCloudLibraryEvents(container) {
     try {
       const info = await cloudLibraryService.cloudInfo();
       if (currentUid === user.uid) find('cloud-info').textContent = info.exists ? `क्लाउड प्रति: ${new Date(info.updatedAt).toLocaleString('hi-IN')}` : 'इस खाते में अभी कोई क्लाउड प्रति नहीं है।';
-    } catch (error) { if (currentUid === user.uid) status.textContent = error.message; }
+    } catch (error) { if (currentUid === user.uid) status.textContent = cloudErrorMessage(error); }
   });
-  find('cloud-sign-in').addEventListener('click', () => run(() => cloudLibraryService.signIn()));
+  find('cloud-sign-in').addEventListener('click', () => run(() => cloudLibraryService.signIn(), 90000));
   find('cloud-sign-out').addEventListener('click', () => run(() => cloudLibraryService.signOut()));
   find('cloud-upload').addEventListener('click', () => run(async () => {
     clearCandidate();
