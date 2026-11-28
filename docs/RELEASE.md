@@ -1,6 +1,6 @@
-# KavyaVault 1.0.0 local release candidate
+# KavyaVault 1.0.0 historical local release candidate
 
-Packaged locally for verification on 22 November 2026. This package contains the production static app and a small local server. It does not publish the archive or connect it to a cloud account.
+Packaged locally for verification on 22 November 2026. This package contains the production static app and a small local server. It does not publish the archive or connect it to a cloud account. **The website was subsequently deployed** with Firebase account features; see [current rollout status](FIREBASE-ROLLOUT.md). Instructions and "no public hosting" statements below describe only this historical portable package.
 
 Known acceptance issue: PDF pages render Hindi correctly in the tested readers, but exact text extraction can split or duplicate matras. Use EPUB or the original library for exact text interchange. The full native clipboard comparison and final mobile toolbar visual recheck remain unverified; this candidate does not claim a completed Phase 7 sign-off. See `docs/ROADMAP.md` and `docs/VERIFICATION.md`.
 

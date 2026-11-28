@@ -1,6 +1,6 @@
-# Automatic sync release plan
+# Automatic sync architecture and release checks
 
-This branch adds account-scoped, per-record Firestore sync. It is a review candidate, **not deployed**. Keep the project on Spark, do not enable Cloud Storage, and publish the reviewed rules before enabling this build in production.
+Account-scoped, per-record Firestore sync is deployed on the public Kavyakalash site. Its owner-only rules were deployed before the Hosting build in November 2026. Keep the project on Spark and do not enable Cloud Storage. This document records the design and the checks to repeat for future releases.
 
 ## Data boundaries and migration
 
@@ -26,7 +26,7 @@ The account controls can remove currently indexed synced records, the current ma
 
 ## Release verification
 
-1. Run `npm test`, `npm run build`, and `npm run test:rules` against the emulator. The emulator uses synthetic users and records only.
+1. Run `npm test`, `npm run build`, and `npm run test:rules`. The rules emulator uses synthetic users and records only.
 2. In an isolated staging Firebase project, verify Google persistence preference, first-time guest access, returning guest, profile editing, account switching, manual backup compatibility, offline reconnection, two-device edits, conflicts, and deletion. Use disposable records only.
 3. Check Firestore Usage before and after a measured 100-record session and a large manuscript; confirm Spark quotas are acceptable.
-4. Review migration and security rules, then request explicit approval before any production Hosting or rules deployment. Do not test deletion with the owner's actual poetry collection.
+4. Review migration and security rules, then request explicit approval before any further production Hosting or rules deployment. Do not test deletion with the owner's actual poetry collection.

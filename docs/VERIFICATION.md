@@ -1,6 +1,6 @@
-# Release verification — 22 November 2026
+# Historical local-release verification — 22 November 2026
 
-This report concerns the local release branch `codex/complete-local-release`. Synthetic fixtures were used; the user's existing library was not imported or changed.
+This report concerns the local release branch `codex/complete-local-release` **as it stood on 22 November 2026**. The website was subsequently deployed with Firebase Authentication, automatic sync, and private profiles; see [current Firebase rollout](FIREBASE-ROLLOUT.md). The historical "no public deployment" statements below describe this earlier local candidate. Synthetic fixtures were used; the user's existing library was not imported or changed.
 
 **Release assessment:** the local release candidate is packaged and its launcher works. This is not an unconditional Phase 7 completion sign-off: PDF text extraction has a confirmed compatibility defect, and the full native-reader clipboard comparison remains unverified. No `phase-7-complete` tag is created.
 
