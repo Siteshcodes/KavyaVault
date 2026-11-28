@@ -1,6 +1,8 @@
-# Roadmap status — 22 November 2026
+# Roadmap and acceptance status
 
-This ledger records the repository's implemented work and remaining acceptance items. Historical notes are in `phase-history.md`; they are not evidence that every production integration exists.
+**Current status (November 2026):** Kavyakalash is public on Firebase Hosting. Guest access, Google Authentication, UID-scoped libraries, optional automatic Firestore sync, private profiles, and manual backup are implemented. The Firestore rules were deployed before Hosting. The owner reports testing live account features; future releases should repeat two-device and offline checks with disposable accounts. See [Firebase rollout](FIREBASE-ROLLOUT.md) and [automatic sync architecture](AUTO-SYNC.md).
+
+The Phase 7 ledger below records the **22 November 2026 local release candidate** and its remaining acceptance items. Historical notes are in `phase-history.md`; they are not evidence that every production integration exists.
 
 | Work | Status and evidence |
 |---|---|
@@ -19,4 +21,4 @@ This ledger records the repository's implemented work and remaining acceptance i
 2. **Full native-reader clipboard round trip:** only a selected Hindi heading was pasted successfully in Acrobat; the full comparison was interrupted by desktop takeover. Desktop UI tooling subsequently became unavailable.
 3. **Final mobile toolbar visual recheck:** the 390/768/1024/1440 layouts were inspected, then small controls were enlarged and the mobile toolbar wrapped. Final CSS/label changes pass build/tests but need one more visual pass.
 
-The release is a local candidate. The `phase-7-complete` tag is intentionally absent while these acceptance items remain open. Public hosting, printer hardware checks, a low-memory mobile benchmark and production AI/OCR/embedding providers are not included in this package.
+That Phase 7 package remains a local candidate. The `phase-7-complete` tag is intentionally absent while these acceptance items remain open. **The website was subsequently deployed**; printer hardware checks, a low-memory mobile benchmark and production AI/OCR/embedding providers were not included in the local package.
